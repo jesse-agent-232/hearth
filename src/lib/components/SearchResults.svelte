@@ -75,7 +75,7 @@
 	}
 </script>
 
-<div class="absolute left-0 right-0 top-full mt-1 bg-surface-modal backdrop-blur-xl border border-border-card rounded-xl overflow-hidden z-20 shadow-theme max-h-[60vh] overflow-y-auto">
+<div class="hero-search-results absolute left-0 right-0 top-full mt-1 bg-surface-modal backdrop-blur-xl border border-border-card rounded-xl overflow-hidden z-20 shadow-theme overflow-y-auto" style="max-height: var(--results-max-h, 60vh)">
 
 	<!-- ═══ ACTIONS SECTION ═══ -->
 	{#if actions.length > 0}

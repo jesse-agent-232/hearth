@@ -10,12 +10,14 @@
 </script>
 
 {#if weatherData && weatherInfo}
-	<div class="shrink-0 animate-fade-in text-right">
-		<div class="flex items-center gap-2 justify-end">
-			<div class="w-5 h-5 shrink-0 text-content-muted max-md:w-4 max-md:h-4">{@html weatherInfo[0]}</div>
-			<span class="text-[1.5rem] max-md:text-[1.1rem] font-normal text-content leading-none tracking-tight tabular-nums">
-				<AnimatedNumber value={weatherData.temp} />&deg;
-			</span>
-		</div>
+	<div class="shrink-0 animate-fade-in flex items-center gap-1.5 text-[0.85rem] max-md:text-[0.75rem] tracking-[0.12em] uppercase text-content">
+		<div class="w-3.5 h-3.5 shrink-0 opacity-85">{@html weatherInfo[0]}</div>
+		<span class="tabular-nums normal-case font-medium">
+			<AnimatedNumber value={weatherData.temp} />&deg;
+		</span>
+		{#if locationName}
+			<span class="text-content-muted hidden md:inline">·</span>
+			<span class="text-content-muted hidden md:inline">{locationName}</span>
+		{/if}
 	</div>
 {/if}

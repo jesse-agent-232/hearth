@@ -9,4 +9,7 @@ data/
 test-results/
 *.png
 yarn.lock
-config.yml
+
+# Claude Code working state + ad-hoc scratch scripts
+.claude/
+.claude-*

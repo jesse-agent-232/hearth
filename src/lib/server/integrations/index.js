@@ -19,11 +19,9 @@ const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {
-	const categories = getAppsConfig();
-	for (const cat of categories) {
-		for (const app of cat.items || []) {
-			if (app.id === id) return app;
-		}
+	const apps = getAppsConfig();
+	for (const app of apps) {
+		if (app.id === id) return app;
 	}
 	return null;
 }

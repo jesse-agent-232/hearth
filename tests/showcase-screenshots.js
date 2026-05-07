@@ -78,7 +78,7 @@ async function setupPage(browser, vp, prefs) {
 }
 
 async function waitForDashboard(page) {
-	await page.waitForSelector('.category-card', { timeout: 15000 }).catch(() => {});
+	await page.waitForSelector('.app-tile', { timeout: 15000 }).catch(() => {});
 	// Wait for all icon images to load
 	await page.waitForFunction(() => {
 		const imgs = document.querySelectorAll('.app-icon-wrap img');

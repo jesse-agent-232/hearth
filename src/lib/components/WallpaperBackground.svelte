@@ -14,7 +14,7 @@
 	});
 </script>
 
-<div class="fixed inset-0 -z-20 {failed ? 'bg-surface' : ''}">
+<div class="dashboard-wallpaper fixed inset-0 -z-20 {failed ? 'bg-surface' : ''}">
 	{#if imgSrc && !failed}
 		{#key imgSrc}
 		<img
@@ -28,4 +28,4 @@
 		{/key}
 	{/if}
 </div>
-<div class="fixed inset-0 -z-10 pointer-events-none backdrop-blur-[6px]" style="background: linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.35) 100%);"></div>
+<div class="fixed inset-0 -z-10 pointer-events-none" style="background: linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.35) 100%);"></div>

@@ -7,6 +7,8 @@
 	let isIOS = $state(false);
 	let dismissed = $state(false);
 
+	let { devMode = false } = $props();
+
 	onMount(() => {
 		// Don't show if already installed as standalone
 		if (window.matchMedia('(display-mode: standalone)').matches) return;
@@ -14,6 +16,10 @@
 		// Check if dismissed recently (7 days)
 		const dismissedAt = localStorage.getItem('install_dismissed');
 		if (dismissedAt && Date.now() - parseInt(dismissedAt) < 7 * 86400000) return;
+
+		// Dev mode (no auth, demo user): suppress the iOS prompt so screenshots
+		// and local dev runs aren't dominated by the install banner overlay.
+		if (devMode) return;
 
 		// iOS Safari detection
 		const ua = navigator.userAgent;
@@ -50,7 +56,7 @@
 </script>
 
 {#if showPrompt && !dismissed}
-	<div class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-4 py-3.5 px-6 glass-card rounded-none border-t border-border-card z-50 animate-slide-up">
+	<div class="install-prompt fixed bottom-0 left-0 right-0 flex items-center justify-center gap-4 py-3.5 px-6 glass-card rounded-none border-t border-border-card z-[60] animate-slide-up" style="padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px))">
 		{#if isIOS}
 			<span class="text-base text-content-dim">
 				Tap <strong class="text-content">Share</strong> then <strong class="text-content">Add to Home Screen</strong> to install

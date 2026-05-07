@@ -11,6 +11,17 @@
 	let { query = $bindable(''), apps = [], onSettingsOpen = () => {} } = $props();
 	let inputEl;
 	let containerEl;
+	// Available pixel height for the results dropdown — computed from the bar's
+	// bottom edge to the viewport bottom minus a breathing gap. Recomputed on
+	// open + window resize so the panel never spills past the visible area.
+	let resultsMaxHeight = $state(420);
+	function recomputeResultsMaxHeight() {
+		if (!containerEl || typeof window === 'undefined') return;
+		const rect = containerEl.getBoundingClientRect();
+		const gap = 24;
+		const available = window.innerHeight - rect.bottom - gap;
+		resultsMaxHeight = Math.max(220, available);
+	}
 
 	// ── Provider model — unified search ───────────────────────────
 	// There is no provider switcher. The form's submit target is the
@@ -179,8 +190,64 @@
 	// providers in the future render as separate sections in the dropdown.
 	let providerResults = $state({}); // providerId → { results, loading, error }
 	let inlineOpen = $state(false);
+	// True when the results panel is actually being shown — gates the
+	// "joined surface" Raycast-style styling on the container.
+	const isPaletteOpen = $derived(inlineOpen && !!(query.trim() || activeScope));
 	let debounceTimer = null;
 	let lastDispatched = '';
+
+	// ── Rotating typed placeholder ────────────────────────────────
+	// Cycles through hints so the placeholder advertises what the palette
+	// can do (bangs, actions, shortcuts) without a static wall of text.
+	// Pauses while the user is focused, typing, or scoped — those are
+	// states where a moving placeholder would distract.
+	const PLACEHOLDER_HINTS = [
+		'Search apps, files, photos…',
+		'Try !nc to scope Nextcloud',
+		'Type !settings to configure',
+		'Press / anywhere to focus'
+	];
+	let placeholderText = $state(PLACEHOLDER_HINTS[0]);
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (inlineOpen || query || activeScope) return;
+		let hintIndex = 0;
+		let charIndex = PLACEHOLDER_HINTS[0].length;
+		let phase = 'holding';
+		let timeout;
+		placeholderText = PLACEHOLDER_HINTS[0];
+
+		const step = () => {
+			const target = PLACEHOLDER_HINTS[hintIndex];
+			if (phase === 'holding') {
+				phase = 'erasing';
+				timeout = setTimeout(step, 1800);
+			} else if (phase === 'erasing') {
+				if (charIndex > 0) {
+					charIndex--;
+					placeholderText = target.slice(0, charIndex);
+					timeout = setTimeout(step, 22);
+				} else {
+					phase = 'typing';
+					hintIndex = (hintIndex + 1) % PLACEHOLDER_HINTS.length;
+					timeout = setTimeout(step, 320);
+				}
+			} else if (phase === 'typing') {
+				const next = PLACEHOLDER_HINTS[hintIndex];
+				if (charIndex < next.length) {
+					charIndex++;
+					placeholderText = next.slice(0, charIndex);
+					timeout = setTimeout(step, 45);
+				} else {
+					phase = 'holding';
+					timeout = setTimeout(step, 2200);
+				}
+			}
+		};
+		timeout = setTimeout(step, 2800);
+		return () => clearTimeout(timeout);
+	});
 
 	function closeInline() {
 		inlineOpen = false;
@@ -224,10 +291,19 @@
 		}
 	}
 
+	// Min query length before any remote provider fetch fires. One/two-letter
+	// queries are mostly people filtering local apps — fanning out to every
+	// connected integration on every keystroke is noisy + expensive (and the
+	// results are too broad to be useful). Matches the Raycast/Spotlight
+	// pattern of "local-instant, remote-after-3-chars". Scoped queries are
+	// gated by the same threshold by design — the user opted into a scope but
+	// we still don't want a Planka cards fetch on "p".
+	const MIN_REMOTE_QUERY_LENGTH = 3;
+
 	function dispatchSearch(q, providers) {
 		clearTimeout(debounceTimer);
 		const trimmed = (q || '').trim();
-		if (!trimmed) {
+		if (trimmed.length < MIN_REMOTE_QUERY_LENGTH) {
 			providerResults = {};
 			return;
 		}
@@ -240,7 +316,13 @@
 	}
 
 	$effect(() => {
-		if (hasInlineProviders) {
+		// Bang-prefixed input is a built-in command (`!settings`, `!theme`, …) or
+		// a pending scope shortcut. Either way the user is not asking integrations
+		// to search — skip the dispatch entirely so we don't waste requests on
+		// every keystroke until they hit space and a real query begins.
+		const trimmed = (query || '').trim();
+		const isBang = trimmed.startsWith('!');
+		if (hasInlineProviders && !isBang) {
 			dispatchSearch(query, scopedProviders);
 		} else {
 			providerResults = {};
@@ -250,6 +332,9 @@
 	// Close on click outside
 	onMount(() => {
 		ensureIntegrationsLoaded();
+		recomputeResultsMaxHeight();
+		const onResize = () => recomputeResultsMaxHeight();
+		window.addEventListener('resize', onResize);
 
 		const tipRotator = setInterval(() => {
 			if (allTips.length > 2) tipIndex += 2;
@@ -307,8 +392,15 @@
 		return () => {
 			document.removeEventListener('keydown', onKeydown);
 			document.removeEventListener('mousedown', onClickOutside);
+			window.removeEventListener('resize', onResize);
 			clearInterval(tipRotator);
 		};
+	});
+
+	// Recompute when the palette opens (the bar may have raised on focus, so
+	// its bottom edge changed) and when the scope chip appears/disappears.
+	$effect(() => {
+		if (inlineOpen) requestAnimationFrame(recomputeResultsMaxHeight);
 	});
 
 	function handleSubmit(e) {
@@ -324,6 +416,18 @@
 	}
 
 	function handleInputKeydown(e) {
+		// Escape — clear scope/query and dismiss the palette. Handled here on
+		// the input directly (rather than relying on the document-level listener)
+		// so it can't be missed by event-bubbling quirks or activeElement checks.
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			query = '';
+			activeScope = null;
+			inlineOpen = false;
+			inputEl?.blur();
+			return;
+		}
 		// Backspace at empty input with a chip → clear the scope and put "!" back in the input
 		if (e.key === 'Backspace' && activeScope && query === '' && inputEl?.selectionStart === 0) {
 			e.preventDefault();
@@ -358,44 +462,59 @@
 
 	// Auto-execute a no-arg action as soon as the bang is fully typed (no space needed),
 	// provided no other bang could still extend this prefix (e.g. `!set` vs `!settings`).
+	// Returns true when an action ran (and runAction has already cleared state),
+	// so callers can skip any "reopen the palette" work that would otherwise
+	// undo the blur/close (e.g. the search-active body dim staying on for !wall).
 	function maybeAutoExecAction() {
-		if (activeScope) return;
+		if (activeScope) return false;
 		const s = (query || '').trimStart();
 		const m = s.match(/^!([a-zA-Z0-9_-]+)\s*$/);
-		if (!m) return;
+		if (!m) return false;
 		const bang = m[1].toLowerCase();
 		const hits = ACTIONS.filter((a) => a.bang === bang);
-		if (!(hits.length === 1 && !hits[0].arg)) return;
+		if (!(hits.length === 1 && !hits[0].arg)) return false;
 		// Collision check — if another bang is a proper extension of this one, wait.
 		const hasLongerBang = ACTIONS.some((a) => a.bang !== bang && a.bang.startsWith(bang));
-		if (hasLongerBang) return;
+		if (hasLongerBang) return false;
 		runAction(hits[0]);
+		return true;
 	}
 
 	function handleInput() {
 		maybePromoteScope();
-		maybeAutoExecAction();
+		if (maybeAutoExecAction()) return;
 		inlineOpen = true;
 	}
+
+	// Toggle a body class while the search palette is open so the rest of
+	// the dashboard can dim/blur via CSS without fighting stacking contexts.
+	// Ancestors of the search bar use `transform` (fade-in-up animation),
+	// which creates a containing block and breaks `position: fixed` overlays
+	// placed inside the component tree — hence the body-level class.
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (inlineOpen) document.body.classList.add('search-active');
+		else document.body.classList.remove('search-active');
+		return () => document.body.classList.remove('search-active');
+	});
 </script>
 
-<div class="relative mb-3" bind:this={containerEl}>
+<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px">
 	<form
-		class="flex items-center rounded-xl px-4 transition-all duration-200 focus-within:border-border-pill focus-within:ring-1 focus-within:ring-border-pill/40"
-		style="background: var(--card-bg); border: 1px solid var(--divider);"
+		class="hero-search-form flex items-center px-5 md:px-7"
 		action={searchConfig.url}
 		method="GET"
 		target="_blank"
 		onsubmit={handleSubmit}
 	>
-		<svg class="text-content-dim shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+		<svg class="text-content-dim shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 
 		{#if activeIntegration}
-			<span class="flex items-center gap-1 shrink-0 ml-2 text-[0.7rem] font-mono px-2 py-1 rounded-lg border border-border-pill bg-surface-card-strong text-content-muted">
+			<span class="scope-chip flex items-center gap-1 shrink-0 ml-2 text-[0.7rem] font-mono px-2 py-1 rounded-lg border">
 				{activeIntegration.name}
 				<button
 					type="button"
-					class="text-content-dim hover:text-content bg-transparent border-none cursor-pointer leading-none p-0 ml-0.5"
+					class="scope-chip-clear bg-transparent border-none cursor-pointer leading-none p-0 ml-0.5"
 					onclick={() => { activeScope = null; inputEl?.focus(); }}
 					aria-label="Clear scope"
 				>&times;</button>
@@ -407,8 +526,8 @@
 			bind:value={query}
 			type="text"
 			name={searchConfig.param || 'q'}
-			class="w-full h-[44px] bg-transparent border-none text-content text-[0.85rem] px-3 outline-none font-mono"
-			placeholder={activeIntegration ? `Search in ${activeIntegration.name}...` : 'Search apps, jump to...'}
+			class="w-full h-[44px] md:h-[52px] bg-transparent border-none text-[0.85rem] md:text-[0.95rem] px-3 md:px-4 outline-none font-mono"
+			placeholder={activeIntegration ? `Search in ${activeIntegration.name}...` : placeholderText}
 			autocomplete="off"
 			onfocus={handleFocus}
 			oninput={handleInput}
@@ -416,9 +535,9 @@
 		/>
 
 		{#if query}
-			<button type="button" class="text-content-dim text-sm bg-transparent border-none cursor-pointer hover:text-content px-1" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
+			<button type="button" class="clear-btn text-sm md:text-base bg-transparent border-none cursor-pointer px-1" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
 		{:else}
-			<kbd class="text-content-muted text-[0.6rem] bg-surface-card-strong py-0.5 px-1.5 rounded border border-border-card font-mono shrink-0">/</kbd>
+			<kbd class="hero-search-kbd text-[0.6rem] md:text-[0.7rem] py-0.5 px-1.5 md:py-1 md:px-2 rounded border font-mono shrink-0">/</kbd>
 		{/if}
 	</form>
 

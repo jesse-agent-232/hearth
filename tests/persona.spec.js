@@ -118,7 +118,7 @@ test.describe.serial('Persona: Family', () => {
 		await expect(page.locator('h2', { hasText: 'Local Weather' })).toBeVisible({ timeout: 10000 });
 	});
 
-	test('dashboard shows family categories', async ({ page }) => {
+	test('dashboard shows family apps', async ({ page }) => {
 		await setPrefs(page, { onboarded: true, name: 'demo', username: 'demo', passwordVerified: true });
 		await page.goto('/?user=demo');
 		await page.waitForTimeout(3000);
@@ -126,12 +126,7 @@ test.describe.serial('Persona: Family', () => {
 		// Time/date always visible
 		await expect(page.locator('h1').first()).toBeVisible();
 
-		// Categories
-		for (const cat of ['Family', 'Entertainment']) {
-			await expect(page.locator(`div.text-content-dim:has-text("${cat}")`).first()).toBeVisible();
-		}
-
-		// Apps
+		// Categories are gone — apps render as individual tiles on the surface.
 		for (const app of ['Photos', 'Passwords', 'Movies', 'YouTube']) {
 			await expect(page.locator(`text=${app}`).first()).toBeVisible();
 		}
@@ -178,8 +173,8 @@ test.describe.serial('Persona: Developer', () => {
 		await page.goto('/?user=demo');
 		await page.waitForTimeout(3000);
 
-		// Should see apps immediately, no onboarding modal
-		await expect(page.locator(`div.text-content-dim:has-text("Dev")`).first()).toBeVisible();
+		// Should see app tiles immediately, no onboarding modal
+		await expect(page.locator('.app-tile').first()).toBeVisible();
 	});
 
 	test('time visible but no weather', async ({ page }) => {
@@ -194,15 +189,12 @@ test.describe.serial('Persona: Developer', () => {
 		await expect(page.locator('text=°C')).not.toBeVisible();
 	});
 
-	test('dev and infra categories with correct apps', async ({ page }) => {
+	test('dev persona apps are surfaced', async ({ page }) => {
 		await setPrefs(page, { onboarded: true, name: 'dev', username: 'dev', passwordVerified: true });
 		await page.goto('/?user=demo');
 		await page.waitForTimeout(3000);
 
-		for (const cat of ['Dev', 'Infra', 'Bookmarks']) {
-			await expect(page.locator(`div.text-content-dim:has-text("${cat}")`).first()).toBeVisible();
-		}
-
+		// Categories are gone; apps render as individual tiles.
 		for (const app of ['GitHub', 'Gitea', 'Portainer', 'Grafana', 'HN', 'Claude']) {
 			await expect(page.locator(`text=${app}`).first()).toBeVisible();
 		}

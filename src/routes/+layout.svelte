@@ -9,6 +9,7 @@
 	const brandName = config?.branding?.name || 'Hearth';
 	const brandDesc = config?.branding?.description || 'Self-hosted dashboard';
 	const themeColor = config?.branding?.theme_color || '#09090b';
+	const accentColor = config?.branding?.accent_color || '#f5b942';
 	const shortName = config?.branding?.short_name || brandName.toLowerCase();
 	const fontFamily = config?.branding?.font?.family || 'JetBrains Mono';
 	const fontUrl = config?.branding?.font?.url || 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap';
@@ -28,7 +29,7 @@
 	{#if fontUrl}
 		<link href={fontUrl} rel="stylesheet">
 	{/if}
-	{@html `<style>:root { --font-family: '${fontFamily}', monospace; } body { font-family: var(--font-family); }</style>`}
+	{@html `<style>:root { --font-family: '${fontFamily}', monospace; --accent: ${accentColor}; } body { font-family: var(--font-family); }</style>`}
 </svelte:head>
 
 {@render children()}

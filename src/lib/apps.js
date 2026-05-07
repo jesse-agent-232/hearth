@@ -1,43 +1,58 @@
-// Apps module — builds categories, defaults, and setup guides from config data.
+// Apps module — builds the flat app catalog and setup guides from config data.
 // On the server, config is loaded from YAML. On the client, it's passed via page data.
 
+let warnedOnLegacyShape = false;
+
+// Accept both the new flat shape (apps: [{id, name, ...}]) and the legacy
+// nested shape (apps: [{category, items: [...]}]). The legacy shape is
+// flattened with a one-time warning so existing operator configs keep loading.
+function normalizeAppsInput(appsConfig) {
+	if (!Array.isArray(appsConfig)) return [];
+	if (appsConfig.length === 0) return [];
+	const first = appsConfig[0];
+	if (first && Array.isArray(first.items)) {
+		if (!warnedOnLegacyShape) {
+			warnedOnLegacyShape = true;
+			console.warn(
+				"[hearth] config: nested 'category/items' apps shape is deprecated. " +
+					'Flatten apps: into a single list. The category labels are silently ignored.'
+			);
+		}
+		return appsConfig.flatMap((c) => (Array.isArray(c?.items) ? c.items : []));
+	}
+	return appsConfig;
+}
+
 export function buildAppsFromConfig(appsConfig) {
-	const categories = (appsConfig || []).map(cat => ({
-		label: cat.category,
-		apps: (cat.items || []).map(item => ({
-			id: item.id,
-			name: item.name,
-			url: item.url,
-			icon: resolveIcon(item.icon, item.icon_mono, item.brandColor, item.brandFg, item.brandExplicit),
-			selfHosted: item.self_hosted || false,
-			adminOnly: item.admin_only || false,
-			default: item.default_visible !== false,
-			ios: item.app_store?.ios || null,
-			android: item.app_store?.android || null,
-			extension: item.browser_extension || null,
-			subtitle: item.setup_guide?.subtitle || null
-		}))
+	const items = normalizeAppsInput(appsConfig);
+
+	const apps = items.map((item) => ({
+		id: item.id,
+		name: item.name,
+		url: item.url,
+		icon: resolveIcon(item.icon, item.icon_mono, item.brandColor, item.brandFg, item.brandExplicit),
+		selfHosted: item.self_hosted || false,
+		adminOnly: item.admin_only || false,
+		default: item.default_visible !== false,
+		ios: item.app_store?.ios || null,
+		android: item.app_store?.android || null,
+		extension: item.browser_extension || null,
+		subtitle: item.setup_guide?.subtitle || null,
+		tags: Array.isArray(item.tags) ? item.tags : []
 	}));
 
-	const defaultAppIds = categories
-		.flatMap(cat => cat.apps)
-		.filter(app => app.default !== false)
-		.map(app => app.id);
-
 	const setupGuides = {};
-	for (const cat of appsConfig || []) {
-		for (const item of cat.items || []) {
-			if (item.setup_guide) {
-				setupGuides[item.name] = {
-					title: `${item.name} Setup`,
-					subtitle: item.setup_guide.subtitle || item.name,
-					steps: item.setup_guide.steps || []
-				};
-			}
+	for (const item of items) {
+		if (item.setup_guide) {
+			setupGuides[item.name] = {
+				title: `${item.name} Setup`,
+				subtitle: item.setup_guide.subtitle || item.name,
+				steps: item.setup_guide.steps || []
+			};
 		}
 	}
 
-	return { categories, defaultAppIds, setupGuides };
+	return { apps, setupGuides };
 }
 
 const DI_CDN = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg';

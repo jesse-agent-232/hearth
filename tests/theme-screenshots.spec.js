@@ -6,7 +6,7 @@ async function goToDashboard(page, extraPrefs = {}) {
 	await page.goto('/');
 	await page.evaluate((p) => localStorage.setItem('landing_prefs', JSON.stringify(p)), prefs);
 	await page.goto('/?user=demo');
-	await page.waitForSelector('div.text-content-dim >> text=Storage', { timeout: 10000 });
+	await page.waitForSelector('.app-tile', { timeout: 10000 });
 	// Wait for hydration
 	await page.waitForFunction(() => document.querySelector('style[data-sveltekit]') === null, { timeout: 10000 });
 }
