@@ -31,7 +31,10 @@ export function handleIconError(e, icon) {
 /** Return inline style for icon backgrounds in colored mode. */
 export function getBrandBgStyle(icon) {
 	if (icon.brandExplicit && icon.brandColor) return `background: ${icon.brandColor};`;
-	return 'background: #ffffff;';
+	// Default tile resolves per-theme via --tile-bg-default (white in light,
+	// translucent dark in dark). Apps that opt into a brand-color tile via
+	// `tile_color` keep their explicit hex regardless of theme.
+	return 'background: var(--tile-bg-default);';
 }
 
 /** Return CSS filter to tint icon glyph to match brand foreground color. */

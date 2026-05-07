@@ -26,11 +26,10 @@
 
 	function formatDate() {
 		const d = now;
-		const day = DAYS[d.getDay()];
-		const month = MONTHS[d.getMonth()];
+		const day = DAYS[d.getDay()].slice(0, 3);
+		const month = MONTHS[d.getMonth()].slice(0, 3);
 		const date = d.getDate();
-		const year = d.getFullYear();
-		return `${day}, ${month} ${date}, ${year}`;
+		return `${day} · ${month} ${date}`;
 	}
 
 	async function fetchWeather(lat, lon) {
@@ -88,28 +87,31 @@
 		fetchLocation(useLat, useLon).then(n => { locationName = n; });
 	});
 
+	let headerEl;
 	onMount(() => {
 		const timer = setInterval(() => { now = new Date(); }, 60000);
-		return () => clearInterval(timer);
+		// Toggle a blurred backdrop on the sticky header only once the
+		// page has scrolled a bit — keeps the at-rest top-of-page clean.
+		const onScroll = () => headerEl?.classList.toggle('is-stuck', window.scrollY > 8);
+		onScroll();
+		window.addEventListener('scroll', onScroll, { passive: true });
+		return () => {
+			clearInterval(timer);
+			window.removeEventListener('scroll', onScroll);
+		};
 	});
 </script>
 
-<div class="mb-8">
-	<!-- Clock + Weather row -->
-	<div class="flex justify-between items-end">
-		<h1 class="text-[4rem] font-medium text-content tracking-tighter leading-[0.85] max-md:text-[3rem] max-xs:text-[2.5rem] tabular-nums">{formatTime()}</h1>
-		<div class="flex flex-col items-end gap-2">
-			{#if showWeather}<Weather {weatherData} {locationName} />{/if}
-			{#if headlines.length > 0}<NewsPill {headlines} />{/if}
-		</div>
+<!-- Compact status-bar header: a single mono row with time · date on the
+     left and weather/location on the right. Clock is the anchor but no
+     longer the visual hero — the search palette below is. -->
+<div bind:this={headerEl} class="dashboard-header mb-8 max-md:mb-6 flex justify-between items-center gap-3 text-[0.85rem] max-md:text-[0.75rem] font-mono tracking-[0.12em] uppercase">
+	<div class="flex items-baseline gap-3 min-w-0 flex-wrap">
+		<span class="text-[1.35rem] max-md:text-[1.1rem] font-semibold text-content tabular-nums tracking-tight normal-case">{formatTime()}</span>
+		<span class="text-content-muted">{formatDate()}</span>
 	</div>
-	<!-- Date (left) + Weather desc (right) -->
-	<div class="flex justify-between items-baseline mt-1.5 max-md:mt-1">
-		<div class="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-content-muted">{formatDate()}</div>
-		{#if weatherData}
-			<div class="text-[0.6rem] max-md:text-[0.5rem] font-medium uppercase tracking-[0.15em] text-content-muted text-right">
-				<span class="max-md:hidden">{(WEATHER_MAP[weatherData.code] || [null, 'Unknown'])[1]}</span>{#if locationName}<span class="max-md:hidden"> · </span><span>{locationName}</span>{/if}
-			</div>
-		{/if}
+	<div class="flex items-center gap-3 shrink-0">
+		{#if headlines.length > 0}<NewsPill {headlines} />{/if}
+		{#if showWeather}<Weather {weatherData} {locationName} />{/if}
 	</div>
 </div>

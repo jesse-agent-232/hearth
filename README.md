@@ -269,6 +269,10 @@ privacy:
 - [marked](https://github.com/markedjs/marked) + [DOMPurify](https://github.com/cure53/DOMPurify) for markdown
 - [adapter-node](https://kit.svelte.dev/docs/adapter-node) for Docker
 
+## Design System
+
+Hearth ships a small Tailwind-v4 design system: a 4-level surface elevation ladder (`surface-0..3`), unified type/radius/shadow/motion scales, and a single `bloom-focus` focus state. See [`docs/design-system.md`](docs/design-system.md) for the full guide and recipe gallery — every UI surface composes from this vocabulary.
+
 ## License
 
 MIT

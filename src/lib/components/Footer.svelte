@@ -9,7 +9,7 @@
 	let { onOpenPrivacy = null } = $props();
 </script>
 
-<div class="flex items-center gap-3 pt-6 pb-2 text-[0.65rem] text-content-dim">
+<div class="dashboard-footer flex items-center gap-3 pt-6 pb-2 text-[0.65rem] text-content-dim">
 	<span>{brandName}</span>
 	{#if registration?.enabled && registration?.url}
 		<span class="opacity-40">&middot;</span>

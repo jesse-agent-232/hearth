@@ -1,17 +1,14 @@
 <script>
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
-	import { adminApps as adminAppsStore } from '$lib/stores/adminApps.js';
-	import { buildAppsFromConfig, resolveIcon } from '$lib/apps.js';
-	import { getIconSrc, getIconClass, handleIconError } from '$lib/iconHelpers.js';
-	import AppIcon from '$lib/components/AppIcon.svelte';
+	import { buildAppsFromConfig } from '$lib/apps.js';
 	import IntegrationsPanel from '$lib/components/IntegrationsPanel.svelte';
-	import { appDirectory } from '$lib/appDirectory.js';
 	import { TOTAL_WALLPAPERS, getWallpaperThumbUrl } from '$lib/wallpaper.js';
 	import { browser } from '$app/environment';
 
 	const siteConfig = getContext('config');
-	const { categories, defaultAppIds } = buildAppsFromConfig(siteConfig?.apps);
+	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
+	const defaultAppIds = catalogApps.filter((a) => a.default !== false).map((a) => a.id);
 
 	let { open = $bindable(false), isAdmin = false } = $props();
 
@@ -27,47 +24,6 @@
 	const WALLPAPERS_PER_PAGE = 12;
 	const totalPages = Math.ceil(TOTAL_WALLPAPERS / WALLPAPERS_PER_PAGE);
 
-	// Custom bookmarks (per-user)
-	let customApps = $state($prefs.customApps || []);
-	let showAddForm = $state(false);
-	let newName = $state('');
-	let newUrl = $state('');
-	let newIcon = $state('');
-
-	// Admin default apps (server-backed, shared across all users)
-	let adminApps = $derived($adminAppsStore);
-	let showAdminAddForm = $state(false);
-	let adminNewName = $state('');
-	let adminNewUrl = $state('');
-	let adminNewIcon = $state('');
-	let adminNewCategory = $state('');
-	let adminNewSelfHosted = $state(false);
-	let adminSearch = $state('');
-	let showSearchResults = $state(false);
-
-	// Existing app IDs/names to filter out already-added apps
-	const existingNames = $derived(new Set([
-		...categories.flatMap(c => c.apps.map(a => a.name.toLowerCase())),
-		...adminApps.map(a => a.name.toLowerCase())
-	]));
-
-	const searchResults = $derived.by(() => {
-		const q = adminSearch.trim().toLowerCase();
-		if (!q) return appDirectory.filter(a => !existingNames.has(a.name.toLowerCase())).slice(0, 8);
-		return appDirectory
-			.filter(a => a.name.toLowerCase().includes(q) && !existingNames.has(a.name.toLowerCase()))
-			.slice(0, 8);
-	});
-
-	function selectFromDirectory(entry) {
-		adminNewName = entry.name;
-		adminNewIcon = entry.icon;
-		adminNewCategory = entry.category || 'Custom';
-		adminNewSelfHosted = entry.self_hosted || false;
-		adminSearch = '';
-		showSearchResults = false;
-	}
-
 	let prevOpen = false;
 	$effect(() => {
 		if (open && !prevOpen) {
@@ -80,12 +36,6 @@
 			openInNewTab = $prefs.openInNewTab ?? true;
 			wallpaperPage = wallpaperId ? Math.floor((wallpaperId - 1) / WALLPAPERS_PER_PAGE) : 0;
 			enabledWidgets = new Set($prefs.enabledWidgets || ['weather', 'news', 'search']);
-			customApps = $prefs.customApps || [];
-			adminAppsStore.load();
-			showAddForm = false;
-			showAdminAddForm = false;
-			newName = ''; newUrl = ''; newIcon = '';
-			adminNewName = ''; adminNewUrl = ''; adminNewIcon = ''; adminNewCategory = ''; adminNewSelfHosted = false;
 		}
 		prevOpen = open;
 	});
@@ -153,72 +103,12 @@
 		wallpaperId = null;
 		openInNewTab = true;
 		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true, customApps: [] }));
-		customApps = [];
-	}
-
-	// Bookmark helpers
-	function addBookmark() {
-		if (!newName.trim() || !newUrl.trim()) return;
-		let url = newUrl.trim();
-		if (!url.startsWith('http')) url = 'https://' + url;
-		try {
-			const parsed = new URL(url);
-			if (!['http:', 'https:'].includes(parsed.protocol)) return;
-		} catch { return; }
-		const id = 'custom-' + Date.now();
-		let icon = newIcon.trim();
-		if (!icon) {
-			try { icon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; }
-			catch { icon = null; }
-		}
-		customApps = [...customApps, { id, name: newName.trim(), url, icon }];
-		prefs.update(p => ({ ...p, customApps }));
-		newName = ''; newUrl = ''; newIcon = '';
-		showAddForm = false;
-	}
-
-	function removeBookmark(id) {
-		customApps = customApps.filter(a => a.id !== id);
-		prefs.update(p => ({ ...p, customApps }));
-	}
-
-	// Admin app helpers — server-backed via adminApps store
-	async function addAdminApp() {
-		if (!adminNewName.trim() || !adminNewUrl.trim()) return;
-		let url = adminNewUrl.trim();
-		if (!url.startsWith('http')) url = 'https://' + url;
-		const icon = adminNewIcon.trim() || null;
-		const app = {
-			name: adminNewName.trim(), url, icon,
-			category: adminNewCategory.trim() || 'Custom',
-			self_hosted: adminNewSelfHosted
-		};
-		const result = await adminAppsStore.add(app);
-		if (result) {
-			// Add to visible set
-			const next = new Set(visibleSet);
-			next.add(result.id);
-			visibleSet = next;
-			prefs.update(p => ({ ...p, visibleApps: [...next] }));
-		}
-		adminNewName = ''; adminNewUrl = ''; adminNewIcon = ''; adminNewCategory = ''; adminNewSelfHosted = false;
-		showAdminAddForm = false;
-	}
-
-	async function removeAdminApp(id) {
-		await adminAppsStore.remove(id);
 	}
 
 	function portal(node) {
 		document.body.appendChild(node);
 		return { destroy() { if (node.parentNode) node.parentNode.removeChild(node); } };
 	}
-
-	const filteredCategories = $derived(
-		categories
-			.map(cat => ({ ...cat, apps: cat.apps.filter(app => !app.adminOnly || isAdmin) }))
-			.filter(cat => cat.apps.length > 0)
-	);
 
 	const iconStyles = [
 		{ id: 'colored', label: 'Colored' },
@@ -257,7 +147,6 @@
 			<div class="hidden max-md:flex shrink-0 px-3 pt-2 pb-1 gap-1 border-b border-border-card overflow-x-auto items-center">
 				{#each [
 					{ id: 'appearance', label: 'Appearance' },
-					{ id: 'apps', label: 'Apps' },
 					{ id: 'widgets', label: 'Widgets' },
 					{ id: 'integrations', label: 'Integrations' }
 				] as tab}
@@ -275,7 +164,6 @@
 					<div class="flex flex-col gap-0.5">
 						{#each [
 							{ id: 'appearance', label: 'Appearance', svg: '<circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v-2M4.22 4.22l1.42 1.42m12.72 12.72-1.42-1.42M1 12h2m18 0h-2M4.22 19.78l1.42-1.42M18.36 5.64l-1.42 1.42"/>' },
-							{ id: 'apps', label: 'Apps', svg: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
 							{ id: 'widgets', label: 'Widgets', svg: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>' },
 							{ id: 'integrations', label: 'Integrations', svg: '<path d="M9 2v6"/><path d="M15 2v6"/><path d="M12 17v5"/><path d="M5 8h14a2 2 0 0 1 2 2v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-3a2 2 0 0 1 2-2z"/>' }
 						] as tab}
@@ -403,190 +291,11 @@
 					{/if}
 				</div>
 
-				{:else if activeTab === 'apps'}
-				<!-- ═══ APPS TAB ═══ -->
-				<div class="mb-4">
-					<div class="text-[0.85rem] font-semibold text-content">Apps</div>
-					<div class="text-[0.7rem] text-content-dim mt-0.5">Toggle which apps appear on your dashboard.</div>
-				</div>
-				{#each filteredCategories as category, i}
-					<div class="{i > 0 ? 'mt-4' : ''}">
-						<div class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">{category.label}</div>
-						{#each category.apps as app}
-							<button
-								class="flex items-center gap-3 w-full px-3 py-2 rounded-lg bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors text-left font-mono"
-								onclick={() => toggle(app.id)}
-							>
-								<AppIcon icon={app.icon} name={app.name} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
-								<span class="text-[0.8rem] text-content-muted flex-1">{app.name}</span>
-								<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {visibleSet.has(app.id) ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
-									<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {visibleSet.has(app.id) ? 'translate-x-4' : 'translate-x-0.5'}"></div>
-								</div>
-							</button>
-						{/each}
-					</div>
-				{/each}
-
-				<!-- Admin-added default apps -->
-				{#if adminApps.length > 0}
-					<div class="mt-4">
-						<div class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Added Apps</div>
-						{#each adminApps as app}
-							{@const icon = resolveIcon(app.icon)}
-							<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-card-hover transition-colors">
-								<AppIcon {icon} name={app.name} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
-								<span class="text-[0.8rem] text-content-muted flex-1 truncate">{app.name}</span>
-								{#if isAdmin}
-									<button
-										class="bg-transparent border-none text-content-dim text-sm cursor-pointer hover:text-red-400 transition-colors p-1"
-										onclick={() => removeAdminApp(app.id)}
-										title="Remove"
-									>&times;</button>
-								{/if}
-								<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {visibleSet.has(app.id) ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}" onclick={() => toggle(app.id)} role="switch" tabindex="0">
-									<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {visibleSet.has(app.id) ? 'translate-x-4' : 'translate-x-0.5'}"></div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- Admin: Add Default App -->
-				{#if isAdmin}
-					<div class="mt-5">
-						<div class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Add App</div>
-						{#if showAdminAddForm}
-							<div class="p-3 bg-surface-input border border-border-card rounded-xl space-y-2">
-								<!-- Search from directory -->
-								{#if !adminNewName}
-									<div class="relative">
-										<input type="text" bind:value={adminSearch} placeholder="Search apps (e.g. Jellyfin, Grafana...)"
-											onfocus={() => showSearchResults = true}
-											class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-										{#if showSearchResults && searchResults.length > 0}
-											<div class="absolute left-0 right-0 top-full mt-1 bg-surface-modal backdrop-blur-xl border border-border-card rounded-lg overflow-hidden z-10 max-h-[200px] overflow-y-auto">
-												{#each searchResults as entry}
-													{@const icon = resolveIcon(entry.icon)}
-													<button
-														class="flex items-center gap-2.5 w-full px-3 py-2 bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors text-left font-mono"
-														onclick={() => selectFromDirectory(entry)}
-													>
-														<AppIcon {icon} name={entry.name} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
-														<span class="text-[0.8rem] text-content-muted flex-1">{entry.name}</span>
-														<span class="text-[0.6rem] text-content-dim">{entry.category}</span>
-													</button>
-												{/each}
-											</div>
-										{/if}
-									</div>
-									<button
-										class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content-muted transition-colors font-mono px-1"
-										onclick={() => { adminNewName = ' '; adminNewName = ''; showSearchResults = false; }}
-									>or enter manually</button>
-								{:else}
-									<!-- Selected / manual entry -->
-									<div class="flex items-center gap-2">
-										{#if adminNewIcon}
-											{@const icon = resolveIcon(adminNewIcon)}
-											<AppIcon {icon} name={adminNewName} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
-										{/if}
-										<input type="text" bind:value={adminNewName} placeholder="App name"
-											class="flex-1 bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-										<button
-											class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content-muted transition-colors font-mono shrink-0"
-											onclick={() => { adminNewName = ''; adminNewIcon = ''; adminNewCategory = ''; adminNewSelfHosted = false; showSearchResults = true; }}
-										>clear</button>
-									</div>
-									<input type="text" bind:value={adminNewUrl} placeholder="URL (e.g. app.example.com)"
-										class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-									<input type="text" bind:value={adminNewIcon} placeholder="Icon — di:name, si:name, or URL"
-										class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-									<input type="text" bind:value={adminNewCategory} placeholder="Category (default: Custom)"
-										class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-									<label class="flex items-center gap-2 px-1 text-[0.75rem] text-content-dim cursor-pointer">
-										<input type="checkbox" bind:checked={adminNewSelfHosted} class="accent-zinc-400" />
-										<span>Self-hosted — shows in onboarding</span>
-									</label>
-									<div class="flex gap-2 pt-1">
-										<button
-											class="flex-1 py-2 px-3 rounded-lg text-[0.8rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-											disabled={!adminNewName.trim() || !adminNewUrl.trim()}
-											onclick={addAdminApp}
-										>Add App</button>
-										<button
-											class="py-2 px-3 rounded-lg text-[0.8rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors"
-											onclick={() => { showAdminAddForm = false; adminNewName = ''; showSearchResults = false; }}
-										>Cancel</button>
-									</div>
-								{/if}
-							</div>
-						{:else}
-							<button
-								class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-transparent border border-dashed border-border-card cursor-pointer hover:bg-surface-card-hover hover:border-border-pill transition-all text-left font-mono"
-								onclick={() => { showAdminAddForm = true; showSearchResults = true; }}
-							>
-								<span class="text-content-dim text-sm">+</span>
-								<span class="text-[0.8rem] text-content-dim">Add default app</span>
-							</button>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Custom Bookmarks (per-user) — hidden for now -->
-				{#if false}
-				<div class="mt-5">
-					<div class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Your Bookmarks</div>
-
-					{#each customApps as app}
-						{@const icon = resolveIcon(app.icon)}
-						<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-card-hover transition-colors">
-							<AppIcon {icon} name={app.name} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
-							<span class="text-[0.8rem] text-content-muted flex-1 truncate">{app.name}</span>
-							<button
-								class="bg-transparent border-none text-content-dim text-sm cursor-pointer hover:text-red-400 transition-colors p-1"
-								onclick={() => removeBookmark(app.id)}
-								title="Remove"
-							>&times;</button>
-						</div>
-					{/each}
-
-					{#if showAddForm}
-						<div class="mt-2 p-3 bg-surface-input border border-border-card rounded-xl space-y-2">
-							<input type="text" bind:value={newName} placeholder="Name"
-								class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-							<input type="text" bind:value={newUrl} placeholder="URL (e.g. github.com)"
-								class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-							<input type="text" bind:value={newIcon} placeholder="Icon (optional — si:github, URL, or blank)"
-								class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill" />
-							<div class="flex gap-2 pt-1">
-								<button
-									class="flex-1 py-2 px-3 rounded-lg text-[0.8rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-									disabled={!newName.trim() || !newUrl.trim()}
-									onclick={addBookmark}
-								>Add</button>
-								<button
-									class="py-2 px-3 rounded-lg text-[0.8rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors"
-									onclick={() => showAddForm = false}
-								>Cancel</button>
-							</div>
-						</div>
-					{:else}
-						<button
-							class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-transparent border border-dashed border-border-card cursor-pointer hover:bg-surface-card-hover hover:border-border-pill transition-all text-left font-mono mt-1"
-							onclick={() => showAddForm = true}
-						>
-							<span class="text-content-dim text-sm">+</span>
-							<span class="text-[0.8rem] text-content-dim">Add bookmark</span>
-						</button>
-					{/if}
-				</div>
-				{/if}
-
 				{:else if activeTab === 'widgets'}
 				<!-- ═══ WIDGETS TAB ═══ -->
 				<div class="mb-4">
 					<div class="text-[0.85rem] font-semibold text-content">Widgets</div>
-					<div class="text-[0.7rem] text-content-dim mt-0.5">Enable or disable dashboard widgets.</div>
+					<div class="text-[0.7rem] text-content-dim mt-0.5">Header chrome — always at the top of the page. Surface widgets (apps, integrations) are added from the dashboard's edit-mode tray.</div>
 				</div>
 				{@const widgets = [
 					{ id: 'weather', name: 'Weather', desc: 'Temperature and conditions for your location', icon: '☀️' },

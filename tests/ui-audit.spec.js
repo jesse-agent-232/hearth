@@ -19,7 +19,7 @@ async function goToDashboard(page, prefs = {}) {
 	await setPrefs(page, prefs);
 	await page.goto('/?user=demo');
 	// Wait for app grid to render
-	await page.waitForSelector('.category-card', { timeout: 10000 }).catch(() => {});
+	await page.waitForSelector('.app-tile', { timeout: 10000 }).catch(() => {});
 	// Wait for hydration
 	await page.waitForFunction(() => document.querySelector('style[data-sveltekit]') === null, { timeout: 10000 }).catch(() => {});
 	// Let animations settle

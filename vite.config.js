@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
 	return {
 		plugins: [tailwindcss(), sveltekit()],
 		server: {
+			host: true,
 			allowedHosts: true
 		}
 	};

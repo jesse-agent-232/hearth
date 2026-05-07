@@ -48,7 +48,7 @@ function loadConfig() {
 
 function getDefaults() {
 	return {
-		branding: { name: 'Hearth', short_name: 'hearth', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap' }, theme_color: '#09090b' },
+		branding: { name: 'Hearth', short_name: 'hearth', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap' }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
 		auth: { enabled: false, oidc: {}, admin_usernames: [], password_change_url: null, registration: { enabled: false, url: null } },
 		apps: [],
 		customization: { enabled: false },
@@ -75,20 +75,23 @@ export function getAuth() {
 	return getConfig().auth || getDefaults().auth;
 }
 
+// Returns the configured apps as a flat list. Tolerates both the new shape
+// (apps: [{id, ...}]) and the legacy nested shape (apps: [{category, items}]) —
+// the legacy form is silently flattened so existing operator configs keep
+// loading. Each item is enriched in place with brand color metadata.
 export function getAppsConfig() {
-	const apps = getConfig().apps || [];
-	// Enrich each app item with brand color metadata
-	for (const cat of apps) {
-		for (const item of cat.items || []) {
-			const brand = getBrandColor(item.icon, item.tile_color);
-			if (brand) {
-				item.brandColor = brand.brandColor;
-				item.brandFg = brand.brandFg;
-				item.brandExplicit = !!item.tile_color;
-			}
+	const raw = getConfig().apps || [];
+	const isLegacy = Array.isArray(raw) && raw.length > 0 && Array.isArray(raw[0]?.items);
+	const items = isLegacy ? raw.flatMap((c) => (Array.isArray(c?.items) ? c.items : [])) : raw;
+	for (const item of items) {
+		const brand = getBrandColor(item.icon, item.tile_color);
+		if (brand) {
+			item.brandColor = brand.brandColor;
+			item.brandFg = brand.brandFg;
+			item.brandExplicit = !!item.tile_color;
 		}
 	}
-	return apps;
+	return items;
 }
 
 export function getNewsConfig() {

@@ -13,6 +13,8 @@ branding:
     family: "JetBrains Mono"
     url: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
   theme_color: "#09090b"                      # PWA theme color and meta tag
+  accent_color: "#f5b942"                     # Interactive accent: focus rings, selected states, hover halos
+  show_footer: true                           # false = hide the dashboard footer (brand name + register/privacy links)
 
 # ── Authentication ───────────────────────────────────────────
 auth:
@@ -54,80 +56,98 @@ database:
 customization:
   enabled: true
 
-# ── Apps / Bookmarks ────────────────────────────────────────
-# Each category has a label and a list of apps.
-# Icon fields:
-#   icon:       Full-color icon (required). Prefixes: di:name (Dashboard Icons), si:name (Simple Icons), or full URL
-#   icon_mono:  Mono icon for white/grayed styles (optional). Same prefixes. Falls back to grayscale of colored icon.
-#   tile_color: Hex background for iOS-style brand tile (optional). e.g. "#FF0000"
-# Users can switch between Colored / White / Grayed icon styles in Configure.
+# ── Apps ────────────────────────────────────────────────────
+# Flat list of apps the operator wants to expose. Hearth surfaces each app as
+# its own widget tile — there are no operator-defined categories anymore. Users
+# arrange tiles on a per-user grid via the dashboard's edit mode. The legacy
+# "category + items" shape is silently flattened with a one-time warning, so
+# existing configs keep loading, but writing new configs in that shape is
+# discouraged.
+#
+# Per-app fields:
+#   id              Stable identifier — used in user prefs, do not change once shipped.
+#   name            Display label.
+#   url             Target URL.
+#   icon            Full-color icon (required). Prefixes: di:name (Dashboard Icons), si:name (Simple Icons), or full URL.
+#   icon_mono       Mono icon for white/grayed styles (optional). Same prefixes. Falls back to grayscale.
+#   tile_color      Hex background for iOS-style brand tile (optional). e.g. "#FF0000".
+#   self_hosted     Marks as self-hosted (shows in onboarding). Default false.
+#   admin_only      Only visible to admin_usernames / admin_groups. Default false.
+#   default_visible Whether the app is auto-placed on a fresh user's surface. Default true.
+#                   Users can still add/remove from the catalog at any time.
+#   tags            Optional list of strings. Reserved for the All-apps tag-filter UI;
+#                   setting them now is forward-compatible — no filter ships in this release.
+#   app_store       Optional: { ios, android } links for onboarding.
+#   browser_extension  Optional URL for onboarding.
+#   setup_guide     Optional first-run walkthrough.
 apps:
-  - category: "Storage"
-    items:
-      - id: photos
-        name: "Photos"
-        url: "https://photos.example.com"
-        icon: "di:immich"
-        self_hosted: true                        # Marks as self-hosted (shows in onboarding)
-        default_visible: true                 # Shown by default; user can toggle off
-        app_store:
-          ios: "https://apps.apple.com/app/immich/id1613945652"
-          android: "https://play.google.com/store/apps/details?id=app.alextran.immich"
-        setup_guide:
-          subtitle: "Immich - Auto backup your photos & videos"
-          steps:
-            - label: "Download the app"
-              desc: "Get Immich from the App Store or Play Store."
-            - label: "Open & connect"
-              desc: "Launch the app and enter the server URL."
-            - label: "Sign in"
-              desc: "Use your credentials."
-            - label: "Enable backup"
-              desc: "Go to Settings > Backup and enable auto-upload."
+  - id: photos
+    name: "Photos"
+    url: "https://photos.example.com"
+    icon: "di:immich"
+    self_hosted: true
+    default_visible: true
+    tags: ["media", "selfhosted"]
+    app_store:
+      ios: "https://apps.apple.com/app/immich/id1613945652"
+      android: "https://play.google.com/store/apps/details?id=app.alextran.immich"
+    setup_guide:
+      subtitle: "Immich - Auto backup your photos & videos"
+      steps:
+        - label: "Download the app"
+          desc: "Get Immich from the App Store or Play Store."
+        - label: "Open & connect"
+          desc: "Launch the app and enter the server URL."
+        - label: "Sign in"
+          desc: "Use your credentials."
+        - label: "Enable backup"
+          desc: "Go to Settings > Backup and enable auto-upload."
 
-      - id: cloud
-        name: "Cloud"
-        url: "https://cloud.example.com"
-        icon: "di:nextcloud"
-        self_hosted: true
-        default_visible: true
-        app_store:
-          ios: "https://apps.apple.com/app/nextcloud/id1125420102"
-          android: "https://play.google.com/store/apps/details?id=com.nextcloud.client"
+  - id: cloud
+    name: "Cloud"
+    url: "https://cloud.example.com"
+    icon: "di:nextcloud"
+    self_hosted: true
+    default_visible: true
+    tags: ["productivity", "selfhosted"]
+    app_store:
+      ios: "https://apps.apple.com/app/nextcloud/id1125420102"
+      android: "https://play.google.com/store/apps/details?id=com.nextcloud.client"
 
-      - id: vault
-        name: "Vault"
-        url: "https://vault.example.com"
-        icon: "di:bitwarden"
-        self_hosted: true
-        default_visible: true
-        app_store:
-          ios: "https://apps.apple.com/app/bitwarden/id1137397744"
-          android: "https://play.google.com/store/apps/details?id=com.x8bit.bitwarden"
-        browser_extension: "https://bitwarden.com/download/#downloads-web-browser"
+  - id: vault
+    name: "Vault"
+    url: "https://vault.example.com"
+    icon: "di:bitwarden"
+    self_hosted: true
+    default_visible: true
+    tags: ["security", "selfhosted"]
+    app_store:
+      ios: "https://apps.apple.com/app/bitwarden/id1137397744"
+      android: "https://play.google.com/store/apps/details?id=com.x8bit.bitwarden"
+    browser_extension: "https://bitwarden.com/download/#downloads-web-browser"
 
-  - category: "Social"
-    items:
-      - id: reddit
-        name: "Reddit"
-        url: "https://reddit.com"
-        icon: "di:reddit"
-        default_visible: true
-      - id: youtube
-        name: "YouTube"
-        url: "https://youtube.com"
-        icon: "di:youtube"
-        default_visible: true
+  - id: reddit
+    name: "Reddit"
+    url: "https://reddit.com"
+    icon: "di:reddit"
+    default_visible: true
+    tags: ["social"]
 
-  - category: "Tools"
-    items:
-      - id: admin-panel
-        name: "Admin"
-        url: "https://admin.example.com"
-        icon: "di:authelia"
-        self_hosted: true
-        admin_only: true                      # Only visible to admin_usernames
-        default_visible: true
+  - id: youtube
+    name: "YouTube"
+    url: "https://youtube.com"
+    icon: "di:youtube"
+    default_visible: true
+    tags: ["media"]
+
+  - id: admin-panel
+    name: "Admin"
+    url: "https://admin.example.com"
+    icon: "di:authelia"
+    self_hosted: true
+    admin_only: true
+    default_visible: true
+    tags: ["admin"]
 
 # ── News Headlines ──────────────────────────────────────────
 news:
