@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { adminApps as adminAppsStore } from '$lib/stores/adminApps.js';
-	import { resolveIcon } from '$lib/apps.js';
+	import { buildAppsFromConfig, resolveIcon } from '$lib/apps.js';
 	import AppIcon from '$lib/components/AppIcon.svelte';
 	import { getBrandBgStyle } from '$lib/iconHelpers.js';
 	import SearchBar from '$lib/components/SearchBar.svelte';
@@ -45,6 +45,10 @@
 	} = $props();
 
 	const siteConfig = getContext('config');
+
+	// Setup guides keyed by app name, for the tile context menu's "Setup Guide"
+	// entry and the modal it opens. Same helper +page.svelte uses for tipApps.
+	const setupGuides = $derived.by(() => buildAppsFromConfig(siteConfig?.apps).setupGuides);
 
 	// Flat catalog: config apps + admin-added apps + per-user custom bookmarks,
 	// admin_only filtered for non-admins. One source of truth used by every
@@ -270,6 +274,90 @@
 			widgetLayout: defaultWidgetLayout(catalog, registry, { isAdmin })
 		}));
 	}
+
+	// ── Tile context menu (right-click / long-press) — ported from AppGrid ──
+	let contextApp = $state(null);
+	let contextAnchor = $state(null);
+	let contextMenuEl = $state(null);
+	let longPressTimer = null;
+
+	function showContext(app, e) {
+		e.preventDefault();
+		e.stopPropagation();
+		contextAnchor = e.currentTarget;
+		contextApp = app;
+	}
+
+	function startLongPress(app, e) {
+		const target = e.currentTarget;
+		longPressTimer = setTimeout(() => {
+			e.preventDefault();
+			contextAnchor = target;
+			contextApp = app;
+		}, 500);
+	}
+
+	function cancelLongPress() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function openGuide(app) {
+		contextApp = null;
+		guideApp = app;
+	}
+
+	// Position context menu relative to its anchor tile after render, flipping
+	// to stay inside the viewport.
+	$effect(() => {
+		if (contextMenuEl && contextApp && contextAnchor) {
+			contextMenuEl.style.left = '0px';
+			contextMenuEl.style.top = '0px';
+
+			requestAnimationFrame(() => {
+				if (!contextMenuEl || !contextAnchor) return;
+				const anchorRect = contextAnchor.getBoundingClientRect();
+				const menuRect = contextMenuEl.getBoundingClientRect();
+				const vw = window.innerWidth;
+				const vh = window.innerHeight;
+				const pad = 8;
+
+				let x = anchorRect.right;
+				let y = anchorRect.bottom + 4;
+
+				if (x + menuRect.width > vw - pad) x = anchorRect.left - menuRect.width;
+				if (x < pad) x = pad;
+				if (y + menuRect.height > vh - pad) y = anchorRect.top - menuRect.height - 4;
+				if (y < pad) y = pad;
+
+				contextMenuEl.style.left = `${x}px`;
+				contextMenuEl.style.top = `${y}px`;
+				contextMenuEl.style.visibility = 'visible';
+			});
+		}
+	});
+
+	// Dismiss the context menu on outside click, and close the guide modal on Esc.
+	$effect(() => {
+		if (!browser) return;
+		function dismiss(e) {
+			if (contextMenuEl && !contextMenuEl.contains(e.target)) contextApp = null;
+		}
+		function onEsc(e) {
+			if (e.key === 'Escape' && guideApp) {
+				e.preventDefault();
+				guideApp = null;
+			}
+		}
+		window.addEventListener('click', dismiss);
+		window.addEventListener('keydown', onEsc);
+		return () => {
+			window.removeEventListener('click', dismiss);
+			window.removeEventListener('keydown', onEsc);
+		};
+	});
 
 	let searchInput = $state('');
 	let pickerOpen = $state(false);
@@ -628,6 +716,10 @@
 							}
 							recordAppOpen(app.id);
 						}}
+						oncontextmenu={editMode ? undefined : (e) => showContext(app, e)}
+						ontouchstart={editMode ? undefined : (e) => startLongPress(app, e)}
+						ontouchend={editMode ? undefined : cancelLongPress}
+						ontouchmove={editMode ? undefined : cancelLongPress}
 					>
 						<div
 							class="app-tile-icon"
@@ -694,6 +786,112 @@
 	{/if}
 </div>
 </div>
+
+<!-- Tile context menu (portal to body to escape transform containing block) -->
+{#if contextApp}
+	<div
+		bind:this={contextMenuEl}
+		use:portal
+		class="fixed z-50 glass-card rounded-xl py-1.5 shadow-theme min-w-[200px] animate-context-in"
+		style="visibility: hidden;"
+		role="menu"
+	>
+		{#if contextApp.ios}
+			<a href={contextApp.ios} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
+				<span class="text-content-muted text-xs w-4 text-center">&#63743;</span> Download for iOS
+			</a>
+		{/if}
+		{#if contextApp.android}
+			<a href={contextApp.android} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
+				<span class="text-content-muted text-xs w-4 text-center">&#9654;</span> Download for Android
+			</a>
+		{/if}
+		{#if contextApp.extension}
+			<a href={contextApp.extension} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
+				<span class="text-content-muted text-xs w-4 text-center">&#8862;</span> Browser Extension
+			</a>
+		{/if}
+		{#if setupGuides[contextApp.name]}
+			{#if contextApp.ios || contextApp.android || contextApp.extension}
+				<div class="border-t border-border-card my-1"></div>
+			{/if}
+			<button onclick={() => openGuide(contextApp)} class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors w-full text-left font-mono" role="menuitem">
+				<span class="text-content-muted text-xs w-4 text-center">?</span> Setup Guide
+			</button>
+		{/if}
+		<div class="border-t border-border-card my-1"></div>
+		<a href={contextApp.url} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
+			<span class="text-content-muted text-xs w-4 text-center">&#8599;</span> Open {contextApp.name}
+		</a>
+	</div>
+{/if}
+
+<!-- Setup Guide Modal (portal to body) -->
+{#if guideApp && setupGuides[guideApp.name]}
+	{@const guide = setupGuides[guideApp.name]}
+	<div use:portal class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
+		<div class="glass-card rounded-2xl w-full max-w-[480px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
+			<!-- Header with icon color glow + close -->
+			<div class="p-8 pb-6 border-b border-border-card relative">
+				<button
+					class="absolute top-4 right-5 bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
+					onclick={() => (guideApp = null)}
+					aria-label="Close"
+				>&times;</button>
+				<div class="flex items-center gap-3.5 mb-1 pr-8">
+					<div class="app-icon-wrap w-12 h-12 rounded-[14px] flex items-center justify-center relative overflow-hidden shrink-0">
+						{#if iconStyle === 'colored' && guideApp.icon?.colored}
+							<img src={guideApp.icon.colored} alt="" class="absolute inset-0 w-full h-full scale-150 blur-xl opacity-40 pointer-events-none" />
+						{/if}
+						<AppIcon icon={guideApp.icon} name={guideApp.name} size="w-7 h-7" {iconStyle} className={iconStyle === 'colored' ? 'relative z-10' : ''} />
+					</div>
+					<div class="min-w-0">
+						<h3 class="text-[1.2rem] font-semibold text-content m-0 truncate">{guide.title}</h3>
+						<p class="text-[0.8rem] text-content-dim m-0 truncate">{guide.subtitle}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Steps -->
+			<div class="px-8 pb-4 max-h-[300px] overflow-y-auto">
+				{#each guide.steps as step, i}
+					<div class="flex gap-3.5 {i < guide.steps.length - 1 ? 'mb-5' : ''}">
+						<div class="flex flex-col items-center">
+							<span class="w-7 h-7 rounded-full bg-surface-card-strong text-[0.75rem] font-semibold text-content-muted flex items-center justify-center shrink-0">{i + 1}</span>
+							{#if i < guide.steps.length - 1}
+								<div class="w-px flex-1 bg-surface-card mt-2"></div>
+							{/if}
+						</div>
+						<div class="pt-0.5 pb-1">
+							<p class="text-[0.9rem] text-content font-medium m-0">{step.label}</p>
+							<p class="text-[0.8rem] text-content-dim m-0 mt-1 leading-relaxed">{step.desc}</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<!-- Server URL -->
+			<div class="mx-8 mb-5 px-4 py-2.5 glass-card rounded-xl">
+				<span class="text-[0.65rem] text-content-dim uppercase tracking-[0.15em]">Server URL</span>
+				<p class="text-[0.85rem] text-content-muted font-mono m-0 mt-0.5">{guideApp.url}</p>
+			</div>
+
+			<!-- Actions -->
+			<div class="px-8 pb-8 flex gap-2.5">
+				{#if guideApp.ios}
+					<a href={guideApp.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] text-[0.85rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
+						<img src="/icons/appstore.svg" alt="" class="w-4 h-4 icon-white" /> App Store
+					</a>
+				{/if}
+				{#if guideApp.android}
+					<a href={guideApp.android} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] text-[0.85rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
+						<img src="/icons/googleplay.svg" alt="" class="w-4 h-4 icon-white" /> Play Store
+					</a>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
 
 {#if customizationEnabled}
 	{#if editMode}
