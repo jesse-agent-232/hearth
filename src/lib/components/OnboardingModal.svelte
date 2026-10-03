@@ -98,7 +98,7 @@
 	});
 
 	// Derive services from apps config — use onboarding.services IDs if defined, otherwise auto-derive
-	const allApps = (siteConfig?.apps || []).flatMap(cat => cat.items || []);
+	const allApps = siteConfig?.apps || [];
 	const serviceConfig = onboardingConfig.services;
 	const services = serviceConfig?.length
 		? serviceConfig
