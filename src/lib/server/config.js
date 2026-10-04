@@ -1,4 +1,4 @@
-import { readFileSync, watchFile } from 'fs';
+import { readFileSync, statSync, watchFile } from 'fs';
 import { resolve, dirname } from 'path';
 import yaml from 'js-yaml';
 import { marked } from 'marked';
@@ -126,15 +126,24 @@ export function getIntegrationsConfig() {
 	return getConfig().integrations || {};
 }
 
+// Rendered once per file version: isomorphic-dompurify runs on jsdom, which
+// leaks ~110 KB per sanitize call, and this runs on every layout load.
+let _privacyCache = { key: null, html: null };
+
 async function loadPrivacyHtml(config) {
 	const file = config.privacy?.file;
 	if (!file) return null;
 	try {
 		const configPath = process.env.CONFIG_PATH || 'config.yml';
 		const base = dirname(resolve(configPath));
-		const md = readFileSync(resolve(base, file), 'utf-8');
+		const path = resolve(base, file);
+		const key = `${path}:${statSync(path).mtimeMs}`;
+		if (_privacyCache.key === key) return _privacyCache.html;
+		const md = readFileSync(path, 'utf-8');
 		const { default: DOMPurify } = await import('isomorphic-dompurify');
-		return DOMPurify.sanitize(marked.parse(md));
+		const html = DOMPurify.sanitize(marked.parse(md));
+		_privacyCache = { key, html };
+		return html;
 	} catch {
 		return null;
 	}
