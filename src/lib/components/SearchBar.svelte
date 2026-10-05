@@ -1,10 +1,14 @@
 <script>
-	import { onMount, getContext } from 'svelte';
+	import { onMount, getContext, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { TOTAL_WALLPAPERS } from '$lib/wallpaper.js';
+	import { resolveIcon } from '$lib/apps.js';
 	import SearchResults from './SearchResults.svelte';
+	import { isMac } from './Keys.svelte';
+	import { bestScore } from '$lib/launcher/match.js';
+	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -98,33 +102,6 @@
 		activeScope ? $integrationsStore.integrations.find((it) => it.id === activeScope) : null
 	);
 
-	const integrationTips = $derived(
-		$integrationsStore.integrations
-			.filter((it) => it.shortcut && it.userState?.connected)
-			.map((it) => ({ kind: 'scope', id: it.id, bang: it.shortcut, label: it.name }))
-	);
-
-	// Static action tips (kept in sync with ACTIONS below; bang only, one entry per bang)
-	const actionTips = [
-		{ kind: 'action', id: 'settings', bang: 'settings', label: 'Configure' },
-		{ kind: 'action', id: 'theme', bang: 'theme', label: 'Theme' },
-		{ kind: 'action', id: 'icon', bang: 'icon', label: 'Icon style' },
-		{ kind: 'action', id: 'wall', bang: 'wall', label: 'Wallpaper' },
-		{ kind: 'action', id: 'logout', bang: 'logout', label: 'Log out' }
-	];
-
-	const allTips = $derived([...integrationTips, ...actionTips]);
-
-	// Rotate tips 2 at a time so the footer stays uncluttered
-	let tipIndex = $state(0);
-	const visibleTips = $derived.by(() => {
-		const list = allTips;
-		if (list.length <= 2) return list;
-		const a = tipIndex % list.length;
-		const b = (tipIndex + 1) % list.length;
-		return [list[a], list[b]];
-	});
-
 	// ── Quick-action registry ────────────────────────────────────
 	// Icon SVG strings are pre-rendered paths (fed into a <svg> wrapper in the row).
 	const ICONS = {
@@ -136,22 +113,22 @@
 	};
 
 	const ACTIONS = [
-		{ id: 'settings', bang: 'settings', label: 'Open Configure', icon: ICONS.settings, exec: () => onSettingsOpen() },
+		{ id: 'settings', bang: 'settings', label: 'Open Configure', keywords: ['settings', 'preferences', 'integrations', 'widgets'], icon: ICONS.settings, exec: () => onSettingsOpen() },
 		// manual: never auto-runs on the last keystroke; needs Enter or a click
-		{ id: 'logout', bang: 'logout', label: 'Log out', icon: ICONS.logout, manual: true, exec: () => { window.location.href = '/auth/logout'; } },
+		{ id: 'logout', bang: 'logout', label: 'Log out', keywords: ['sign out', 'logout'], icon: ICONS.logout, manual: true, exec: () => { window.location.href = '/auth/logout'; } },
 		{
-			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', icon: ICONS.wall,
+			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', keywords: ['wallpaper', 'background', 'shuffle'], icon: ICONS.wall,
 			exec: () => {
 				const next = Math.floor(Math.random() * TOTAL_WALLPAPERS) + 1;
 				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true }));
 			}
 		},
 		...['dark', 'light', 'auto'].map((t) => ({
-			id: `theme-${t}`, bang: 'theme', arg: t, label: `Theme: ${t[0].toUpperCase()}${t.slice(1)}`, icon: ICONS.theme,
+			id: `theme-${t}`, bang: 'theme', arg: t, label: `Theme: ${t[0].toUpperCase()}${t.slice(1)}`, keywords: [t, `${t} mode`], icon: ICONS.theme,
 			exec: () => prefs.update((p) => ({ ...p, theme: t }))
 		})),
 		...['colored', 'white', 'grayed'].map((s) => ({
-			id: `icon-${s}`, bang: 'icon', arg: s, label: `Icon style: ${s[0].toUpperCase()}${s.slice(1)}`, icon: ICONS.icon,
+			id: `icon-${s}`, bang: 'icon', arg: s, label: `Icon style: ${s[0].toUpperCase()}${s.slice(1)}`, keywords: [`${s} icons`], icon: ICONS.icon,
 			exec: () => prefs.update((p) => ({ ...p, iconStyle: s }))
 		}))
 	];
@@ -192,9 +169,6 @@
 	// providers in the future render as separate sections in the dropdown.
 	let providerResults = $state({}); // providerId → { results, loading, error }
 	let inlineOpen = $state(false);
-	// True when the results panel is actually being shown — gates the
-	// "joined surface" Raycast-style styling on the container.
-	const isPaletteOpen = $derived(inlineOpen && !!(query.trim() || activeScope));
 	let debounceTimer = null;
 	let lastDispatched = '';
 	let searchAbort = null;
@@ -219,12 +193,16 @@
 		const it = $integrationsStore.integrations.find((i) => i.shortcut && i.userState?.connected);
 		return it ? `Try !${it.shortcut} to scope ${it.name}` : null;
 	});
+	// The server render assumes Mac; swap to Ctrl after hydration so the
+	// two renders agree.
+	let macKeys = $state(true);
+	onMount(() => { macKeys = isMac; });
 	const FIRST_HINT = 'Search apps, files, photos…';
 	const PLACEHOLDER_HINTS = $derived([
 		FIRST_HINT,
 		...(scopeHint ? [scopeHint] : []),
-		'Type !settings to configure',
-		'Press / anywhere to focus'
+		'Type a command, like “dark” or “wallpaper”',
+		`Press / or ${isMac ? '⌘K' : 'Ctrl K'} anywhere to search`
 	]);
 	let placeholderText = $state(FIRST_HINT);
 
@@ -276,10 +254,6 @@
 		timeout = setTimeout(step, 2800);
 		return () => clearTimeout(timeout);
 	});
-
-	function closeInline() {
-		inlineOpen = false;
-	}
 
 	async function fireOneProvider(provider, q, signal) {
 		providerResults = {
@@ -360,71 +334,305 @@
 		}
 	});
 
-	// Close on click outside
+	// ── Launcher model ────────────────────────────────────────────
+	// Everything the list shows is built here as sections of items. Each item
+	// carries its own actions; actions[0] is what Enter does, actions[1] is
+	// ⌘↵, and the ⌘K panel lists them all.
+	const openAppsInNewTab = $derived($prefs.openInNewTab ?? true);
+
+	function openUrl(url, newTab) {
+		if (!url) return;
+		if (newTab) window.open(url, '_blank', 'noopener,noreferrer');
+		else window.location.href = url;
+	}
+
+	async function copyText(text) {
+		try { await navigator.clipboard.writeText(text); } catch {}
+	}
+
+	function finish() {
+		query = '';
+		activeScope = null;
+		inlineOpen = false;
+		panelOpen = false;
+		inputEl?.blur();
+	}
+
+	function linkActions(key, url, newTabFirst) {
+		const open = { label: 'Open', run: () => { recordOpen(key); openUrl(url, newTabFirst); finish(); } };
+		const other = {
+			label: newTabFirst ? 'Open in this tab' : 'Open in new tab',
+			hint: '⌘ ↵',
+			run: () => { recordOpen(key); openUrl(url, !newTabFirst); finish(); }
+		};
+		const copy = { label: 'Copy link', hint: '⌘ ⇧ C', run: () => { copyText(url); finish(); } };
+		return [open, other, copy];
+	}
+
+	function appItem(app) {
+		const key = `app:${app.id}`;
+		let host = '';
+		try { host = new URL(app.url).host; } catch {}
+		return {
+			key,
+			title: app.name,
+			subtitle: app.subtitle || host,
+			appIcon: app.icon ?? null,
+			accessory: 'App',
+			actions: linkActions(key, app.url, openAppsInNewTab)
+		};
+	}
+
+	function commandItem(a) {
+		return {
+			key: `cmd:${a.id}`,
+			title: a.label,
+			subtitle: a.bang ? `!${a.bang}${a.arg ? ' ' + a.arg : ''}` : '',
+			svg: a.icon,
+			accessory: 'Command',
+			actions: [{ label: 'Run command', run: () => runAction(a) }]
+		};
+	}
+
+	const PROVIDER_KIND_ORDER = { media: 0, document: 1, file: 2, card: 3, bookmark: 4, photo: 5 };
+
+	let frecency = $state({});
+	$effect(() => {
+		if (inlineOpen) frecency = frecencyScores();
+	});
+
+	const sections = $derived.by(() => {
+		const q = (query || '').trim();
+		const out = [];
+
+		// Bang mode: only the matching commands.
+		if (matchedActions.length) {
+			out.push({ id: 'commands', label: 'Commands', items: matchedActions.map(commandItem) });
+			return out;
+		}
+		if (q.startsWith('!') && !activeScope) return out;
+
+		// Nothing typed yet: recents first, then a few commands.
+		if (!q && !activeScope) {
+			const ranked = apps
+				.map((a) => ({ a, f: frecency[`app:${a.id}`] || 0 }))
+				.filter((x) => x.f > 0)
+				.sort((x, y) => y.f - x.f)
+				.slice(0, 6)
+				.map((x) => x.a);
+			const recent = ranked.length ? ranked : apps.slice(0, 6);
+			out.push({ id: 'recent', label: ranked.length ? 'Recent' : 'Apps', items: recent.map(appItem) });
+			const suggested = ['settings', 'wall', $prefs.theme === 'light' ? 'theme-dark' : 'theme-light'];
+			out.push({
+				id: 'commands',
+				label: 'Commands',
+				items: suggested.map((id) => ACTIONS.find((a) => a.id === id)).filter(Boolean).map(commandItem)
+			});
+			return out;
+		}
+
+		if (!activeScope) {
+			const scoredApps = apps
+				.map((a) => ({
+					a,
+					s: bestScore(q, a.name, [a.subtitle, ...(a.tags || [])].filter(Boolean)) + Math.min(frecency[`app:${a.id}`] || 0, 10)
+				}))
+				.filter((x) => x.s >= 20)
+				.sort((x, y) => y.s - x.s)
+				.slice(0, 6);
+			if (scoredApps.length) out.push({ id: 'apps', label: 'Apps', items: scoredApps.map((x) => appItem(x.a)) });
+
+			const scoredCmds = ACTIONS
+				.map((a) => ({ a, s: bestScore(q, a.label, a.keywords || []) }))
+				.filter((x) => x.s >= 45)
+				.sort((x, y) => y.s - x.s)
+				.slice(0, 3);
+			if (scoredCmds.length) out.push({ id: 'commands', label: 'Commands', items: scoredCmds.map((x) => commandItem(x.a)) });
+		}
+
+		// Results from connected apps, one section each.
+		const provSections = scopedProviders.map((p) => {
+			const data = providerResults[p.providerId] || {};
+			const results = data.results || [];
+			const kind = results[0]?.meta?.kind || 'other';
+			const layout = kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list';
+			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
+			return {
+				id: `p-${p.providerId}`,
+				label: p.label,
+				layout,
+				kind,
+				loading: !!data.loading && q.length >= 3,
+				error: data.error || '',
+				items: results.slice(0, max).map((r) => {
+					const key = `r:${p.providerId}:${r.id}`;
+					return {
+						key,
+						title: r.title,
+						subtitle: r.subtitle,
+						thumbnail: r.thumbnail,
+						kind: r.meta?.kind,
+						badge: r.meta?.status || '',
+						tags: r.tags,
+						accessory: layout === 'list' ? p.integrationName : '',
+						actions: linkActions(key, r.href, true)
+					};
+				})
+			};
+		});
+		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
+		out.push(...provSections);
+
+		// Fallbacks: always reachable, last in the list.
+		if (q) {
+			const fb = [];
+			if (!activeScope) {
+				for (const it of $integrationsStore.integrations) {
+					if (!it.shortcut || !it.userState?.connected) continue;
+					if (!(it.availableSurfaces || []).includes('search')) continue;
+					fb.push({
+						key: `scope:${it.id}`,
+						title: `Search ${it.name} for “${q}”`,
+						subtitle: `!${it.shortcut}`,
+						appIcon: it.icon ? resolveIcon(it.icon) : null,
+						actions: [{ label: `Search ${it.name}`, run: () => { activeScope = it.id; inputEl?.focus(); } }]
+					});
+				}
+			}
+			if (searchConfig?.url) {
+				const param = searchConfig.param || 'q';
+				const url = `${searchConfig.url}${searchConfig.url.includes('?') ? '&' : '?'}${param}=${encodeURIComponent(q)}`;
+				fb.unshift({
+					key: 'web',
+					title: `Search the web for “${q}”`,
+					subtitle: searchConfig.name || 'Web',
+					appIcon: searchConfig.icon ? resolveIcon(searchConfig.icon) : undefined,
+					svg: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
+					actions: linkActions('web', url, true).slice(0, 3)
+				});
+			}
+			if (fb.length) out.push({ id: 'fallbacks', label: 'Use “' + (q.length > 24 ? q.slice(0, 24) + '…' : q) + '” with…', items: fb });
+		}
+		return out;
+	});
+
+	const flatItems = $derived(sections.flatMap((s) => s.items));
+	let selectedKey = $state(null);
+	let panelOpen = $state(false);
+	let resultsEl = $state();
+
+	// Keep a valid selection. Until the user arrows away, it tracks the top
+	// row, so results that arrive late (and sort above the fallbacks) take it.
+	let userMoved = false;
+	$effect(() => {
+		const keys = flatItems.map((i) => i.key);
+		const cur = untrack(() => selectedKey);
+		if (!userMoved || !keys.includes(cur)) selectedKey = keys[0] ?? null;
+	});
+	$effect(() => {
+		query;
+		panelOpen = false;
+		userMoved = false;
+	});
+
+	function moveSelection(delta) {
+		const keys = flatItems.map((i) => i.key);
+		if (!keys.length) return;
+		const i = keys.indexOf(selectedKey);
+		selectedKey = keys[(i + delta + keys.length) % keys.length];
+		userMoved = true;
+	}
+
+	function runItem(item, e) {
+		if (!item) return;
+		const mod = e && (e.metaKey || e.ctrlKey);
+		const action = mod && item.actions[1] ? item.actions[1] : item.actions[0];
+		action?.run();
+	}
+
+	const isPaletteOpen = $derived(inlineOpen);
+
+	// Desktop landing page: the first keystroke anywhere starts a search.
+	function typeAnywhere(e) {
+		if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+		if (e.key.length !== 1 || e.key === ' ' || e.key === '/') return;
+		const el = document.activeElement;
+		if (el && el !== document.body && el.tagName !== 'A' && el.tagName !== 'BUTTON') return;
+		if (document.querySelector('[aria-modal="true"]')) return;
+		if (window.matchMedia('(pointer: coarse)').matches) return;
+		e.preventDefault();
+		query = e.key;
+		inputEl?.focus();
+		inlineOpen = true;
+		handleInput();
+	}
+
 	onMount(() => {
 		ensureIntegrationsLoaded();
 		recomputeResultsMaxHeight();
 		const onResize = () => recomputeResultsMaxHeight();
 		window.addEventListener('resize', onResize);
 
-		const tipRotator = setInterval(() => {
-			if (allTips.length > 2) tipIndex += 2;
-		}, 3500);
+		// ?q= deep link (browser search engine / OpenSearch): open the
+		// launcher pre-filled, then drop the parameter from the address bar.
+		const params = new URLSearchParams(window.location.search);
+		const q0 = params.get('q');
+		if (q0) {
+			query = q0;
+			inlineOpen = true;
+			inputEl?.focus();
+			params.delete('q');
+			const rest = params.toString();
+			history.replaceState(history.state, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+		}
 
 		function onClickOutside(e) {
 			if (inlineOpen && containerEl && !containerEl.contains(e.target)) {
 				inlineOpen = false;
+				panelOpen = false;
 			}
 		}
 		function onKeydown(e) {
-			// ⌘K / Ctrl+K — open search from anywhere (industry standard)
+			// ⌘K / Ctrl+K — open search from anywhere; inside the open
+			// launcher it toggles the action panel instead.
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
 				e.preventDefault();
+				if (inlineOpen && document.activeElement === inputEl && selectedKey) {
+					panelOpen = !panelOpen;
+					return;
+				}
 				inputEl?.focus();
 				inputEl?.select();
+				inlineOpen = true;
 				return;
 			}
-			if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+			if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
 				e.preventDefault();
 				inputEl?.focus();
 				return;
 			}
-			if (e.key === 'Escape' && document.activeElement === inputEl) {
-				query = '';
-				activeScope = null;
-				inlineOpen = false;
-				inputEl.blur();
-				return;
-			}
-			// Arrow navigation when dropdown is open and focus is in the container
-			if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && inlineOpen && containerEl?.contains(document.activeElement)) {
-				const items = Array.from(containerEl.querySelectorAll('[data-nav-item]'));
-				if (!items.length) return;
-				const current = document.activeElement;
-				const idx = items.indexOf(current);
-				e.preventDefault();
-				if (e.key === 'ArrowDown') {
-					const next = idx < 0 ? items[0] : items[Math.min(idx + 1, items.length - 1)];
-					next?.focus();
-				} else {
-					// ArrowUp from first result returns to the input
-					if (idx <= 0) inputEl?.focus();
-					else items[idx - 1]?.focus();
-				}
-			}
-			// Escape from a focused result returns to input
-			if (e.key === 'Escape' && containerEl?.contains(document.activeElement) && document.activeElement !== inputEl) {
-				e.preventDefault();
-				inputEl?.focus();
-			}
+			typeAnywhere(e);
 		}
 		document.addEventListener('keydown', onKeydown);
 		document.addEventListener('mousedown', onClickOutside);
+
+		// iOS has no interactive-widget support yet: lift the bottom-docked
+		// search above the on-screen keyboard by the part of the layout
+		// viewport the keyboard covers.
+		const vv = window.visualViewport;
+		const onViewport = () => {
+			const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+			document.documentElement.style.setProperty('--kb-inset', `${covered}px`);
+		};
+		vv?.addEventListener('resize', onViewport);
+		vv?.addEventListener('scroll', onViewport);
+
 		return () => {
 			document.removeEventListener('keydown', onKeydown);
 			document.removeEventListener('mousedown', onClickOutside);
 			window.removeEventListener('resize', onResize);
-			clearInterval(tipRotator);
+			vv?.removeEventListener('resize', onViewport);
+			vv?.removeEventListener('scroll', onViewport);
 		};
 	});
 
@@ -435,9 +643,8 @@
 	});
 
 	function handleSubmit(e) {
-		// Enter key on the form → web search in a new tab. Behavior preserved
-		// from pre-integrations Hearth: empty query is a no-op, otherwise the
-		// browser does a normal form submit to the configured search URL.
+		// Enter is handled in the keydown below; a submit only gets here with
+		// nothing to run (no results yet), and then it is a web search.
 		if (!query.trim()) e.preventDefault();
 	}
 
@@ -447,16 +654,22 @@
 	}
 
 	function handleInputKeydown(e) {
-		// Escape — clear scope/query and dismiss the palette. Handled here on
-		// the input directly (rather than relying on the document-level listener)
-		// so it can't be missed by event-bubbling quirks or activeElement checks.
+		if (resultsEl?.panelKey(e)) return;
+
+		// Escape steps back one level: action panel, query, scope, then close.
 		if (e.key === 'Escape') {
 			e.preventDefault();
 			e.stopPropagation();
-			query = '';
-			activeScope = null;
-			inlineOpen = false;
-			inputEl?.blur();
+			if (panelOpen) panelOpen = false;
+			else if (query) query = '';
+			else if (activeScope) activeScope = null;
+			else { inlineOpen = false; inputEl?.blur(); }
+			return;
+		}
+		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			inlineOpen = true;
+			moveSelection(e.key === 'ArrowDown' ? 1 : -1);
 			return;
 		}
 		// Backspace at empty input with a chip → clear the scope and put "!" back in the input
@@ -467,26 +680,27 @@
 			requestAnimationFrame(() => inputEl?.setSelectionRange(1, 1));
 			return;
 		}
-		// Enter — commit a pending bang as a scope, OR run action if unambiguous (exactly one match)
-		if (e.key === 'Enter' && !activeScope) {
-			if (matchedActions.length === 1) {
-				e.preventDefault();
-				runAction(matchedActions[0]);
-				return;
-			}
-			if (matchedActions.length > 1) {
-				// Multiple matches — don't auto-pick; let user arrow-down and choose
-				e.preventDefault();
-				const first = containerEl?.querySelector('[data-nav-item]');
-				first?.focus();
-				return;
-			}
+		// ⌘⇧C copies the selected item's link.
+		if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
+			const item = flatItems.find((i) => i.key === selectedKey);
+			const copy = item?.actions.find((a) => a.label === 'Copy link');
+			if (copy) { e.preventDefault(); copy.run(); }
+			return;
+		}
+		if (e.key === 'Enter') {
+			// A typed scope shortcut ("!photos") becomes a scope chip.
 			const s = (query || '').trimStart();
-			const m = s.match(/^!([a-zA-Z0-9_-]+)$/);
-			if (m && shortcutMap.get(m[1].toLowerCase())) {
+			const m = !activeScope && s.match(/^!([a-zA-Z0-9_-]+)$/);
+			if (m && shortcutMap.get(m[1].toLowerCase()) && !matchedActions.length) {
 				e.preventDefault();
 				activeScope = shortcutMap.get(m[1].toLowerCase());
 				query = '';
+				return;
+			}
+			const item = flatItems.find((i) => i.key === selectedKey);
+			if (item) {
+				e.preventDefault();
+				runItem(item, e);
 			}
 		}
 	}
@@ -528,21 +742,27 @@
 		else document.body.classList.remove('search-active');
 		return () => document.body.classList.remove('search-active');
 	});
+
+	const listId = 'launcher-list';
+	const emptyText = $derived(
+		(query || '').trim().startsWith('!') && !activeScope ? 'No command or scope by that name. Try !settings, !theme or !wall.' : ''
+	);
 </script>
 
 <!-- Close when keyboard focus leaves the palette (Tab-out); click-outside is
      handled by onClickOutside. A null relatedTarget is a click on a
      non-focusable spot, which may be inside the panel, so it's ignored. -->
 <div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px"
-	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) inlineOpen = false; }}>
+	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) { inlineOpen = false; panelOpen = false; } }}>
 	<form
-		class="hero-search-form flex items-center px-5 md:px-7"
+		class="hero-search-form flex items-center px-4 md:px-6"
 		action={searchConfig.url}
 		method="GET"
 		target="_blank"
+		role="search"
 		onsubmit={handleSubmit}
 	>
-		<svg class="text-content-dim shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+		<svg class="text-content-dim shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 
 		{#if activeIntegration}
 			<span class="scope-chip flex items-center gap-1 shrink-0 ml-2 text-[0.7rem] font-mono px-2 py-1 rounded-lg border">
@@ -561,42 +781,42 @@
 			bind:value={query}
 			type="text"
 			name={searchConfig.param || 'q'}
-			class="w-full h-[44px] md:h-[52px] bg-transparent border-none text-[0.85rem] md:text-[0.95rem] px-3 md:px-4 outline-none font-mono"
-			placeholder={activeIntegration ? `Search in ${activeIntegration.name}...` : placeholderText}
+			class="hero-search-input w-full h-[48px] md:h-[52px] bg-transparent border-none px-3 md:px-4 outline-none font-mono"
+			placeholder={activeIntegration ? `Search in ${activeIntegration.name}…` : placeholderText}
 			autocomplete="off"
+			autocapitalize="off"
+			spellcheck="false"
+			enterkeyhint="go"
+			role="combobox"
+			aria-label="Search apps, files and commands"
+			aria-expanded={isPaletteOpen}
+			aria-controls={listId}
+			aria-autocomplete="list"
+			aria-activedescendant={isPaletteOpen && selectedKey ? `${listId}-${selectedKey}` : undefined}
 			onfocus={handleFocus}
 			oninput={handleInput}
 			onkeydown={handleInputKeydown}
 		/>
 
 		{#if query}
-			<button type="button" class="clear-btn text-sm md:text-base bg-transparent border-none cursor-pointer px-1" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
+			<button type="button" class="clear-btn text-sm md:text-base bg-transparent border-none cursor-pointer px-1" aria-label="Clear search" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
 		{:else}
-			<kbd class="hero-search-kbd text-[0.65rem] md:text-[0.7rem] py-0.5 px-1.5 md:py-1 md:px-2 rounded border font-mono shrink-0">/</kbd>
+			<kbd class="hero-search-kbd hidden md:inline-flex items-center gap-0.5 text-[0.7rem] py-1 px-2 rounded border font-mono shrink-0">{#if macKeys}<svg class="kbd-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Command"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3Z"/></svg>{:else}Ctrl{/if}K</kbd>
 		{/if}
 	</form>
 
-	{#if inlineOpen && (query.trim() || activeScope)}
-		{@const bangMode = query.trimStart().startsWith('!') || !!activeScope || matchedActions.length > 0}
+	{#if isPaletteOpen}
 		<SearchResults
-			apps={bangMode ? [] : apps}
-			providers={matchedActions.length ? [] : scopedProviders}
-			providerResults={providerResults}
-			{query}
-			searchConfig={bangMode ? {} : searchConfig}
-			tips={activeScope || matchedActions.length ? [] : visibleTips}
-			actions={matchedActions}
-			onaction={runAction}
-			onclose={closeInline}
-			ontip={(tip) => {
-				if (tip.kind === 'scope') {
-					activeScope = tip.id;
-					query = '';
-				} else {
-					query = `!${tip.bang} `;
-				}
-				inputEl?.focus();
-			}}
+			bind:this={resultsEl}
+			{sections}
+			{selectedKey}
+			{panelOpen}
+			{listId}
+			{emptyText}
+			onselect={(k) => { selectedKey = k; userMoved = true; }}
+			onrun={runItem}
+			onaction={(item, action) => { panelOpen = false; action.run(); }}
+			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
 		/>
 	{/if}
 </div>

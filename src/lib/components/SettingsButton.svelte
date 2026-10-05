@@ -50,7 +50,7 @@
 	</button>
 
 	{#if open}
-		<div class="absolute top-12 right-0 glass-card rounded-xl overflow-hidden min-w-[180px] animate-menu-up shadow-theme">
+		<div class="absolute top-12 right-0 glass-card menu-surface rounded-xl overflow-hidden min-w-[180px] animate-menu-up shadow-theme">
 			{#if showAuth && name}
 				<div class="px-4 py-2.5 text-[0.7rem] text-content-muted font-mono uppercase tracking-[0.12em] border-b border-border-card">{name}</div>
 			{/if}
@@ -88,9 +88,9 @@
 </div>
 
 <!-- Mobile: bottom-right FAB + bottom sheet -->
-<div class="user-menu md:hidden fixed bottom-16 right-4 z-[60]">
+<div class="user-menu dock-account md:hidden fixed z-[60]">
 	<button
-		class="w-10 h-10 rounded-[12px] glass-card text-content text-[0.8rem] font-semibold flex items-center justify-center cursor-pointer transition-all duration-200 hover:text-content shadow-theme relative"
+		class="w-[50px] h-[50px] rounded-[16px] glass-card text-content text-[0.8rem] font-semibold flex items-center justify-center cursor-pointer transition-all duration-200 hover:text-content shadow-theme relative"
 		title={name || 'Settings'}
 		onclick={() => open = !open}
 	>
@@ -100,7 +100,7 @@
 	{#if open}
 		<div class="fixed inset-0 z-[70]" onclick={() => open = false}>
 			<div class="absolute inset-0 bg-surface-overlay"></div>
-			<div class="absolute bottom-0 left-0 right-0 glass-card rounded-t-2xl animate-slide-up pb-[env(safe-area-inset-bottom,0px)]" onclick={(e) => e.stopPropagation()}>
+			<div class="absolute bottom-0 left-0 right-0 glass-card menu-surface rounded-t-2xl animate-slide-up pb-[env(safe-area-inset-bottom,0px)]" onclick={(e) => e.stopPropagation()}>
 				<div class="w-10 h-1 bg-content-dim/30 rounded-full mx-auto mt-3 mb-2"></div>
 				{#if showAuth && name}
 					<div class="px-5 py-2 text-[0.75rem] text-content-muted font-mono uppercase tracking-[0.12em]">{name}</div>

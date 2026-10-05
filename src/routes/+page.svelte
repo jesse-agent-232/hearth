@@ -190,7 +190,7 @@
 			<Header lat={$prefs.lat} lon={$prefs.lon} placeName={$prefs.locationSource === 'manual' ? $prefs.locationName : ''} locationSource={$prefs.locationSource} showWeather={weatherEnabled} headlines={newsEnabled ? data.news : []} />
 
 		</div>
-		<div class="opacity-0 animate-fade-in-up [animation-fill-mode:both] [animation-delay:75ms] relative z-20">
+		<div class="launcher-host opacity-0 animate-fade-in-up [animation-fill-mode:both] [animation-delay:75ms] relative z-20">
 			<WidgetGrid isAdmin={data.isAdmin} bind:guideApp bind:editMode {searchEnabled} {customizationEnabled} onSettingsOpen={() => manageAppsOpen = true} />
 		</div>
 		<!-- Inline help tips disabled for now — revisit once the palette

@@ -39,7 +39,7 @@
 </script>
 
 {#if wrap}
-	<div class="app-icon-wrap {wrapSize} rounded-[22%] flex items-center justify-center relative overflow-hidden shrink-0 bg-surface-card-strong {className}" style={src && !failed ? wrapBg : ''}>
+	<div class="app-icon-wrap {wrapSize} rounded-[22%] flex items-center justify-center relative overflow-hidden shrink-0 bg-surface-card-strong {className}" class:is-brand={src && !failed && iconStyle === 'colored' && icon?.brandExplicit && icon?.brandColor} style={src && !failed ? wrapBg : ''}>
 		{#if src && !failed}
 			<img {src} alt={name} class="{size} {imgClass}" onerror={onError} />
 		{:else}

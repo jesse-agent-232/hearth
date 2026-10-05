@@ -167,7 +167,8 @@ search:
 
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
-# Nextcloud, Planka, Karakeep. Add more in src/lib/server/integrations/.
+# Nextcloud, Planka, Karakeep, Jellyfin, Jellyseerr. Add more in
+# src/lib/server/integrations/.
 #
 # Each key must match both the adapter's `id` AND an app `id` in the apps
 # section above — the integration inherits the app's icon automatically.
@@ -226,6 +227,20 @@ integrations:
     enabled: true
     name: "Bookmarks"
     default_url: "https://karakeep.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  jellyfin:
+    enabled: true
+    name: "Jellyfin"
+    default_url: "https://jellyfin.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  jellyseerr:
+    enabled: true
+    name: "Requests"
+    default_url: "https://jellyseerr.example.com"
     surfaces:
       search: true
       widgets: false
