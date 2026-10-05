@@ -7,6 +7,7 @@ import {
 	deleteConnection
 } from '$lib/server/integrations/store.js';
 import { redactConfig, isRedacted } from '$lib/server/integrations/serialize.js';
+import { withDeadline } from '$lib/server/integrations/deadline.js';
 
 // PUT /api/integrations/:id   body: { config, surfaces }
 // Save (or update) the user's connection. Secret fields that come back as
@@ -46,12 +47,25 @@ export async function PUT({ cookies, url, request, params }) {
 
 // DELETE /api/integrations/:id
 // Disconnect — wipes the row entirely.
-export async function DELETE({ cookies, url, params }) {
+export async function DELETE({ cookies, url, params, fetch }) {
 	const user = getSessionUser(cookies, url);
 	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
 
 	const adapter = getAdapter(params.id);
 	if (!adapter) return json({ error: 'Unknown integration' }, { status: 404 });
+
+	// Revoke the upstream session too (e.g. a Quick Connect token), best
+	// effort: an unreachable server must not stop the user disconnecting.
+	if (adapter.signOut) {
+		const existing = await getConnection(user.username, adapter.id);
+		if (existing?.config) {
+			try {
+				await adapter.signOut({ config: existing.config, fetch: withDeadline(fetch, 5000) });
+			} catch {
+				/* ignore */
+			}
+		}
+	}
 
 	await deleteConnection(user.username, adapter.id);
 	return json({ ok: true });
@@ -72,6 +86,8 @@ function mergeConfig(adapter, existing, submitted) {
 	for (const field of adapter.configSchema || []) {
 		const v = submitted[field.key];
 		if (v == null) continue;
+		// Hidden fields (tokens, ids) are only ever set by the sign-in flow.
+		if (field.hidden) continue;
 		// A bullet-redacted secret means "don't change this" — keep existing.
 		if (field.type === 'secret' && isRedacted(v)) continue;
 		if (typeof v === 'string') {

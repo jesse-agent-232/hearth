@@ -16,6 +16,7 @@
  * @property {string} [help]                    Small helper text shown under the field
  * @property {{ baseKey: string, path: string, label: string }} [helpUrl]  Clickable link built from config[baseKey] + path
  * @property {string} [fromOperatorDefault]     If set, the form pre-fills from `integrations.<id>.<value>` in config.yml
+ * @property {boolean} [hidden]                 Stored and redacted like any field, but never rendered — filled by `signIn`
  */
 
 /**
@@ -59,6 +60,20 @@
  */
 
 /**
+ * @typedef {Object} SignIn
+ * A device-code style sign-in (e.g. Jellyfin Quick Connect): Hearth shows a
+ * code, the user approves it inside the other app, and the adapter trades the
+ * approval for that user's own token. No password or admin key passes through
+ * Hearth. The generic /api/integrations/:id/signin route keeps `state`
+ * server-side and saves the connection when `poll` reports done.
+ *
+ * @property {string} label                                    Button text, e.g. 'Sign in with Quick Connect'
+ * @property {string} [help]                                   Markdown shown next to the code
+ * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<{ code: string, state: object } | { error: string }>} start
+ * @property {(ctx: { config: object, state: object, fetch: typeof fetch }) => Promise<{ status: 'pending' } | { status: 'done', config: object } | { status: 'error', error: string }>} poll
+ */
+
+/**
  * @typedef {Object} IntegrationAdapter
  * @property {string} id                                       Must match the config.yml key
  * @property {string} name                                     Display name
@@ -66,6 +81,8 @@
  * @property {string} description                              One-line summary
  * @property {ConfigField[]} configSchema                      Fields rendered in the connect form
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<TestResult>} test
+ * @property {SignIn} [signIn]                                 Replaces the Test/Connect buttons with a code-approval flow
+ * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<void>} [signOut]  Best-effort token revoke on disconnect
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, object>} [widgets]                Reserved — widget rendering is out of scope for this PR

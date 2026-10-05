@@ -3,9 +3,12 @@
 // Surfaces:
 //   - searchProviders.media — searches movies, shows, episodes, albums and artists
 //
-// Auth uses `Authorization: MediaBrowser Token="..."`. The X-Emby-Token
-// header and api_key query param are legacy: Jellyfin 10.11 added a switch
-// for them and 12.0 turns them off by default.
+// Auth is Quick Connect: Hearth shows a code, the user approves it in their
+// own Jellyfin session, and Hearth keeps that user's access token. No API key
+// (those are server-wide and see every library) and no password (Jellyfin
+// signs in with the LLDAP password, which unlocks every other app too).
+// Tokens go in `Authorization: MediaBrowser …, Token="..."`; the X-Emby-Token
+// header and api_key query param are legacy and off by default in 12.0.
 
 // Item kinds searched, and how each one reads in the subtitle.
 const ITEM_TYPES = {
@@ -37,36 +40,90 @@ const adapter = {
 			help: 'Base URL of your Jellyfin server',
 			fromOperatorDefault: 'default_url'
 		},
-		{
-			key: 'apiKey',
-			type: 'secret',
-			label: 'API Key',
-			required: true,
-			help: '1. Open **Dashboard → API Keys** (admin only)\n2. Click **+**, name it (e.g. Hearth)\n3. Copy the key and paste it here\n\nThis key has full admin rights on the server. Only connect it on an admin\'s Hearth account.',
-			helpUrl: { baseKey: 'url', path: '/web/#/dashboard/keys', label: 'Open API keys' }
-		}
+		// Filled in by Quick Connect, never typed.
+		{ key: 'accessToken', type: 'secret', label: 'Access token', required: true, hidden: true },
+		{ key: 'userId', type: 'text', label: 'User id', hidden: true },
+		{ key: 'userName', type: 'text', label: 'User', hidden: true },
+		{ key: 'deviceId', type: 'text', label: 'Device id', hidden: true }
 	],
 
+	signIn: {
+		label: 'Sign in with Quick Connect',
+		help: 'In Jellyfin, open your **profile → Quick Connect** and enter this code.',
+
+		async start({ config, fetch }) {
+			const base = stripTrailingSlash(config.url);
+			// One device id per sign-in: Jellyfin keeps one session per device,
+			// so this shows up as its own "Hearth" entry under Devices.
+			const deviceId = `hearth-${crypto.randomUUID()}`;
+			const headers = authHeaders({ deviceId });
+			const enabled = await fetch(`${base}/QuickConnect/Enabled`, { headers });
+			if (!enabled.ok) return { error: `Jellyfin returned ${enabled.status} — is the URL right?` };
+			if ((await enabled.json()) !== true) {
+				return { error: 'Quick Connect is turned off on this server (Dashboard → General → Quick Connect)' };
+			}
+			const res = await fetch(`${base}/QuickConnect/Initiate`, { method: 'POST', headers });
+			if (!res.ok) return { error: `Couldn’t start Quick Connect (${res.status})` };
+			const data = await res.json();
+			if (!data?.Secret || !data?.Code) return { error: 'Jellyfin sent an unexpected reply' };
+			return { code: String(data.Code), state: { secret: data.Secret, deviceId } };
+		},
+
+		async poll({ config, state, fetch }) {
+			const base = stripTrailingSlash(config.url);
+			const headers = authHeaders({ deviceId: state.deviceId });
+			const res = await fetch(`${base}/QuickConnect/Connect?secret=${encodeURIComponent(state.secret)}`, { headers });
+			// Jellyfin forgets a code after ~10 minutes and then 404s it.
+			if (res.status === 404) return { status: 'error', error: 'The code expired — start again' };
+			if (!res.ok) return { status: 'error', error: `Jellyfin returned ${res.status}` };
+			if (!(await res.json())?.Authenticated) return { status: 'pending' };
+
+			const auth = await fetch(`${base}/Users/AuthenticateWithQuickConnect`, {
+				method: 'POST',
+				headers: { ...headers, 'content-type': 'application/json' },
+				body: JSON.stringify({ Secret: state.secret })
+			});
+			if (!auth.ok) return { status: 'error', error: `Sign-in failed (${auth.status})` };
+			const session = await auth.json();
+			if (!session?.AccessToken || !session?.User?.Id) {
+				return { status: 'error', error: 'Jellyfin sent an unexpected reply' };
+			}
+			return {
+				status: 'done',
+				config: {
+					accessToken: session.AccessToken,
+					userId: session.User.Id,
+					userName: session.User.Name || '',
+					deviceId: state.deviceId
+				}
+			};
+		}
+	},
+
+	// Ends the Hearth session in Jellyfin, so the token stops working.
+	async signOut({ config, fetch }) {
+		if (!config?.url || !config?.accessToken) return;
+		await fetch(`${stripTrailingSlash(config.url)}/Sessions/Logout`, {
+			method: 'POST',
+			headers: authHeaders(config)
+		});
+	},
+
 	async test({ config, fetch }) {
-		if (!config?.url || !config?.apiKey) {
-			return { ok: false, message: 'URL and API key are required' };
+		if (!config?.url || !config?.accessToken) {
+			return { ok: false, message: 'Sign in with Quick Connect first' };
 		}
 		const base = stripTrailingSlash(config.url);
 		try {
-			// /System/Info (unlike /System/Info/Public) needs a valid key.
-			const res = await fetch(`${base}/System/Info`, {
-				method: 'GET',
-				headers: authHeaders(config)
-			});
+			const res = await fetch(`${base}/Users/Me`, { method: 'GET', headers: authHeaders(config) });
 			if (!res.ok) {
 				if (res.status === 401 || res.status === 403) {
-					return { ok: false, message: 'API key rejected — create one under Dashboard → API Keys' };
+					return { ok: false, message: 'Session ended in Jellyfin — sign in again' };
 				}
 				return { ok: false, message: `Server returned ${res.status} ${res.statusText}` };
 			}
-			const info = await res.json();
-			const name = info?.ServerName || 'Jellyfin';
-			return { ok: true, message: `Connected to ${name}${info?.Version ? ` (v${info.Version})` : ''}` };
+			const me = await res.json();
+			return { ok: true, message: `Signed in as ${me?.Name || config.userName || 'Jellyfin user'}` };
 		} catch (err) {
 			return { ok: false, message: `Connection failed: ${err.message}` };
 		}
@@ -77,18 +134,17 @@ const adapter = {
 			label: 'Media',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
-				if (!config?.url || !config?.apiKey) return { results: [] };
+				if (!config?.url || !config?.accessToken) return { results: [] };
 				const trimmed = (query || '').trim();
 				if (!trimmed) return { results: [] };
 
 				const base = stripTrailingSlash(config.url);
-				// /Items rather than /Search/Hints: an API key has no user, and
-				// /Items explicitly serves API-key callers without a userId (all
-				// libraries visible). /Search/Hints passes the key's empty user id
-				// straight into the search engine. Everything we read (year,
-				// series, episode numbers, image tags, ServerId) is in the default
-				// DTO, so no Fields= is needed.
+				// /Items with userId applies that user's library access and
+				// parental rating. Everything we read (year, series, episode
+				// numbers, image tags, ServerId) is in the default DTO, so no
+				// Fields= is needed.
 				const params = new URLSearchParams({
+					userId: config.userId || '',
 					searchTerm: trimmed,
 					Recursive: 'true',
 					IncludeItemTypes: Object.keys(ITEM_TYPES).join(','),
@@ -153,12 +209,17 @@ function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-function authHeaders(config) {
-	return {
-		// Keys are hex; drop anything that could break out of the quoted value.
-		Authorization: `MediaBrowser Token="${String(config.apiKey).replace(/[^A-Za-z0-9_-]/g, '')}"`,
-		accept: 'application/json'
-	};
+// Jellyfin wants client details on every call, signed in or not.
+function authHeaders({ deviceId, accessToken }) {
+	const parts = [`Client="Hearth"`, `Device="Hearth"`, `DeviceId="${quoteSafe(deviceId || 'hearth')}"`, `Version="1.0"`];
+	if (accessToken) parts.push(`Token="${quoteSafe(accessToken)}"`);
+	return { Authorization: `MediaBrowser ${parts.join(', ')}`, accept: 'application/json' };
+}
+
+// Tokens are hex and device ids are ours; drop anything that could break out
+// of the quoted value.
+function quoteSafe(value) {
+	return String(value).replace(/[^A-Za-z0-9_-]/g, '');
 }
 
 // "Movie · 2019", "Episode · Severance S2E3", "Album · Artist · 2020"
