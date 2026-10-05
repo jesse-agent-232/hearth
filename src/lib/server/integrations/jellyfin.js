@@ -10,14 +10,17 @@
 // Tokens go in `Authorization: MediaBrowser …, Token="..."`; the X-Emby-Token
 // header and api_key query param are legacy and off by default in 12.0.
 
-// Item kinds searched, and how each one reads in the subtitle.
+// Item kinds searched, and how each one reads in the subtitle. Episodes are
+// left out: a title search matches dozens of them and buries the show.
 const ITEM_TYPES = {
 	Movie: 'Movie',
 	Series: 'Show',
-	Episode: 'Episode',
 	MusicAlbum: 'Album',
 	MusicArtist: 'Artist'
 };
+
+// Posters render 138 CSS px tall; 3x covers phone screens.
+const POSTER_HEIGHT = 420;
 
 // Jellyfin item ids are GUIDs, serialised as 32 hex chars (or dashed).
 const ITEM_ID = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
@@ -140,9 +143,8 @@ const adapter = {
 
 				const base = stripTrailingSlash(config.url);
 				// /Items with userId applies that user's library access and
-				// parental rating. Everything we read (year, series, episode
-				// numbers, image tags, ServerId) is in the default DTO, so no
-				// Fields= is needed.
+				// parental rating. Everything we read (year, album artist, image
+				// tags, ServerId) is in the default DTO, so no Fields= is needed.
 				const params = new URLSearchParams({
 					userId: config.userId || '',
 					searchTerm: trimmed,
@@ -171,7 +173,7 @@ const adapter = {
 							title: item.Name || 'Untitled',
 							subtitle: subtitleFor(item),
 							thumbnail: imageId
-								? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}`
+								? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}?maxHeight=${POSTER_HEIGHT}`
 								: undefined,
 							href: `${base}/web/#/details?id=${encodeURIComponent(item.Id)}${server}`,
 							meta: { kind: 'media' }
@@ -193,7 +195,7 @@ const adapter = {
 					return new Response('Invalid item id', { status: 400 });
 				}
 				const requested = parseInt(new URL(request.url).searchParams.get('maxHeight') ?? '', 10);
-				const maxHeight = Number.isNaN(requested) ? 120 : Math.min(Math.max(requested, 32), 600);
+				const maxHeight = Number.isNaN(requested) ? POSTER_HEIGHT : Math.min(Math.max(requested, 32), 600);
 				return fetch(`${base}/Items/${id}/Images/Primary?maxHeight=${maxHeight}&quality=90`, {
 					method: 'GET',
 					headers: { Authorization: authHeaders(config).Authorization }
@@ -222,27 +224,16 @@ function quoteSafe(value) {
 	return String(value).replace(/[^A-Za-z0-9_-]/g, '');
 }
 
-// "Movie · 2019", "Episode · Severance S2E3", "Album · Artist · 2020"
+// "Movie · 2019", "Album · Artist · 2020"
 function subtitleFor(item) {
 	const parts = [ITEM_TYPES[item.Type] || item.Type];
-	if (item.Type === 'Episode') {
-		const se =
-			item.ParentIndexNumber != null && item.IndexNumber != null
-				? ` S${item.ParentIndexNumber}E${item.IndexNumber}`
-				: '';
-		if (item.SeriesName || se) parts.push(`${item.SeriesName || ''}${se}`.trim());
-	} else if (item.Type === 'MusicAlbum' && item.AlbumArtist) {
-		parts.push(item.AlbumArtist);
-	}
-	if (item.ProductionYear && item.Type !== 'Episode') parts.push(String(item.ProductionYear));
+	if (item.Type === 'MusicAlbum' && item.AlbumArtist) parts.push(item.AlbumArtist);
+	if (item.ProductionYear) parts.push(String(item.ProductionYear));
 	return parts.filter(Boolean).join(' · ');
 }
 
-// Episodes often have no image of their own — fall back to the show's poster.
 function primaryImageId(item) {
-	if (item.ImageTags?.Primary) return item.Id;
-	if (item.Type === 'Episode' && item.SeriesId && item.SeriesPrimaryImageTag) return item.SeriesId;
-	return null;
+	return item.ImageTags?.Primary ? item.Id : null;
 }
 
 export default adapter;
