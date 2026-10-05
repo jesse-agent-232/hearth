@@ -31,9 +31,10 @@ Most self-hosted dashboards are admin tools: one person configures them, one per
 - **Weather widget** — Open-Meteo (free, no API key)
 - **News headlines** — any RSS feed
 - **Integrations** — pluggable app adapters (Immich, Paperless, Nextcloud, Planka, Karakeep, Jellyfin, Jellyseerr) with encrypted per-user credentials
-- **Unified search** — apps, web search, and integration results in one Spotlight-style dropdown
+- **Launcher** — Raycast-style: apps, commands, integration results and web-search fallbacks in one ranked list; apps you open often rise to the top
 - **Command prefixes** — `!p` / `!b` / `!photos` scope search to one integration; `!settings` / `!theme` / `!icon` / `!wall` / `!logout` fire quick actions
-- **Keyboard shortcuts** — `⌘K` / `Ctrl+K` focuses search from anywhere; `↑ ↓` navigate results; `Esc` closes modals and overlays
+- **Keyboard** — type anywhere (or `/`, `⌘K` / `Ctrl+K`) to search; `↑ ↓` move, `↵` opens, `⌘↵` opens the other way (tab vs new tab), `⌘K` shows every action for the selected result, `Esc` steps back one level
+- **Browser default search** — `/?q=…` opens Hearth with the launcher prefilled, and `/opensearch.xml` lets browsers add Hearth as a search engine. On phones the search docks at the bottom, above the keyboard
 - **Search bar** — configurable fallback search engine (Google, SearXNG, etc.)
 - **PWA support** — installable as a native app on mobile
 - **Docker** — single container, multi-arch (amd64/arm64)

@@ -12,6 +12,7 @@
 		sections = [],
 		selectedKey = null,
 		panelOpen = false,
+		panelIndex = $bindable(0),
 		listId = 'launcher-list',
 		emptyText = '',
 		onselect = () => {},
@@ -22,7 +23,6 @@
 
 	const flat = $derived(sections.flatMap((s) => s.items));
 	const selected = $derived(flat.find((i) => i.key === selectedKey) || null);
-	let panelIndex = $state(0);
 	$effect(() => {
 		if (panelOpen) panelIndex = 0;
 	});
@@ -65,7 +65,7 @@
 				<div class="launcher-section" role="group" aria-labelledby="{listId}-{section.id}">
 					<div class="launcher-section-label" id="{listId}-{section.id}">
 						<span>{section.label}</span>
-						{#if section.loading}<span class="launcher-spinner" aria-label="Searching"></span>{/if}
+						{#if section.loading}<span class="launcher-spinner" role="status" aria-label="Searching"></span>{/if}
 					</div>
 					{#if section.error}
 						<div class="launcher-error">{section.error}</div>
@@ -77,6 +77,7 @@
 								id="{listId}-{item.key}"
 								role="option"
 								aria-selected={isSel}
+								aria-label={section.layout === 'list' ? undefined : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
 								tabindex="-1"
 								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : 'is-row'}"
 								class:is-selected={isSel}
@@ -84,8 +85,11 @@
 								onpointermove={() => { if (!isSel) onselect(item.key); }}
 								onmousedown={(e) => e.preventDefault()}
 								onclick={(e) => onrun(item, e)}
+								onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); onrun(item, e); } }}
 							>
-								{#if section.layout === 'grid' || section.layout === 'poster'}
+								{#if item.more && section.layout !== 'list'}
+									<div class="launcher-thumb-wrap launcher-more">{item.title}</div>
+								{:else if section.layout === 'grid' || section.layout === 'poster'}
 									<div class="launcher-thumb-wrap">
 										{#if item.thumbnail}
 											<img src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
@@ -158,7 +162,8 @@
 			{#each selected.actions as action, i}
 				<button
 					type="button"
-					role="menuitem"
+					id="{listId}-action-{i}"
+						role="menuitem"
 					class="launcher-action"
 					class:is-selected={i === panelIndex}
 					onpointermove={() => (panelIndex = i)}

@@ -92,6 +92,13 @@
 		query = m[2];
 	}
 
+	// Shortcuts arrive with the integrations store, which can be after a
+	// `?q=!jf dune` deep link set the query — promote once they do.
+	$effect(() => {
+		shortcutMap;
+		untrack(maybePromoteScope);
+	});
+
 	const scopedProviders = $derived(
 		activeScope
 			? inlineProviders.filter((p) => p.integrationId === activeScope)
@@ -358,12 +365,16 @@
 		inputEl?.blur();
 	}
 
+	// Only app opens feed frecency: they're the only keys it ranks, and
+	// one-off result opens would otherwise evict app history.
+	const noteOpen = (key) => { if (key.startsWith('app:')) recordOpen(key); };
+
 	function linkActions(key, url, newTabFirst) {
-		const open = { label: 'Open', run: () => { recordOpen(key); openUrl(url, newTabFirst); finish(); } };
+		const open = { label: 'Open', run: () => { noteOpen(key); openUrl(url, newTabFirst); finish(); } };
 		const other = {
 			label: newTabFirst ? 'Open in this tab' : 'Open in new tab',
 			hint: '⌘ ↵',
-			run: () => { recordOpen(key); openUrl(url, !newTabFirst); finish(); }
+			run: () => { noteOpen(key); openUrl(url, !newTabFirst); finish(); }
 		};
 		const copy = { label: 'Copy link', hint: '⌘ ⇧ C', run: () => { copyText(url); finish(); } };
 		return [open, other, copy];
@@ -379,6 +390,7 @@
 			subtitle: app.subtitle || host,
 			appIcon: app.icon ?? null,
 			accessory: 'App',
+			url: app.url,
 			actions: linkActions(key, app.url, openAppsInNewTab)
 		};
 	}
@@ -437,7 +449,9 @@
 					a,
 					s: bestScore(q, a.name, [a.subtitle, ...(a.tags || [])].filter(Boolean)) + Math.min(frecency[`app:${a.id}`] || 0, 10)
 				}))
-				.filter((x) => x.s >= 20)
+				// 45+ = substring or better; a letters-in-order match alone would
+				// put a weak app above the web fallback that Enter should hit.
+				.filter((x) => x.s >= 45)
 				.sort((x, y) => y.s - x.s)
 				.slice(0, 6);
 			if (scoredApps.length) out.push({ id: 'apps', label: 'Apps', items: scoredApps.map((x) => appItem(x.a)) });
@@ -464,10 +478,11 @@
 				kind,
 				loading: !!data.loading && q.length >= 3,
 				error: data.error || '',
-				items: results.slice(0, max).map((r) => {
+				items: [...results.slice(0, max).map((r) => {
 					const key = `r:${p.providerId}:${r.id}`;
 					return {
 						key,
+						url: r.href,
 						title: r.title,
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
@@ -477,7 +492,14 @@
 						accessory: layout === 'list' ? p.integrationName : '',
 						actions: linkActions(key, r.href, true)
 					};
-				})
+				}), ...(results.length > max && p.searchUrl ? [{
+					key: `more:${p.providerId}`,
+					title: `${results.length - max}+ more in ${p.integrationName}`,
+					more: true,
+					url: p.searchUrl,
+					svg: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+					actions: linkActions(`more:${p.providerId}`, p.searchUrl, true)
+				}] : [])]
 			};
 		});
 		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
@@ -489,6 +511,7 @@
 			if (!activeScope) {
 				for (const it of $integrationsStore.integrations) {
 					if (!it.shortcut || !it.userState?.connected) continue;
+					if (it.userState?.surfaces?.search === false) continue;
 					if (!(it.availableSurfaces || []).includes('search')) continue;
 					fb.push({
 						key: `scope:${it.id}`,
@@ -508,7 +531,8 @@
 					subtitle: searchConfig.name || 'Web',
 					appIcon: searchConfig.icon ? resolveIcon(searchConfig.icon) : undefined,
 					svg: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
-					actions: linkActions('web', url, true).slice(0, 3)
+					url,
+					actions: linkActions('web', url, true)
 				});
 			}
 			if (fb.length) out.push({ id: 'fallbacks', label: 'Use “' + (q.length > 24 ? q.slice(0, 24) + '…' : q) + '” with…', items: fb });
@@ -519,6 +543,7 @@
 	const flatItems = $derived(sections.flatMap((s) => s.items));
 	let selectedKey = $state(null);
 	let panelOpen = $state(false);
+	let panelIndex = $state(0);
 	let resultsEl = $state();
 
 	// Keep a valid selection. Until the user arrows away, it tracks the top
@@ -546,6 +571,13 @@
 	function runItem(item, e) {
 		if (!item) return;
 		const mod = e && (e.metaKey || e.ctrlKey);
+		// Mouse: Cmd/Ctrl-click and middle-click mean "new tab", as on a link.
+		if (item.url && e && 'button' in e && (mod || e.button === 1)) {
+			noteOpen(item.key);
+			openUrl(item.url, true);
+			finish();
+			return;
+		}
 		const action = mod && item.actions[1] ? item.actions[1] : item.actions[0];
 		action?.run();
 	}
@@ -792,7 +824,7 @@
 			aria-expanded={isPaletteOpen}
 			aria-controls={listId}
 			aria-autocomplete="list"
-			aria-activedescendant={isPaletteOpen && selectedKey ? `${listId}-${selectedKey}` : undefined}
+			aria-activedescendant={isPaletteOpen && selectedKey ? (panelOpen ? `${listId}-action-${panelIndex}` : `${listId}-${selectedKey}`) : undefined}
 			onfocus={handleFocus}
 			oninput={handleInput}
 			onkeydown={handleInputKeydown}
@@ -811,6 +843,7 @@
 			{sections}
 			{selectedKey}
 			{panelOpen}
+			bind:panelIndex
 			{listId}
 			{emptyText}
 			onselect={(k) => { selectedKey = k; userMoved = true; }}

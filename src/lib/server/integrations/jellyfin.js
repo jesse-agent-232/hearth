@@ -42,7 +42,7 @@ const adapter = {
 			type: 'secret',
 			label: 'API Key',
 			required: true,
-			help: '1. Open **Dashboard → API Keys** (admin only)\n2. Click **+**, name it (e.g. Hearth)\n3. Copy the key and paste it here',
+			help: '1. Open **Dashboard → API Keys** (admin only)\n2. Click **+**, name it (e.g. Hearth)\n3. Copy the key and paste it here\n\nThis key has full admin rights on the server. Only connect it on an admin\'s Hearth account.',
 			helpUrl: { baseKey: 'url', path: '/web/#/dashboard/keys', label: 'Open API keys' }
 		}
 	],
@@ -155,7 +155,8 @@ function stripTrailingSlash(url) {
 
 function authHeaders(config) {
 	return {
-		Authorization: `MediaBrowser Token="${config.apiKey}"`,
+		// Keys are hex; drop anything that could break out of the quoted value.
+		Authorization: `MediaBrowser Token="${String(config.apiKey).replace(/[^A-Za-z0-9_-]/g, '')}"`,
 		accept: 'application/json'
 	};
 }
