@@ -1552,6 +1552,7 @@ body.search-active .hero-area {
 }
 .is-tile .launcher-thumb-wrap { height: 96px; }
 .is-poster .launcher-thumb-wrap { aspect-ratio: 2 / 3; }
+.launcher-more { padding: 8px; text-align: center; font-size: 12px; line-height: 1.3; }
 .launcher-thumb-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .launcher-thumb-fallback { width: 20px; height: 20px; }
 .launcher-item.is-selected .launcher-thumb-wrap {

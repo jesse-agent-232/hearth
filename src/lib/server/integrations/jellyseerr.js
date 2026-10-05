@@ -44,7 +44,7 @@ const adapter = {
 			type: 'secret',
 			label: 'API Key',
 			required: true,
-			help: '1. Open **Settings → General** (admin only)\n2. Copy the **API Key** and paste it here',
+			help: '1. Open **Settings → General** (admin only)\n2. Copy the **API Key** and paste it here\n\nThis key has full admin rights on the server. Only connect it on an admin\'s Hearth account.',
 			helpUrl: { baseKey: 'url', path: '/settings/main', label: 'Open Jellyseerr settings' }
 		}
 	],
@@ -105,7 +105,7 @@ const adapter = {
 				}
 				const data = await res.json();
 				const items = (data?.results || []).filter(
-					(r) => r.mediaType === 'movie' || r.mediaType === 'tv'
+					(r) => (r.mediaType === 'movie' || r.mediaType === 'tv') && Number.isInteger(r.id)
 				);
 				return {
 					results: items.slice(0, Math.min(limit || 10, 20)).map((r) => {
@@ -117,16 +117,29 @@ const adapter = {
 							title: title || 'Untitled',
 							subtitle: [MEDIA_LABEL[r.mediaType], year].filter(Boolean).join(' · '),
 							tags: [status],
-							// No CSP restricts img-src, and TMDB posters are public, so
-							// they load straight from TMDB's CDN like Jellyseerr's own UI.
+							// Proxied, so the browser only ever talks to Hearth.
 							thumbnail: POSTER_PATH.test(r.posterPath || '')
-								? `https://image.tmdb.org/t/p/w185${r.posterPath}`
+								? `/api/integrations/jellyseerr/proxy/poster${r.posterPath}`
 								: undefined,
 							href: `${base}/${r.mediaType}/${r.id}`,
 							meta: { kind: 'media', status }
 						};
 					})
 				};
+			}
+		}
+	},
+
+	proxy: {
+		// TMDB poster, fetched server-side from a fixed host.
+		poster: {
+			defaultCacheControl: 'private, max-age=604800',
+			async fetch({ params, fetch }) {
+				const path = '/' + (params.path?.[0] || '');
+				if (params.path?.length !== 1 || !POSTER_PATH.test(path)) {
+					return new Response('Invalid poster path', { status: 400 });
+				}
+				return fetch(`https://image.tmdb.org/t/p/w185${path}`, { method: 'GET' });
 			}
 		}
 	},
