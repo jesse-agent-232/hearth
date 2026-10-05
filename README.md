@@ -30,7 +30,7 @@ Most self-hosted dashboards are admin tools: one person configures them, one per
 - **Hot reload** — config changes detected automatically, no container restart needed
 - **Weather widget** — Open-Meteo (free, no API key)
 - **News headlines** — any RSS feed
-- **Integrations** — pluggable app adapters (Immich, Paperless, Nextcloud, Planka, Karakeep, Jellyfin, Seerr) with encrypted per-user credentials
+- **Integrations** — pluggable app adapters (Immich, Paperless, Nextcloud, Planka, Karakeep, Jellyfin) with encrypted per-user credentials
 - **Launcher** — Raycast-style: apps, commands, integration results and web-search fallbacks in one ranked list; apps you open often rise to the top
 - **Command prefixes** — `!p` / `!b` / `!photos` scope search to one integration; `!settings` / `!theme` / `!icon` / `!wall` / `!logout` fire quick actions
 - **Keyboard** — type anywhere (or `/`, `⌘K` / `Ctrl+K`) to search; `↑ ↓` move, `↵` opens, `⌘↵` opens the other way (tab vs new tab), `⌘K` shows every action for the selected result, `Esc` steps back one level
