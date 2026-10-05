@@ -367,11 +367,13 @@ body {
 .glass-card[role='dialog'] {
 	background: rgba(24, 24, 27, 0.82);
 }
+/* Menus and popovers sit over tiles and the search bar; at glass opacity
+   whatever is underneath competes with the menu text. */
 .glass-card.menu-surface {
-	background: rgba(24, 24, 27, 0.88);
+	background: #18181b;
 }
 .theme-light .glass-card.menu-surface {
-	background: rgba(255, 255, 255, 0.9);
+	background: #ffffff;
 }
 .theme-light [role='dialog'] .glass-card,
 .theme-light .glass-card[role='dialog'] {
@@ -1737,3 +1739,38 @@ body.search-active .hero-area {
 @media (pointer: coarse) {
 	.launcher-footer-hint, .launcher-footer kbd, .launcher-action-hint { display: none; }
 }
+
+/* ── Tile context menu ─────────────────────────────────────── */
+.tile-menu { overflow: hidden; font-family: var(--font-mono, ui-monospace, monospace); }
+.tile-menu-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 14px 10px;
+	border-bottom: 1px solid var(--color-border-card, rgba(255, 255, 255, 0.08));
+}
+.tile-menu-name { font-size: 0.85rem; font-weight: 600; color: var(--color-content); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-menu-host { font-size: 0.7rem; color: var(--color-content-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: calc(100% - 12px);
+	margin: 0 6px;
+	padding: 7px 8px;
+	border: none;
+	border-radius: 7px;
+	background: transparent;
+	font: inherit;
+	font-size: 0.8rem;
+	text-align: left;
+	color: var(--color-content-muted);
+	text-decoration: none;
+	cursor: pointer;
+}
+.tile-menu-item:hover, .tile-menu-item:focus-visible { background: var(--launcher-sel, rgba(255, 255, 255, 0.08)); color: var(--color-content); outline: none; }
+.tile-menu-item svg {
+	width: 15px; height: 15px; flex-shrink: 0;
+	fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+.tile-menu-sep { height: 1px; margin: 5px 0; background: var(--color-border-card, rgba(255, 255, 255, 0.08)); }

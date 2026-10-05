@@ -1,7 +1,7 @@
-// Jellyseerr (Seerr) integration adapter.
+// Seerr (formerly Jellyseerr / Overseerr) integration adapter.
 //
 // Surfaces:
-//   - searchProviders.requests — TMDB search via Jellyseerr, with each title's
+//   - searchProviders.requests — TMDB search via Seerr, with each title's
 //     request / availability status
 
 // MediaStatus from server/constants/media.ts. A result with no mediaInfo has
@@ -23,20 +23,20 @@ const POSTER_PATH = /^\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/;
 
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
-	id: 'jellyseerr',
-	name: 'Jellyseerr',
+	id: 'seerr',
+	name: 'Seerr',
 	icon: 'di:jellyseerr',
-	shortcut: 'js',
+	shortcut: 'sr',
 	description: 'Media requests — find titles and see what is available',
 
 	configSchema: [
 		{
 			key: 'url',
 			type: 'url',
-			label: 'Jellyseerr URL',
+			label: 'Seerr URL',
 			required: true,
-			placeholder: 'https://jellyseerr.example.com',
-			help: 'Base URL of your Jellyseerr server',
+			placeholder: 'https://seerr.example.com',
+			help: 'Base URL of your Seerr server',
 			fromOperatorDefault: 'default_url'
 		},
 		{
@@ -45,7 +45,7 @@ const adapter = {
 			label: 'API Key',
 			required: true,
 			help: '1. Open **Settings → General** (admin only)\n2. Copy the **API Key** and paste it here\n\nThis key has full admin rights on the server. Only connect it on an admin\'s Hearth account.',
-			helpUrl: { baseKey: 'url', path: '/settings/main', label: 'Open Jellyseerr settings' }
+			helpUrl: { baseKey: 'url', path: '/settings/main', label: 'Open Seerr settings' }
 		}
 	],
 
@@ -77,7 +77,7 @@ const adapter = {
 				return { ok: false, message: `Auth check failed: ${meRes.status}` };
 			}
 			const version = status?.version ? ` (v${status.version})` : '';
-			return { ok: true, message: `Connected to Jellyseerr${version}` };
+			return { ok: true, message: `Connected to Seerr${version}` };
 		} catch (err) {
 			return { ok: false, message: `Connection failed: ${err.message}` };
 		}
@@ -85,7 +85,7 @@ const adapter = {
 
 	searchProviders: {
 		requests: {
-			label: 'Requests',
+			label: 'Seerr',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.apiKey) return { results: [] };
@@ -93,7 +93,7 @@ const adapter = {
 				if (!trimmed) return { results: [] };
 
 				const base = stripTrailingSlash(config.url);
-				// Jellyseerr's OpenAPI validator rejects any reserved character in
+				// Seerr's OpenAPI validator rejects any reserved character in
 				// the query value, including `+` for a space, so URLSearchParams
 				// won't do. encodeURIComponent leaves !'()* alone; escape those too.
 				const res = await fetch(`${base}/api/v1/search?query=${strictEncode(trimmed)}&page=1`, {
@@ -101,7 +101,7 @@ const adapter = {
 					headers: authHeaders(config)
 				});
 				if (!res.ok) {
-					throw new Error(`Jellyseerr search failed: ${res.status}`);
+					throw new Error(`Seerr search failed: ${res.status}`);
 				}
 				const data = await res.json();
 				const items = (data?.results || []).filter(
@@ -119,7 +119,7 @@ const adapter = {
 							tags: [status],
 							// Proxied, so the browser only ever talks to Hearth.
 							thumbnail: POSTER_PATH.test(r.posterPath || '')
-								? `/api/integrations/jellyseerr/proxy/poster${r.posterPath}`
+								? `/api/integrations/seerr/proxy/poster${r.posterPath}`
 								: undefined,
 							href: `${base}/${r.mediaType}/${r.id}`,
 							meta: { kind: 'media', status }
