@@ -69,24 +69,58 @@
 		);
 	}
 
-	async function search(e) {
-		e.preventDefault();
+	// Search as you type: debounced, and only the newest query's answer
+	// lands, so a slow early response can't overwrite a later one.
+	let searchTimer;
+	let searchSeq = 0;
+	let searching = $state(false);
+	let active = $state(0);
+
+	function onAddressInput() {
+		clearTimeout(searchTimer);
 		const q = query.trim();
-		if (!q) return;
-		busy = true;
+		const seq = ++searchSeq;
 		status = '';
-		try {
-			results = await searchPlaces(q);
-			if (!results.length) status = `No places found for “${q}”.`;
-		} catch {
+		if (q.length < 2) {
 			results = [];
-			status = 'Address search failed. Check your connection and try again.';
-		} finally {
-			busy = false;
+			searching = false;
+			return;
 		}
+		searching = true;
+		searchTimer = setTimeout(async () => {
+			try {
+				const found = await searchPlaces(q);
+				if (seq !== searchSeq) return;
+				results = found;
+				active = 0;
+				if (!found.length) status = `No places found for “${q}”.`;
+			} catch {
+				if (seq !== searchSeq) return;
+				results = [];
+				status = 'Address search failed. Check your connection and try again.';
+			} finally {
+				if (seq === searchSeq) searching = false;
+			}
+		}, 250);
+	}
+
+	function onAddressKeydown(e) {
+		if (!results.length) return;
+		if (e.key === 'ArrowDown') active = (active + 1) % results.length;
+		else if (e.key === 'ArrowUp') active = (active - 1 + results.length) % results.length;
+		else return;
+		e.preventDefault();
+	}
+
+	function search(e) {
+		e.preventDefault();
+		if (results[active]) pick(results[active]);
 	}
 
 	function pick(place) {
+		clearTimeout(searchTimer);
+		searchSeq++;
+		searching = false;
 		query = '';
 		setLocation({ lat: place.latitude, lon: place.longitude, locationSource: 'manual', locationName: place.name });
 	}
@@ -145,7 +179,7 @@
 
 		{#if open}
 			<div
-				class="weather-menu absolute right-0 top-full mt-2 z-[70] w-[18rem] max-w-[calc(100vw-2rem)] glass-card rounded-xl shadow-theme animate-menu-up normal-case tracking-normal text-[0.78rem] font-mono text-content overflow-hidden"
+				class="weather-menu absolute right-0 top-full mt-2 z-[70] w-[18rem] max-w-[calc(100vw-2rem)] glass-card menu-surface rounded-xl shadow-theme animate-menu-up normal-case tracking-normal text-[0.78rem] font-mono text-content overflow-hidden"
 				bind:this={menuEl}
 				role="dialog"
 				aria-label="Weather and location"
@@ -186,29 +220,38 @@
 				</div>
 				<form class="px-4 pt-2 pb-3 border-t border-border-card" onsubmit={search}>
 					<label for="weather-address" class="block mb-1.5 text-[0.7rem] text-content-muted">Set custom address</label>
-					<div class="flex gap-2">
+					<div class="relative">
 						<input
 							id="weather-address"
-							class="flex-1 min-w-0 bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.78rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill"
+							role="combobox"
+							aria-expanded={results.length > 0}
+							aria-controls="weather-address-results"
+							aria-activedescendant={results.length ? `weather-place-${active}` : undefined}
+							oninput={onAddressInput}
+							onkeydown={onAddressKeydown}
+							class="w-full min-w-0 pr-8 bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.78rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill"
 							placeholder="City or address"
 							autocomplete="off"
 							bind:value={query}
 						/>
-						<button
-							class="px-3 rounded-lg bg-transparent border border-border-pill text-content cursor-pointer hover:bg-surface-card-hover disabled:opacity-60 disabled:cursor-default"
-							aria-label="Search address"
-							disabled={busy || !query.trim()}
-						>→</button>
+						{#if searching}
+							<span class="launcher-spinner absolute right-3 top-1/2 -translate-y-1/2" role="status" aria-label="Searching"></span>
+						{/if}
 					</div>
 					{#if results.length}
-						<ul class="mt-2 list-none p-0 m-0">
-							{#each results as r (r.id)}
-								<li>
-									<button
-										class="w-full px-2 py-2 rounded-lg text-left bg-transparent border-none cursor-pointer text-content font-mono text-[0.75rem] hover:bg-surface-card-hover"
-										onclick={() => pick(r)}
-									>{placeLabel(r)}</button>
-								</li>
+						<ul id="weather-address-results" class="mt-2 list-none p-0 m-0" role="listbox" aria-label="Places">
+							{#each results as r, i (r.id)}
+								<!-- Keyboard lives on the input (combobox + aria-activedescendant). -->
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<li
+									id="weather-place-{i}"
+									role="option"
+									aria-selected={i === active}
+									class="w-full px-2 py-2 rounded-lg cursor-pointer text-content font-mono text-[0.75rem] {i === active ? 'bg-surface-card-hover' : ''}"
+									onpointermove={() => (active = i)}
+									onmousedown={(e) => e.preventDefault()}
+									onclick={() => pick(r)}
+								>{placeLabel(r)}</li>
 							{/each}
 						</ul>
 					{/if}

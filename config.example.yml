@@ -167,7 +167,7 @@ search:
 
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
-# Nextcloud, Planka, Karakeep, Jellyfin, Jellyseerr. Add more in
+# Nextcloud, Planka, Karakeep, Jellyfin, Seerr. Add more in
 # src/lib/server/integrations/.
 #
 # Each key must match both the adapter's `id` AND an app `id` in the apps
@@ -237,10 +237,10 @@ integrations:
     surfaces:
       search: true
       widgets: false
-  jellyseerr:
+  seerr:
     enabled: true
-    name: "Requests"
-    default_url: "https://jellyseerr.example.com"
+    name: "Seerr"
+    default_url: "https://seerr.example.com"
     surfaces:
       search: true
       widgets: false

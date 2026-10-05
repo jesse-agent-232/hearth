@@ -356,12 +356,18 @@
 				const vh = window.innerHeight;
 				const pad = 8;
 
-				let x = anchorRect.right;
-				let y = anchorRect.bottom + 4;
+				// Beside the tile, top edges aligned, so it reads as the tile's menu.
+				let x = anchorRect.right + 6;
+				let y = anchorRect.top;
 
-				if (x + menuRect.width > vw - pad) x = anchorRect.left - menuRect.width;
-				if (x < pad) x = pad;
-				if (y + menuRect.height > vh - pad) y = anchorRect.top - menuRect.height - 4;
+				if (x + menuRect.width > vw - pad) x = anchorRect.left - menuRect.width - 6;
+				if (x < pad) {
+					// No room either side (phones): below the tile, centred on it.
+					x = Math.min(Math.max(anchorRect.left + anchorRect.width / 2 - menuRect.width / 2, pad), vw - menuRect.width - pad);
+					y = anchorRect.bottom + 6;
+					if (y + menuRect.height > vh - pad) y = anchorRect.top - menuRect.height - 6;
+				}
+				if (y + menuRect.height > vh - pad) y = vh - pad - menuRect.height;
 				if (y < pad) y = pad;
 
 				contextMenuEl.style.left = `${x}px`;
@@ -748,6 +754,7 @@
 						target={openInNewTab ? '_blank' : undefined}
 						rel={openInNewTab ? 'noopener noreferrer' : undefined}
 						class="app-tile-link"
+						class:menu-open={contextApp?.id === app.id}
 						title={app.name}
 						aria-label={app.name}
 						onclick={(e) => {
@@ -831,40 +838,60 @@
 
 <!-- Tile context menu (portal to body to escape transform containing block) -->
 {#if contextApp}
+	{@const host = (() => { try { return new URL(contextApp.url).host; } catch { return ''; } })()}
 	<div
 		bind:this={contextMenuEl}
 		use:portal
-		class="fixed z-50 glass-card rounded-xl py-1.5 shadow-theme min-w-[200px] animate-context-in"
+		class="tile-menu fixed z-50 glass-card menu-surface rounded-xl shadow-theme w-[240px] animate-context-in"
 		style="visibility: hidden;"
 		role="menu"
+		aria-label="{contextApp.name} options"
 	>
-		{#if contextApp.ios}
-			<a href={contextApp.ios} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
-				<span class="text-content-muted text-xs w-4 text-center">&#63743;</span> Download for iOS
+		<!-- Which app this menu belongs to -->
+		<div class="tile-menu-head">
+			<AppIcon icon={contextApp.icon} name={contextApp.name} size="w-[22px] h-[22px]" wrapSize="w-9 h-9" iconStyle="colored" wrap />
+			<div class="min-w-0">
+				<div class="tile-menu-name">{contextApp.name}</div>
+				{#if host}<div class="tile-menu-host">{host}</div>{/if}
+			</div>
+		</div>
+		<div class="py-1.5">
+			<a href={contextApp.url} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem" onclick={() => { recordAppOpen(contextApp.id); contextApp = null; }}>
+				<svg viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+				Open {contextApp.name}
 			</a>
-		{/if}
-		{#if contextApp.android}
-			<a href={contextApp.android} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
-				<span class="text-content-muted text-xs w-4 text-center">&#9654;</span> Download for Android
-			</a>
-		{/if}
-		{#if contextApp.extension}
-			<a href={contextApp.extension} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
-				<span class="text-content-muted text-xs w-4 text-center">&#8862;</span> Browser Extension
-			</a>
-		{/if}
-		{#if setupGuides[contextApp.name]}
-			{#if contextApp.ios || contextApp.android || contextApp.extension}
-				<div class="border-t border-border-card my-1"></div>
-			{/if}
-			<button onclick={() => openGuide(contextApp)} class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors w-full text-left font-mono" role="menuitem">
-				<span class="text-content-muted text-xs w-4 text-center">?</span> Setup Guide
+			<button type="button" class="tile-menu-item" role="menuitem" onclick={() => { navigator.clipboard?.writeText(contextApp.url).catch(() => {}); contextApp = null; }}>
+				<svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+				Copy link
 			</button>
-		{/if}
-		<div class="border-t border-border-card my-1"></div>
-		<a href={contextApp.url} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3.5 py-2 text-[0.8rem] text-content-muted no-underline hover:bg-surface-card-hover transition-colors" role="menuitem">
-			<span class="text-content-muted text-xs w-4 text-center">&#8599;</span> Open {contextApp.name}
-		</a>
+			{#if contextApp.ios || contextApp.android || contextApp.extension || setupGuides[contextApp.name]}
+				<div class="tile-menu-sep"></div>
+			{/if}
+			{#if contextApp.ios}
+				<a href={contextApp.ios} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
+					<svg viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/></svg>
+					Get the iOS app
+				</a>
+			{/if}
+			{#if contextApp.android}
+				<a href={contextApp.android} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
+					<svg viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/></svg>
+					Get the Android app
+				</a>
+			{/if}
+			{#if contextApp.extension}
+				<a href={contextApp.extension} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
+					<svg viewBox="0 0 24 24"><path d="M19.4 13a2.5 2.5 0 0 0 0-5H18V5a1 1 0 0 0-1-1h-3v1.5a2.5 2.5 0 0 1-5 0V4H6a1 1 0 0 0-1 1v3h1.5a2.5 2.5 0 0 1 0 5H5v3a1 1 0 0 0 1 1h3v-1.5a2.5 2.5 0 0 1 5 0V17h3a1 1 0 0 0 1-1v-3Z"/></svg>
+					Browser extension
+				</a>
+			{/if}
+			{#if setupGuides[contextApp.name]}
+				<button type="button" class="tile-menu-item" role="menuitem" onclick={() => openGuide(contextApp)}>
+					<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+					Setup guide
+				</button>
+			{/if}
+		</div>
 	</div>
 {/if}
 
@@ -1283,7 +1310,8 @@
 		-webkit-user-select: none;
 		user-select: none;
 	}
-	.app-tile-link:hover {
+	.app-tile-link:hover,
+	.app-tile-link.menu-open {
 		background: var(--card-hover);
 	}
 	.app-tile-icon {
