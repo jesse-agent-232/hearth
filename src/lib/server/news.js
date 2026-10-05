@@ -3,6 +3,17 @@ import { getNewsConfig } from './config.js';
 const NEWS_TTL = 15 * 60 * 1000; // 15 minutes
 let cache = { ts: 0, items: [] };
 
+// Feed links are rendered straight into <a href>, so keep only http(s):
+// a `javascript:` link in a feed would otherwise run as Hearth when clicked.
+function safeLink(raw) {
+	try {
+		const u = new URL(raw);
+		return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
+	} catch {
+		return null;
+	}
+}
+
 export async function fetchNews() {
 	const newsConfig = getNewsConfig();
 	if (!newsConfig.enabled) return [];
@@ -27,7 +38,7 @@ export async function fetchNews() {
 			if (!title) continue;
 			// Extract link
 			const linkMatch = block.match(/<link>(.*?)<\/link>/);
-			const link = linkMatch ? linkMatch[1].trim() : null;
+			const link = linkMatch ? safeLink(linkMatch[1].trim()) : null;
 			items.push({ title, link });
 		}
 
