@@ -20,6 +20,7 @@
 		clamp
 	} from '$lib/widgets/layout.js';
 	import { POPULAR_APPS } from '$lib/popularApps.js';
+	import { recordOpen } from '$lib/launcher/frecency.js';
 
 	// Move a node to document.body so its position:fixed coords resolve to
 	// the viewport even when an ancestor has a transform/filter (which
@@ -231,6 +232,7 @@
 
 	// Recently-opened apps tracking (lifted unchanged from AppGrid).
 	function recordAppOpen(appId) {
+		recordOpen(`app:${appId}`);
 		prefs.update((p) => {
 			const prev = Array.isArray(p.recentApps) ? p.recentApps : [];
 			const next = [appId, ...prev.filter((id) => id !== appId)].slice(0, 16);
