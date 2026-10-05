@@ -15,9 +15,8 @@ import nextcloud from './nextcloud.js';
 import planka from './planka.js';
 import karakeep from './karakeep.js';
 import jellyfin from './jellyfin.js';
-import seerr from './seerr.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, seerr];
+const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {
