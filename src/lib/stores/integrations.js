@@ -88,12 +88,35 @@ function createIntegrationsStore() {
 		return await res.json();
 	}
 
+	// Sign-in flows (e.g. Jellyfin Quick Connect): start returns a code to
+	// show; poll until the server reports done, which also saves the
+	// connection server-side.
+	async function signIn(integrationId, body) {
+		const res = await fetch(`/api/integrations/${encodeURIComponent(integrationId)}/signin`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) throw new Error(data.error || `Sign-in failed (${res.status})`);
+		if (data.status === 'done') {
+			state.update((s) => ({
+				...s,
+				integrations: s.integrations.map((it) =>
+					it.id === integrationId ? { ...it, userState: data.userState } : it
+				)
+			}));
+		}
+		return data;
+	}
+
 	return {
 		subscribe: state.subscribe,
 		load,
 		save,
 		disconnect,
-		test
+		test,
+		signIn
 	};
 }
 

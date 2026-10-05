@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { marked } from 'marked';
 	import AppIcon from './AppIcon.svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
@@ -49,6 +49,64 @@
 	const connected = $derived(!!integration.userState?.connected);
 	const hasSearch = $derived((integration.availableSurfaces || []).includes('search'));
 	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets'));
+	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
+	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
+
+	// Sign-in flow: { flowId, code } while waiting for approval elsewhere.
+	let signFlow = $state(null);
+	let signStarting = $state(false);
+	let signError = $state('');
+	let pollTimer = null;
+	let flowSeq = 0;
+
+	async function startSignIn() {
+		cancelSignIn();
+		signStarting = true;
+		signError = '';
+		const seq = flowSeq;
+		try {
+			const res = await integrationsStore.signIn(integration.id, { action: 'start', config: formConfig });
+			if (seq !== flowSeq) return;
+			signFlow = { flowId: res.flowId, code: res.code };
+			schedulePoll(seq);
+		} catch (err) {
+			if (seq === flowSeq) signError = err.message || 'Sign-in failed';
+		} finally {
+			signStarting = false;
+		}
+	}
+
+	function schedulePoll(seq) {
+		pollTimer = setTimeout(async () => {
+			if (seq !== flowSeq || !signFlow) return;
+			try {
+				const res = await integrationsStore.signIn(integration.id, { action: 'poll', flowId: signFlow.flowId });
+				if (seq !== flowSeq) return;
+				if (res.status === 'pending') return schedulePoll(seq);
+				signFlow = null;
+				if (res.status === 'done') {
+					formConfig = seedConfig();
+					formSurfaces = seedSurfaces();
+					dirty = false;
+					onCollapseRequest();
+				} else {
+					signError = res.status === 'expired' ? 'The code expired — start again' : res.error || 'Sign-in failed';
+				}
+			} catch (err) {
+				if (seq !== flowSeq) return;
+				signFlow = null;
+				signError = err.message || 'Sign-in failed';
+			}
+		}, 2000);
+	}
+
+	function cancelSignIn() {
+		flowSeq++;
+		clearTimeout(pollTimer);
+		signFlow = null;
+	}
+
+	onDestroy(cancelSignIn);
 
 	function markDirty() {
 		dirty = true;
@@ -117,6 +175,8 @@
 
 	// Cancel throws away edits, so reopening shows the saved state again.
 	function cancelEdit() {
+		cancelSignIn();
+		signError = '';
 		formConfig = seedConfig();
 		formSurfaces = seedSurfaces();
 		testStatus = null;
@@ -203,6 +263,9 @@
 		<AppIcon {icon} name={integration.name} size="w-3.5 h-3.5" wrapSize="w-5 h-5" {iconStyle} wrap />
 		<div class="flex-1 min-w-0">
 			<span class="text-[0.8rem] text-content font-medium">{integration.name}</span>
+			{#if signedInAs && !expanded}
+				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}</span>
+			{/if}
 		</div>
 		<div class="flex items-center gap-2">
 			{#if expanded}
@@ -227,7 +290,7 @@
 							<button
 								class="w-full px-3 py-1.5 text-left text-[0.75rem] text-content-muted bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors"
 								onclick={editConnection}
-							>Edit connection</button>
+							>{integration.signIn ? 'Sign in again' : 'Edit connection'}</button>
 							<button
 								class="w-full px-3 py-1.5 text-left text-[0.75rem] text-red-400/80 bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors"
 								onclick={runDisconnect}
@@ -253,7 +316,7 @@
 				</div>
 			{/if}
 			<div class="space-y-2">
-				{#each integration.configSchema as field}
+				{#each visibleFields as field}
 					{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
 					<label class="block">
 						<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{field.required ? ' *' : ''}</span>
@@ -290,29 +353,72 @@
 					</label>
 				{/each}
 
-				{#if testStatus}
-					<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded {testStatus.ok ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
-						{testStatus.ok ? '✓' : '✗'} {testStatus.message}
+				{#if integration.signIn}
+					{#if signFlow}
+						<div class="rounded-lg border border-border-card bg-surface-card/40 px-3 py-3 text-center" role="status" aria-live="polite">
+							<div class="text-[0.7rem] text-content-dim mb-1.5">Your code</div>
+							<div class="signin-digits font-mono text-content" aria-label="Code {signFlow.code.split('').join(' ')}">{signFlow.code}</div>
+							{#if integration.signIn.help}
+								<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(integration.signIn.help)}</div>
+							{/if}
+							{#if formConfig.url}
+								<a
+									href="{formConfig.url.replace(/\/$/, '')}/web/#/quickconnect"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
+								>Open {integration.name} ↗</a>
+							{/if}
+							<div class="flex items-center justify-center gap-2 text-[0.7rem] text-content-dim mt-2.5">
+								<span class="signin-spinner" aria-hidden="true"></span>
+								Waiting for approval…
+							</div>
+						</div>
+					{/if}
+					{#if signError}
+						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
+							{signError}
+						</div>
+					{/if}
+					<div class="flex gap-2 pt-1 justify-end">
+						{#if signFlow}
+							<button
+								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors"
+								onclick={startSignIn}
+							>New code</button>
+						{:else}
+							<button
+								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+								disabled={signStarting || !formConfig.url}
+								onclick={startSignIn}
+							>{signStarting ? 'Getting a code…' : connected ? 'Sign in again' : integration.signIn.label}</button>
+						{/if}
 					</div>
-				{/if}
-				{#if saveError}
-					<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
-						{saveError}
-					</div>
-				{/if}
+				{:else}
+					{#if testStatus}
+						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded {testStatus.ok ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
+							{testStatus.ok ? '✓' : '✗'} {testStatus.message}
+						</div>
+					{/if}
+					{#if saveError}
+						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
+							{saveError}
+						</div>
+					{/if}
 
-				<div class="flex gap-2 pt-1 justify-end">
-					<button
-						class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-						disabled={testing}
-						onclick={runTest}
-					>{testing ? 'Testing…' : 'Test'}</button>
-					<button
-						class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-						disabled={saving || (!dirty && connected)}
-						onclick={runSave}
-					>{saving ? 'Saving…' : connected ? 'Save' : 'Connect'}</button>
-				</div>
+					<div class="flex gap-2 pt-1 justify-end">
+						<button
+							class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={testing}
+							onclick={runTest}
+						>{testing ? 'Testing…' : 'Test'}</button>
+						<button
+							class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={saving || (!dirty && connected)}
+							onclick={runSave}
+						>{saving ? 'Saving…' : connected ? 'Save' : 'Connect'}</button>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Surface toggles -->
@@ -343,6 +449,26 @@
 </div>
 
 <style>
+	.signin-digits {
+		font-size: 1.75rem;
+		font-weight: 600;
+		letter-spacing: 0.3em;
+		/* letter-spacing trails the last digit; pull it back so it centres */
+		margin-right: -0.3em;
+		user-select: all;
+	}
+	.signin-spinner {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		border: 1.5px solid currentColor;
+		border-right-color: transparent;
+		animation: signin-spin 0.8s linear infinite;
+	}
+	@keyframes signin-spin { to { transform: rotate(360deg); } }
+	@media (prefers-reduced-motion: reduce) {
+		.signin-spinner { animation: none; border-right-color: currentColor; opacity: 0.6; }
+	}
 	.field-help :global(ol),
 	.field-help :global(ul) {
 		margin: 0.25rem 0;

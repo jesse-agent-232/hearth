@@ -24,8 +24,10 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 			placeholder: f.placeholder || '',
 			help: f.help || '',
 			helpUrl: f.helpUrl || null,
-			fromOperatorDefault: f.fromOperatorDefault || null
+			fromOperatorDefault: f.fromOperatorDefault || null,
+			hidden: !!f.hidden
 		})),
+		signIn: adapter.signIn ? { label: adapter.signIn.label, help: adapter.signIn.help || '' } : null,
 		searchProviders: Object.fromEntries(
 			Object.entries(adapter.searchProviders || {}).map(([key, p]) => [
 				key,
