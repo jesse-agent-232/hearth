@@ -347,7 +347,19 @@
 	// ⌘↵, and the ⌘K panel lists them all.
 	const openAppsInNewTab = $derived($prefs.openInNewTab ?? true);
 
-	function openUrl(url, newTab) {
+	// Result links come from integrations (bookmarks, files), so only follow
+	// http(s): a stored `javascript:` link would otherwise run as Hearth.
+	function safeUrl(url) {
+		try {
+			const u = new URL(url, window.location.href);
+			return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
+		} catch {
+			return null;
+		}
+	}
+
+	function openUrl(raw, newTab) {
+		const url = raw && safeUrl(raw);
 		if (!url) return;
 		if (newTab) window.open(url, '_blank', 'noopener,noreferrer');
 		else window.location.href = url;
