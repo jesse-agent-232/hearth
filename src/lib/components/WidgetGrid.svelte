@@ -1,5 +1,7 @@
 <script>
+	import { dialog } from '$lib/actions/dialog.js';
 	import { onMount, untrack, getContext } from 'svelte';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import { browser } from '$app/environment';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { adminApps as adminAppsStore } from '$lib/stores/adminApps.js';
@@ -268,11 +270,25 @@
 		});
 	}
 
+	// Reset swaps to Undo for a few seconds rather than asking first.
+	let surfaceUndo = $state(null);
+	let surfaceUndoTimer;
+
 	function resetSurface() {
+		surfaceUndo = { widgetLayout: $prefs.widgetLayout };
+		clearTimeout(surfaceUndoTimer);
+		surfaceUndoTimer = setTimeout(() => (surfaceUndo = null), 8000);
 		prefs.update((p) => ({
 			...p,
 			widgetLayout: defaultWidgetLayout(catalog, registry, { isAdmin })
 		}));
+	}
+
+	function undoResetSurface() {
+		const snapshot = surfaceUndo;
+		surfaceUndo = null;
+		clearTimeout(surfaceUndoTimer);
+		if (snapshot) prefs.update((p) => ({ ...p, widgetLayout: snapshot.widgetLayout }));
 	}
 
 	// ── Tile context menu (right-click / long-press) — ported from AppGrid ──
@@ -280,6 +296,9 @@
 	let contextAnchor = $state(null);
 	let contextMenuEl = $state(null);
 	let longPressTimer = null;
+	// Set when a long-press opened the menu, so the click that follows the
+	// finger lifting doesn't also open the app.
+	let longPressFired = false;
 
 	function showContext(app, e) {
 		e.preventDefault();
@@ -290,11 +309,22 @@
 
 	function startLongPress(app, e) {
 		const target = e.currentTarget;
+		longPressFired = false;
 		longPressTimer = setTimeout(() => {
-			e.preventDefault();
+			longPressFired = true;
 			contextAnchor = target;
 			contextApp = app;
 		}, 500);
+	}
+
+	function endLongPress(e) {
+		if (longPressFired) {
+			e.preventDefault();
+			// preventDefault usually suppresses the click, which would otherwise
+			// be what clears the flag; don't let it eat the next real click.
+			setTimeout(() => (longPressFired = false), 400);
+		}
+		cancelLongPress();
 	}
 
 	function cancelLongPress() {
@@ -484,7 +514,7 @@
 				// + name line (~14) + breathing room. 92 fits cleanly.
 				cellHeight: 92,
 				float: false,
-				animate: true,
+				animate: !prefersReducedMotion.current,
 				handle: '.gs-drag-handle',
 				disableResize: true,
 				disableDrag: true,
@@ -665,13 +695,22 @@
 			{renderInstances.length === 1 ? 'app' : 'apps'}</span
 		>
 		<div class="surface-actions">
-			<button
-				type="button"
-				class="tray-reset"
-				onclick={resetSurface}
-				title="Reset surface to default layout"
-				aria-label="Reset surface to default layout"
-			>Reset</button>
+			{#if surfaceUndo}
+				<button
+					type="button"
+					class="tray-reset tray-undo"
+					onclick={undoResetSurface}
+					aria-label="Undo layout reset"
+				>Undo</button>
+			{:else}
+				<button
+					type="button"
+					class="tray-reset"
+					onclick={resetSurface}
+					title="Reset surface to default layout"
+					aria-label="Reset surface to default layout"
+				>Reset</button>
+			{/if}
 			<button
 				type="button"
 				class="tray-done"
@@ -710,15 +749,16 @@
 						title={app.name}
 						aria-label={app.name}
 						onclick={(e) => {
-							if (editMode) {
+							if (editMode || longPressFired) {
 								e.preventDefault();
+								longPressFired = false;
 								return;
 							}
 							recordAppOpen(app.id);
 						}}
 						oncontextmenu={editMode ? undefined : (e) => showContext(app, e)}
 						ontouchstart={editMode ? undefined : (e) => startLongPress(app, e)}
-						ontouchend={editMode ? undefined : cancelLongPress}
+						ontouchend={editMode ? undefined : endLongPress}
 						ontouchmove={editMode ? undefined : cancelLongPress}
 					>
 						<div
@@ -829,7 +869,7 @@
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
 	{@const guide = setupGuides[guideApp.name]}
-	<div use:portal class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
+	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
 		<div class="glass-card rounded-2xl w-full max-w-[480px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
 			<!-- Header with icon color glow + close -->
 			<div class="p-8 pb-6 border-b border-border-card relative">
@@ -984,7 +1024,7 @@
 	   grid + Reset/Done row). Mirrors the chip typography (size, tracking,
 	   muted tone) so the edit surface reads as one tonal family. */
 	.edit-hint {
-		font-size: 0.6rem;
+		font-size: 0.7rem;
 		letter-spacing: 0.06em;
 		color: var(--color-content-dim, #a1a1aa);
 		opacity: 0.7;
@@ -997,7 +1037,7 @@
 	   primary action without breaking out into a colored CTA. */
 	.tray-reset,
 	.tray-done {
-		font-size: 0.6rem;
+		font-size: 0.7rem;
 		letter-spacing: 0.06em;
 		padding: 0.2rem 0.6rem;
 		border-radius: 9999px;
@@ -1008,6 +1048,10 @@
 		cursor: pointer;
 		transition: background 180ms var(--ease-standard, ease),
 			border-color 180ms, color 180ms, opacity 180ms;
+	}
+	.tray-undo {
+		color: var(--color-content, #fafafa);
+		opacity: 1;
 	}
 	.tray-done {
 		border-color: rgba(255, 255, 255, 0.22);
@@ -1023,6 +1067,22 @@
 		color: var(--color-content, #fafafa);
 		opacity: 1;
 		outline: none;
+	}
+	/* The pill borders and hovers above are white-alpha, invisible on the
+	   light theme; mirror them in black-alpha there. */
+	:global(.theme-light) .tray-reset,
+	:global(.theme-light) .tray-done,
+	:global(.theme-light) .edit-chip {
+		border-color: rgba(0, 0, 0, 0.14);
+	}
+	:global(.theme-light) .tray-reset:hover,
+	:global(.theme-light) .tray-reset:focus-visible,
+	:global(.theme-light) .tray-done:hover,
+	:global(.theme-light) .tray-done:focus-visible,
+	:global(.theme-light) .edit-chip:hover,
+	:global(.theme-light) .edit-chip:focus-visible {
+		background: rgba(0, 0, 0, 0.05);
+		border-color: rgba(0, 0, 0, 0.3);
 	}
 	.hero-slot {
 		min-height: 3rem;
@@ -1078,7 +1138,7 @@
 	}
 	.picker-section-label {
 		padding: 0.4rem 0.5rem 0.2rem;
-		font-size: 0.5rem;
+		font-size: 0.65rem;
 		font-weight: 700;
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
@@ -1156,17 +1216,24 @@
 		margin-bottom: 1rem;
 	}
 	.edit-chip {
-		font-size: 0.6rem;
+		font-size: 0.7rem;
 		letter-spacing: 0.06em;
 		padding: 0.2rem 0.6rem;
+		position: relative;
 		border-radius: 9999px;
 		background: transparent;
 		border: 1px solid rgba(255, 255, 255, 0.10);
 		color: var(--color-content-dim, #a1a1aa);
-		opacity: 0.7;
+		opacity: 0.85;
 		cursor: pointer;
 		transition: background 180ms var(--ease-standard, ease),
 			border-color 180ms, color 180ms, opacity 180ms;
+	}
+	/* Pill stays small; the tap area is ~32px tall */
+	.edit-chip::before {
+		content: '';
+		position: absolute;
+		inset: -0.45rem -0.25rem;
 	}
 	.edit-chip:hover,
 	.edit-chip:focus-visible {
@@ -1209,9 +1276,13 @@
 		text-decoration: none;
 		color: var(--color-content, #e4e4e7);
 		transition: background 200ms var(--ease-standard, ease);
+		/* Long-press opens our menu; suppress iOS's link preview and text selection */
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
 	}
 	.app-tile-link:hover {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--card-hover);
 	}
 	.app-tile-icon {
 		width: 44px;
@@ -1225,7 +1296,7 @@
 		flex-shrink: 0;
 	}
 	.app-tile-name {
-		font-size: 0.65rem;
+		font-size: 0.7rem;
 		text-align: center;
 		max-width: 100%;
 		overflow: hidden;
@@ -1253,6 +1324,12 @@
 	}
 	.app-tile-remove:hover {
 		background: rgba(220, 38, 38, 0.85);
+	}
+	/* 18px badge, ~34px hit area */
+	.app-tile-remove::before {
+		content: '';
+		position: absolute;
+		inset: -8px;
 	}
 
 	/* Drag handle cursor — restricted to the tile itself; the inner link

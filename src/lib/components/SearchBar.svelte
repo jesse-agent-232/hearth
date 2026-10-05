@@ -1,5 +1,6 @@
 <script>
 	import { onMount, getContext } from 'svelte';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { TOTAL_WALLPAPERS } from '$lib/wallpaper.js';
@@ -136,7 +137,8 @@
 
 	const ACTIONS = [
 		{ id: 'settings', bang: 'settings', label: 'Open Configure', icon: ICONS.settings, exec: () => onSettingsOpen() },
-		{ id: 'logout', bang: 'logout', label: 'Log out', icon: ICONS.logout, exec: () => { window.location.href = '/auth/logout'; } },
+		// manual: never auto-runs on the last keystroke; needs Enter or a click
+		{ id: 'logout', bang: 'logout', label: 'Log out', icon: ICONS.logout, manual: true, exec: () => { window.location.href = '/auth/logout'; } },
 		{
 			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', icon: ICONS.wall,
 			exec: () => {
@@ -195,19 +197,36 @@
 	const isPaletteOpen = $derived(inlineOpen && !!(query.trim() || activeScope));
 	let debounceTimer = null;
 	let lastDispatched = '';
+	let searchAbort = null;
+
+	// Drop any pending or in-flight provider search so a slower, older
+	// response can't land under a newer query.
+	function cancelSearch() {
+		clearTimeout(debounceTimer);
+		searchAbort?.abort();
+		searchAbort = null;
+		lastDispatched = '';
+	}
 
 	// ── Rotating typed placeholder ────────────────────────────────
 	// Cycles through hints so the placeholder advertises what the palette
 	// can do (bangs, actions, shortcuts) without a static wall of text.
 	// Pauses while the user is focused, typing, or scoped — those are
 	// states where a moving placeholder would distract.
-	const PLACEHOLDER_HINTS = [
-		'Search apps, files, photos…',
-		'Try !nc to scope Nextcloud',
+	// The scope hint uses a real shortcut from a connected integration, since
+	// shortcuts are per-adapter and operator-overridable.
+	const scopeHint = $derived.by(() => {
+		const it = $integrationsStore.integrations.find((i) => i.shortcut && i.userState?.connected);
+		return it ? `Try !${it.shortcut} to scope ${it.name}` : null;
+	});
+	const FIRST_HINT = 'Search apps, files, photos…';
+	const PLACEHOLDER_HINTS = $derived([
+		FIRST_HINT,
+		...(scopeHint ? [scopeHint] : []),
 		'Type !settings to configure',
 		'Press / anywhere to focus'
-	];
-	let placeholderText = $state(PLACEHOLDER_HINTS[0]);
+	]);
+	let placeholderText = $state(FIRST_HINT);
 
 	$effect(() => {
 		if (typeof document === 'undefined') return;
@@ -219,6 +238,15 @@
 		placeholderText = PLACEHOLDER_HINTS[0];
 
 		const step = () => {
+			// Reduced motion: swap whole hints instead of typing them out.
+			if (prefersReducedMotion.current) {
+				hintIndex = (hintIndex + 1) % PLACEHOLDER_HINTS.length;
+				charIndex = PLACEHOLDER_HINTS[hintIndex].length;
+				phase = 'holding';
+				placeholderText = PLACEHOLDER_HINTS[hintIndex];
+				timeout = setTimeout(step, 4000);
+				return;
+			}
 			const target = PLACEHOLDER_HINTS[hintIndex];
 			if (phase === 'holding') {
 				phase = 'erasing';
@@ -253,7 +281,7 @@
 		inlineOpen = false;
 	}
 
-	async function fireOneProvider(provider, q) {
+	async function fireOneProvider(provider, q, signal) {
 		providerResults = {
 			...providerResults,
 			[provider.providerId]: { ...(providerResults[provider.providerId] || {}), loading: true, error: '' }
@@ -262,7 +290,8 @@
 			const res = await fetch('/api/search', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ provider: provider.providerId, query: q, limit: 24 })
+				body: JSON.stringify({ provider: provider.providerId, query: q, limit: 24 }),
+				signal
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
@@ -279,7 +308,7 @@
 				}
 			};
 		} catch (err) {
-			if (lastDispatched !== q) return;
+			if (signal.aborted || lastDispatched !== q) return;
 			providerResults = {
 				...providerResults,
 				[provider.providerId]: {
@@ -301,7 +330,7 @@
 	const MIN_REMOTE_QUERY_LENGTH = 3;
 
 	function dispatchSearch(q, providers) {
-		clearTimeout(debounceTimer);
+		cancelSearch();
 		const trimmed = (q || '').trim();
 		if (trimmed.length < MIN_REMOTE_QUERY_LENGTH) {
 			providerResults = {};
@@ -309,8 +338,9 @@
 		}
 		debounceTimer = setTimeout(() => {
 			lastDispatched = trimmed;
+			searchAbort = new AbortController();
 			for (const provider of providers) {
-				fireOneProvider(provider, trimmed);
+				fireOneProvider(provider, trimmed, searchAbort.signal);
 			}
 		}, 250);
 	}
@@ -325,6 +355,7 @@
 		if (hasInlineProviders && !isBang) {
 			dispatchSearch(query, scopedProviders);
 		} else {
+			cancelSearch();
 			providerResults = {};
 		}
 	});
@@ -472,7 +503,7 @@
 		if (!m) return false;
 		const bang = m[1].toLowerCase();
 		const hits = ACTIONS.filter((a) => a.bang === bang);
-		if (!(hits.length === 1 && !hits[0].arg)) return false;
+		if (!(hits.length === 1 && !hits[0].arg && !hits[0].manual)) return false;
 		// Collision check — if another bang is a proper extension of this one, wait.
 		const hasLongerBang = ACTIONS.some((a) => a.bang !== bang && a.bang.startsWith(bang));
 		if (hasLongerBang) return false;
@@ -499,7 +530,11 @@
 	});
 </script>
 
-<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px">
+<!-- Close when keyboard focus leaves the palette (Tab-out); click-outside is
+     handled by onClickOutside. A null relatedTarget is a click on a
+     non-focusable spot, which may be inside the panel, so it's ignored. -->
+<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px"
+	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) inlineOpen = false; }}>
 	<form
 		class="hero-search-form flex items-center px-5 md:px-7"
 		action={searchConfig.url}
@@ -537,7 +572,7 @@
 		{#if query}
 			<button type="button" class="clear-btn text-sm md:text-base bg-transparent border-none cursor-pointer px-1" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
 		{:else}
-			<kbd class="hero-search-kbd text-[0.6rem] md:text-[0.7rem] py-0.5 px-1.5 md:py-1 md:px-2 rounded border font-mono shrink-0">/</kbd>
+			<kbd class="hero-search-kbd text-[0.65rem] md:text-[0.7rem] py-0.5 px-1.5 md:py-1 md:px-2 rounded border font-mono shrink-0">/</kbd>
 		{/if}
 	</form>
 

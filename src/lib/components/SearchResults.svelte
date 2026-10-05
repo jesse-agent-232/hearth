@@ -80,7 +80,7 @@
 	<!-- ═══ ACTIONS SECTION ═══ -->
 	{#if actions.length > 0}
 		<div class="px-4 pt-2.5 pb-1">
-			<span class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim">Actions</span>
+			<span class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Actions</span>
 		</div>
 		<div class="flex flex-col gap-0.5 px-1.5 pb-1.5">
 			{#each actions as action (action.id)}
@@ -94,7 +94,7 @@
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-content-dim">{@html action.icon}</svg>
 					</div>
 					<span class="text-[0.8rem] text-content-muted group-hover:text-content transition-colors flex-1">{action.label}</span>
-					<kbd class="text-content-muted text-[0.55rem] bg-surface-card-strong py-0.5 px-1.5 rounded border border-border-card font-mono shrink-0">↵</kbd>
+					<kbd class="text-content-muted text-[0.65rem] bg-surface-card-strong py-0.5 px-1.5 rounded border border-border-card font-mono shrink-0">↵</kbd>
 				</button>
 			{/each}
 		</div>
@@ -103,7 +103,7 @@
 	<!-- ═══ APPS SECTION ═══ -->
 	{#if matchedApps.length > 0}
 		<div class="px-4 pt-2.5 pb-1">
-			<span class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim">Apps</span>
+			<span class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Apps</span>
 		</div>
 		<div class="flex flex-col gap-0.5 px-1.5 pb-1.5">
 			{#each matchedApps as app (app.id)}
@@ -117,7 +117,7 @@
 				>
 					<AppIcon icon={app.icon} name={app.name} size="w-3.5 h-3.5" wrapSize="w-6 h-6" iconStyle="colored" wrap />
 					<span class="text-[0.8rem] text-content-muted group-hover:text-content transition-colors">{app.name}</span>
-					<span class="ml-auto text-[0.55rem] text-content-dim/40 shrink-0">&nearr;</span>
+					<span class="ml-auto text-[0.65rem] text-content-dim/40 shrink-0">&nearr;</span>
 				</a>
 			{/each}
 		</div>
@@ -128,9 +128,9 @@
 		{#if section.loading || section.error || section.results.length > 0}
 			<div>
 				<div class="px-4 pt-2.5 pb-1 flex items-center gap-2">
-					<span class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim">{section.provider.label}</span>
+					<span class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">{section.provider.label}</span>
 					{#if section.loading}
-						<span class="text-[0.5rem] text-content-dim font-mono">searching…</span>
+						<span class="text-[0.7rem] text-content-dim font-mono">searching…</span>
 					{/if}
 				</div>
 
@@ -224,13 +224,13 @@
 								<div class="flex flex-col min-w-0 flex-1">
 									<span class="text-[0.8rem] text-content-muted group-hover:text-content transition-colors truncate">{item.title}</span>
 									{#if item.subtitle}
-										<span class="text-[0.65rem] text-content-dim truncate">{item.subtitle}</span>
+										<span class="text-[0.7rem] text-content-dim truncate">{item.subtitle}</span>
 									{/if}
 								</div>
 								{#if item.tags?.length}
 									<div class="hidden md:flex items-center gap-1 shrink-0 max-w-[40%] overflow-hidden">
 										{#each item.tags.slice(0, 3) as tag}
-											<span class="text-[0.55rem] font-mono px-1.5 py-0.5 rounded border border-border-card text-content-dim bg-surface-card-strong/60 whitespace-nowrap">{tag}</span>
+											<span class="text-[0.65rem] font-mono px-1.5 py-0.5 rounded border border-border-card text-content-dim bg-surface-card-strong/60 whitespace-nowrap">{tag}</span>
 										{/each}
 									</div>
 								{/if}
@@ -246,7 +246,7 @@
 	{#if webHref}
 		<div>
 			<div class="px-4 pt-2.5 pb-1">
-				<span class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim">Suggestions</span>
+				<span class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Suggestions</span>
 			</div>
 			<div class="px-1.5 pb-1.5">
 				<a
@@ -267,17 +267,17 @@
 					{/if}
 					<div class="flex flex-col min-w-0">
 						<span class="text-[0.8rem] text-content-muted group-hover:text-content transition-colors">Search for "{query}"</span>
-						<span class="text-[0.65rem] text-content-dim truncate">{searchConfig?.name || 'Web'}</span>
+						<span class="text-[0.7rem] text-content-dim truncate">{searchConfig?.name || 'Web'}</span>
 					</div>
-					<kbd class="ml-auto text-content-muted text-[0.55rem] bg-surface-card-strong py-0.5 px-1.5 rounded border border-border-card font-mono shrink-0">↵</kbd>
+					<kbd class="ml-auto text-content-muted text-[0.65rem] bg-surface-card-strong py-0.5 px-1.5 rounded border border-border-card font-mono shrink-0">↵</kbd>
 				</a>
 			</div>
 		</div>
 	{/if}
 
 	{#if tips.length > 0}
-		<div class="border-t border-border-card px-4 py-2 flex items-center gap-2 flex-wrap text-[0.6rem] font-mono text-content-dim">
-			<span class="uppercase tracking-[0.15em] text-[0.55rem] mr-1">Tips</span>
+		<div class="border-t border-border-card px-4 py-2 flex items-center gap-2 flex-wrap text-[0.7rem] font-mono text-content-dim">
+			<span class="uppercase tracking-[0.15em] text-[0.65rem] mr-1">Tips</span>
 			{#each tips as t (t.kind + ':' + t.id)}
 				<button
 					type="button"

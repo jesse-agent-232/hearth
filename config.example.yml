@@ -11,7 +11,7 @@ branding:
   favicon: "/icons/favicon.svg"               # Path in static/, full URL, or null (uses logo, then default)
   font:
     family: "JetBrains Mono"
-    url: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    url: null                                 # JetBrains Mono is bundled; a stylesheet URL is only needed for another font
   theme_color: "#09090b"                      # PWA theme color and meta tag
   accent_color: "#f5b942"                     # Interactive accent: focus rings, selected states, hover halos
   show_footer: true                           # false = hide the dashboard footer (brand name + register/privacy links)
@@ -238,9 +238,7 @@ wallpapers:
 
 # ── Weather Widget ──────────────────────────────────────────
 weather:
-  enabled: true
-  default_lat: 40.7128                        # Default coordinates (before user grants location)
-  default_lon: -74.0060
+  enabled: true                               # Users set their location from the weather pill
 
 # ── Onboarding ──────────────────────────────────────────────
 onboarding:
@@ -277,7 +275,6 @@ onboarding:
     #       desc: "Contact admin if something breaks"
     #       icon: alert-circle                # Per-item icon override
     #   footer: "Thanks for being part of the community"
-    - type: weather                           # Built-in: location permission prompt
 
 # ── Privacy Policy ──────────────────────────────────────────
 # Option A: Use a markdown file (recommended)

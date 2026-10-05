@@ -86,7 +86,7 @@ branding:
   favicon: "/icons/favicon.svg"
   font:
     family: "JetBrains Mono"
-    url: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    url: null   # JetBrains Mono is bundled; set a stylesheet URL only for another font
   theme_color: "#09090b"
 ```
 
@@ -170,7 +170,7 @@ Direct URLs also work: `"https://cdn.example.com/icon.svg"`.
 
 ### Onboarding
 
-Onboarding uses a composable `slides` array. Each slide has a `type` — built-in types (`welcome`, `services`, `weather`) have special behavior, while `privacy`, `security`, and `list` all render through a generic list engine with per-type defaults.
+Onboarding uses a composable `slides` array. Each slide has a `type` — built-in types (`welcome`, `services`) have special behavior, while `privacy`, `security`, and `list` all render through a generic list engine with per-type defaults.
 
 ```yaml
 onboarding:
@@ -195,7 +195,6 @@ onboarding:
           desc: "Contact the admin if something breaks"
           icon: alert-circle                           # per-item icon override
       footer: "Thanks for being here"
-    - type: weather                        # location permission prompt
 ```
 
 All list-based types (`privacy`, `security`, `list`) support: `icon`, `title`, `subtitle`, `items`, `footer`, `list_icon`. Items auto-detect format: `{text}` renders with bold markdown, `{title, desc}` renders as **title** — desc. Both formats can coexist in one slide.
@@ -236,9 +235,7 @@ wallpapers:
   enabled: true
 
 weather:
-  enabled: true
-  default_lat: 40.7128
-  default_lon: -74.0060
+  enabled: true                # users set their location from the weather pill
 
 tips:
   enabled: true

@@ -1,4 +1,5 @@
 <script>
+	import { dialog } from '$lib/actions/dialog.js';
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { getWallpaperUrl } from '$lib/wallpaper.js';
@@ -31,7 +32,7 @@
 </script>
 
 {#if blocked}
-	<div class="fixed inset-0 flex flex-col items-center justify-center z-[200] p-4">
+	<div use:dialog class="fixed inset-0 flex flex-col items-center justify-center z-[200] p-4">
 		<!-- Wallpaper background -->
 		<div class="fixed inset-0 -z-20 bg-surface">
 			{#if wallpaperUrl}

@@ -55,8 +55,9 @@ export function buildAppsFromConfig(appsConfig) {
 	return { apps, setupGuides };
 }
 
-const DI_CDN = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg';
-const SI_CDN = 'https://cdn.simpleicons.org';
+// Served through Hearth's own cache (routes/api/icon), not the CDNs directly.
+const DI_CDN = '/api/icon/di';
+const SI_CDN = '/api/icon/si';
 
 // dashboard-icons slug → simpleicons slug (for names that differ)
 const diToSimpleIcon = {

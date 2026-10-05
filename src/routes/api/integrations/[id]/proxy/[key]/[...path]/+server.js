@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
 import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
+import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
 
 // GET /api/integrations/:id/proxy/:key/*
 //
@@ -14,6 +15,9 @@ import { getConnection } from '$lib/server/integrations/store.js';
 // Headers preserved from upstream: content-type, content-length, etag,
 // last-modified, cache-control. If upstream omits cache-control we fall
 // back to the handler's defaultCacheControl.
+
+// Covers streaming the body too: these are thumbnails, not downloads.
+const PROXY_TIMEOUT_MS = 20000;
 
 const PASS_THROUGH_HEADERS = [
 	'content-type',
@@ -46,10 +50,10 @@ export async function GET({ cookies, url, params, request, fetch }) {
 			config: conn.config,
 			params: { path: segments },
 			request,
-			fetch
+			fetch: withDeadline(fetch, PROXY_TIMEOUT_MS, request.signal)
 		});
 	} catch (err) {
-		throw error(502, `Proxy handler failed: ${err.message}`);
+		throw error(502, `Proxy handler failed: ${describeFetchError(err, PROXY_TIMEOUT_MS)}`);
 	}
 
 	if (!upstream || typeof upstream.status !== 'number') {

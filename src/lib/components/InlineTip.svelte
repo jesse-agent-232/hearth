@@ -96,7 +96,7 @@
 		{#if currentTip.app}
 			<button
 				onclick={handleSetup}
-				class="text-[0.65rem] font-medium font-mono text-content-muted hover:text-content bg-transparent border-none cursor-pointer transition-colors underline decoration-content-dim/40 underline-offset-2 shrink-0 whitespace-nowrap"
+				class="text-[0.7rem] font-medium font-mono text-content-muted hover:text-content bg-transparent border-none cursor-pointer transition-colors underline decoration-content-dim/40 underline-offset-2 shrink-0 whitespace-nowrap"
 			>Set up</button>
 		{/if}
 

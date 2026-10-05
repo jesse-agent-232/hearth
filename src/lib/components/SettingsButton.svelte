@@ -18,6 +18,14 @@
 		window.location.href = '/auth/logout';
 	}
 
+	// The menu item unmounts with the menu, so hand focus to the trigger first;
+	// the Configure dialog then returns focus there when it closes.
+	function openManageApps(e) {
+		e.currentTarget.closest('.user-menu')?.querySelector('button')?.focus();
+		open = false;
+		onmanageapps();
+	}
+
 	function handleClickOutside(e) {
 		if (!e.target.closest('.user-menu')) open = false;
 	}
@@ -60,7 +68,7 @@
 			{#if onmanageapps}
 			<button
 				class="flex items-center gap-2.5 w-full px-4 py-2.5 text-left text-[0.8rem] text-content-muted font-mono bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors duration-150"
-				onclick={() => { open = false; onmanageapps(); }}
+				onclick={openManageApps}
 			>
 				<svg class="w-4 h-4 text-content-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
 				Configure
@@ -111,7 +119,7 @@
 				{#if onmanageapps}
 				<button
 					class="flex items-center gap-3 w-full px-5 py-3 text-left text-[0.9rem] text-content-muted font-mono bg-transparent border-none cursor-pointer hover:bg-surface-card-hover"
-					onclick={() => { open = false; onmanageapps(); }}
+					onclick={openManageApps}
 				>
 					<svg class="w-5 h-5 text-content-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
 					Configure

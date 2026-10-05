@@ -21,7 +21,7 @@ export function getIconClass(iconStyle, icon) {
 /** On img error, fall back to the colored URL with grayscale filter. */
 export function handleIconError(e, icon) {
 	const fb = icon.fallback || icon.colored;
-	if (fb && e.target.src !== fb) {
+	if (fb && e.target.getAttribute('src') !== fb) {
 		e.target.src = fb;
 		// Apply grayscale since we're falling back from mono to colored
 		e.target.classList.add('icon-grayscale-fallback');

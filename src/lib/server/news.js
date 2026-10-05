@@ -14,7 +14,7 @@ export async function fetchNews() {
 	const rssUrl = newsConfig.rss_url || 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
 
 	try {
-		const res = await fetch(rssUrl);
+		const res = await fetch(rssUrl, { signal: AbortSignal.timeout(5000) });
 		const xml = await res.text();
 		const items = [];
 		const regex = /<item>([\s\S]*?)<\/item>/g;

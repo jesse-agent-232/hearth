@@ -1,10 +1,12 @@
 <script>
+	import { dialog } from '$lib/actions/dialog.js';
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { buildAppsFromConfig } from '$lib/apps.js';
 	import IntegrationsPanel from '$lib/components/IntegrationsPanel.svelte';
 	import { TOTAL_WALLPAPERS, getWallpaperThumbUrl } from '$lib/wallpaper.js';
 	import { browser } from '$app/environment';
+	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
 
 	const siteConfig = getContext('config');
 	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
@@ -25,20 +27,37 @@
 	const totalPages = Math.ceil(TOTAL_WALLPAPERS / WALLPAPERS_PER_PAGE);
 
 	let prevOpen = false;
+
+	function loadFromPrefs() {
+		visibleSet = new Set($prefs.visibleApps || defaultAppIds);
+		iconStyle = $prefs.iconStyle || 'colored';
+		theme = $prefs.theme || 'auto';
+		wallpaperEnabled = $prefs.wallpaperEnabled !== false;
+		wallpaperId = $prefs.wallpaperId || null;
+		openInNewTab = $prefs.openInNewTab ?? true;
+		wallpaperPage = wallpaperId ? Math.floor((wallpaperId - 1) / WALLPAPERS_PER_PAGE) : 0;
+		enabledWidgets = new Set($prefs.enabledWidgets || ['weather', 'news', 'search']);
+	}
 	$effect(() => {
 		if (open && !prevOpen) {
 			activeTab = 'appearance';
-			visibleSet = new Set($prefs.visibleApps || defaultAppIds);
-			iconStyle = $prefs.iconStyle || 'colored';
-			theme = $prefs.theme || 'auto';
-			wallpaperEnabled = $prefs.wallpaperEnabled !== false;
-			wallpaperId = $prefs.wallpaperId || null;
-			openInNewTab = $prefs.openInNewTab ?? true;
-			wallpaperPage = wallpaperId ? Math.floor((wallpaperId - 1) / WALLPAPERS_PER_PAGE) : 0;
-			enabledWidgets = new Set($prefs.enabledWidgets || ['weather', 'news', 'search']);
+			loadFromPrefs();
 		}
 		prevOpen = open;
 	});
+
+	// Every close path goes through here so unsaved integration edits
+	// (marked data-unsaved by IntegrationCard) aren't dropped silently.
+	function requestClose() {
+		if (!confirmDiscardUnsaved()) return;
+		open = false;
+	}
+
+	// Switching tabs unmounts the integrations panel, so it asks too.
+	function selectTab(id) {
+		if (id !== activeTab && !confirmDiscardUnsaved()) return;
+		activeTab = id;
+	}
 
 	// Close on Escape while the modal is open
 	$effect(() => {
@@ -46,7 +65,7 @@
 		function onKey(e) {
 			if (e.key === 'Escape') {
 				e.preventDefault();
-				open = false;
+				requestClose();
 			}
 		}
 		window.addEventListener('keydown', onKey);
@@ -95,14 +114,27 @@
 		prefs.update(p => ({ ...p, wallpaperId: id }));
 	}
 
+	// Reset is appearance-only: bookmarks (customApps) and the tile layout are
+	// left alone. The button offers Undo for a few seconds afterwards.
+	const RESET_KEYS = ['visibleApps', 'iconStyle', 'theme', 'wallpaperEnabled', 'wallpaperId', 'openInNewTab'];
+	let resetUndo = $state(null);
+	let resetUndoTimer;
+
 	function resetDefaults() {
-		visibleSet = new Set(defaultAppIds);
-		iconStyle = 'colored';
-		theme = 'auto';
-		wallpaperEnabled = true;
-		wallpaperId = null;
-		openInNewTab = true;
-		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true, customApps: [] }));
+		resetUndo = Object.fromEntries(RESET_KEYS.map((k) => [k, $prefs[k]]));
+		clearTimeout(resetUndoTimer);
+		resetUndoTimer = setTimeout(() => (resetUndo = null), 8000);
+		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true }));
+		loadFromPrefs();
+	}
+
+	function undoResetDefaults() {
+		const snapshot = resetUndo;
+		resetUndo = null;
+		clearTimeout(resetUndoTimer);
+		if (!snapshot) return;
+		prefs.update(p => ({ ...p, ...snapshot }));
+		loadFromPrefs();
 	}
 
 	function portal(node) {
@@ -126,8 +158,9 @@
 {#if open}
 	<div
 		use:portal
+		use:dialog={{ label: 'Configure' }}
 		class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in"
-		onclick={() => open = false}
+		onclick={requestClose}
 	>
 		<div
 			class="glass-card rounded-2xl w-full max-w-[620px] h-[520px] max-md:max-w-full max-md:h-[75vh] max-md:rounded-xl overflow-hidden animate-modal-enter shadow-theme relative flex flex-col"
@@ -138,7 +171,7 @@
 				<span class="text-[0.8rem] font-semibold text-content">Configure</span>
 				<button
 					class="bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
-					onclick={() => open = false}
+					onclick={requestClose}
 					aria-label="Close"
 				>&times;</button>
 			</div>
@@ -152,7 +185,7 @@
 				] as tab}
 					<button
 						class="flex-1 min-w-fit px-2.5 py-2.5 rounded-lg border-none cursor-pointer text-center text-[0.75rem] font-medium transition-all duration-150 {activeTab === tab.id ? 'bg-surface-card-strong text-content' : 'bg-transparent text-content-dim'}"
-						onclick={() => activeTab = tab.id}
+						onclick={() => selectTab(tab.id)}
 					>{tab.label}</button>
 				{/each}
 			</div>
@@ -169,7 +202,7 @@
 						] as tab}
 							<button
 								class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border-none cursor-pointer transition-all duration-150 text-left {activeTab === tab.id ? 'bg-surface-card-strong' : 'bg-transparent hover:bg-surface-card-hover'}"
-								onclick={() => activeTab = tab.id}
+								onclick={() => selectTab(tab.id)}
 							>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0 {activeTab === tab.id ? 'text-content' : 'text-content-dim'}">{@html tab.svg}</svg>
 								<span class="text-[0.78rem] font-medium {activeTab === tab.id ? 'text-content' : 'text-content-dim'}">{tab.label}</span>
@@ -177,10 +210,17 @@
 						{/each}
 					</div>
 					<div class="mt-auto pt-3">
-						<button
-							class="text-[0.65rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono px-3"
-							onclick={resetDefaults}
-						>Reset defaults</button>
+						{#if resetUndo}
+							<button
+								class="text-[0.7rem] text-content bg-transparent border-none cursor-pointer underline underline-offset-2 font-mono px-3"
+								onclick={undoResetDefaults}
+							>Undo reset</button>
+						{:else}
+							<button
+								class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono px-3"
+								onclick={resetDefaults}
+							>Reset defaults</button>
+						{/if}
 					</div>
 				</div>
 
@@ -196,7 +236,7 @@
 
 				<!-- Theme -->
 				<div class="mb-5">
-					<div class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Theme</div>
+					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Theme</div>
 					<div class="flex gap-6">
 						{#each themes as t}
 							<button
@@ -209,7 +249,7 @@
 
 				<!-- Icon style -->
 				<div class="mb-5">
-					<div class="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Icon style</div>
+					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Icon style</div>
 					<div class="flex gap-6">
 						{#each iconStyles as style}
 							<button
@@ -281,7 +321,7 @@
 								disabled={wallpaperPage === 0}
 								onclick={() => wallpaperPage--}
 							>← Prev</button>
-							<span class="text-[0.65rem] text-content-dim font-mono">{wallpaperPage + 1} / {totalPages}</span>
+							<span class="text-[0.7rem] text-content-dim font-mono">{wallpaperPage + 1} / {totalPages}</span>
 							<button
 								class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono disabled:opacity-30 disabled:cursor-not-allowed"
 								disabled={wallpaperPage >= totalPages - 1}
@@ -310,7 +350,7 @@
 						<span class="text-base shrink-0">{widget.icon}</span>
 						<div class="flex-1 min-w-0">
 							<div class="text-[0.8rem] text-content font-medium">{widget.name}</div>
-							<div class="text-[0.65rem] text-content-dim">{widget.desc}</div>
+							<div class="text-[0.7rem] text-content-dim">{widget.desc}</div>
 						</div>
 						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {enabledWidgets.has(widget.id) ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
 							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {enabledWidgets.has(widget.id) ? 'translate-x-4' : 'translate-x-0.5'}"></div>

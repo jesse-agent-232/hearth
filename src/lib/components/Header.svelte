@@ -1,22 +1,19 @@
 <script>
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { getContext } from 'svelte';
 	import Weather from './Weather.svelte';
 	import NewsPill from './NewsPill.svelte';
-	import { DAYS, MONTHS, WEATHER_TTL, FALLBACK_LAT, FALLBACK_LON, WEATHER_MAP } from '$lib/constants.js';
-	let { lat, lon, hasLocation, showWeather = true, headlines = [] } = $props();
-
-	const siteConfig = getContext('config');
-	const weatherConfig = siteConfig?.weather || {};
-	const defaultLat = weatherConfig.default_lat || FALLBACK_LAT;
-	const defaultLon = weatherConfig.default_lon || FALLBACK_LON;
+	import { DAYS, MONTHS } from '$lib/constants.js';
+	import { fetchWeather, reverseGeocode } from '$lib/weather.js';
+	// lat/lon are the user's chosen location (device or a searched place);
+	// without one, the weather pill offers to set it. placeName is set for a
+	// searched place, which needs no reverse lookup.
+	let { lat, lon, placeName = '', locationSource = null, showWeather = true, headlines = [] } = $props();
 
 	let weatherData = $state(null);
+	let weatherLoaded = $state(false);
 	let locationName = $state('');
 	let now = $state(new Date());
-
-	const WEATHER_CACHE_KEY = 'weather_cache';
 
 	function formatTime() {
 		const hours = String(now.getHours()).padStart(2, '0');
@@ -32,59 +29,16 @@
 		return `${day} · ${month} ${date}`;
 	}
 
-	async function fetchWeather(lat, lon) {
-		if (browser) {
-			const cached = localStorage.getItem(WEATHER_CACHE_KEY);
-			if (cached) {
-				const c = JSON.parse(cached);
-				if (c.lat === lat && c.lon === lon && Date.now() - c.ts < WEATHER_TTL) return c.data;
-			}
-		}
-		try {
-			const r = await fetch(
-				`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`
-			);
-			const d = await r.json();
-			const data = { temp: Math.round(d.current.temperature_2m), code: d.current.weather_code };
-			if (browser) {
-				localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ ts: Date.now(), lat, lon, data }));
-			}
-			return data;
-		} catch {
-			return null;
-		}
-	}
-
-	async function fetchLocation(lat, lon) {
-		if (browser) {
-			const cached = localStorage.getItem('weather_location');
-			if (cached) {
-				const c = JSON.parse(cached);
-				if (c.lat === lat && c.lon === lon) return c.name;
-			}
-		}
-		try {
-			const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
-			const d = await r.json();
-			const addr = d.address || {};
-			let name = addr.city || addr.town || addr.village || addr.county || '';
-			name = name.replace(/\s+(Municipal Corporation|District|Tehsil|Taluk|Block)$/i, '');
-			if (name && browser) {
-				localStorage.setItem('weather_location', JSON.stringify({ lat, lon, name }));
-			}
-			return name;
-		} catch {
-			return '';
-		}
-	}
-
 	$effect(() => {
-		if (!showWeather) return;
-		const useLat = lat || defaultLat;
-		const useLon = lon || defaultLon;
-
-		fetchWeather(useLat, useLon).then(d => { weatherData = d; });
-		fetchLocation(useLat, useLon).then(n => { locationName = n; });
+		weatherData = null;
+		weatherLoaded = false;
+		locationName = '';
+		if (!browser || !showWeather || !(lat && lon)) return;
+		let stale = false;
+		if (placeName) locationName = placeName;
+		else reverseGeocode(lat, lon).then((n) => { if (!stale) locationName = n; });
+		fetchWeather(lat, lon).then((d) => { if (!stale) { weatherData = d; weatherLoaded = true; } });
+		return () => { stale = true; };
 	});
 
 	let headerEl;
@@ -112,6 +66,6 @@
 	</div>
 	<div class="flex items-center gap-3 shrink-0">
 		{#if headlines.length > 0}<NewsPill {headlines} />{/if}
-		{#if showWeather}<Weather {weatherData} {locationName} />{/if}
+		{#if showWeather}<Weather {weatherData} {weatherLoaded} {locationName} hasLocation={!!(lat && lon)} source={locationSource === 'manual' ? 'manual' : 'device'} />{/if}
 	</div>
 </div>

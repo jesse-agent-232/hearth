@@ -12,7 +12,8 @@
 	const accentColor = config?.branding?.accent_color || '#f5b942';
 	const shortName = config?.branding?.short_name || brandName.toLowerCase();
 	const fontFamily = config?.branding?.font?.family || 'JetBrains Mono';
-	const fontUrl = config?.branding?.font?.url || 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap';
+	// JetBrains Mono ships in the bundle (app.css); a url is only needed for a custom font.
+	const fontUrl = config?.branding?.font?.url || null;
 </script>
 
 <svelte:head>

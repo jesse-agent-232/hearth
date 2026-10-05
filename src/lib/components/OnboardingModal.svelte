@@ -1,4 +1,5 @@
 <script>
+	import { dialog } from '$lib/actions/dialog.js';
 	import { browser } from '$app/environment';
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
@@ -19,7 +20,7 @@
 	const privacyConfig = siteConfig?.privacy || {};
 	const privacyHtml = privacyConfig.html || null;
 
-	let { oncomplete, authName = null, authUsername = null, devMode = false } = $props();
+	let { oncomplete, authName = null, authUsername = null, devMode = false, isAdmin = false } = $props();
 
 	let step = $state(authName ? 'onboarding' : 'welcome');
 	let slide = $state(0);
@@ -74,19 +75,6 @@
 		oncomplete();
 	}
 
-	function allowLocation() {
-		navigator.geolocation.getCurrentPosition(
-			(pos) => {
-				prefs.update((p) => ({
-					...p,
-					lat: pos.coords.latitude,
-					lon: pos.coords.longitude
-				}));
-				finish();
-			},
-			() => finish()
-		);
-	}
 
 	// Lock body scroll when any modal step is active
 	$effect(() => {
@@ -104,7 +92,7 @@
 		? serviceConfig
 			.map(s => {
 				const app = allApps.find(a => a.id === s.id);
-				if (!app) return null;
+				if (!app || (app.admin_only && !isAdmin)) return null;
 				return {
 					name: app.name,
 					desc: s.desc || app.setup_guide?.subtitle || '',
@@ -124,13 +112,13 @@
 		return text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-content-muted">$1</strong>');
 	}
 
-	// Resolve icon string to a CDN URL
+	// Resolve icon string to an icon URL
 	// Supports: "lucide:icon-name", direct URLs, or bare names (treated as lucide)
 	function resolveSlideIcon(icon) {
 		if (!icon) return null;
 		if (icon.startsWith('http')) return icon;
-		if (icon.startsWith('lucide:')) return `https://cdn.jsdelivr.net/npm/lucide-static/icons/${icon.slice(7)}.svg`;
-		return `https://cdn.jsdelivr.net/npm/lucide-static/icons/${icon}.svg`;
+		if (icon.startsWith('lucide:')) return `/api/icon/lucide/${icon.slice(7)}`;
+		return `/api/icon/lucide/${icon}`;
 	}
 
 
@@ -161,7 +149,10 @@
 
 	// Build slides from config — merge with type defaults for list-based slides
 	const listTypes = new Set(['privacy', 'security', 'list']);
-	const configSlides = onboardingConfig.slides || [{ type: 'welcome' }, { type: 'services' }, { type: 'weather' }];
+	// The old 'weather' slide asked for location up front; the location is
+	// now set from the weather pill itself, so the type is skipped even when
+	// an existing config still lists it.
+	const configSlides = (onboardingConfig.slides || [{ type: 'welcome' }, { type: 'services' }]).filter(s => s.type !== 'weather');
 	const slides = configSlides.map(s => {
 		if (listTypes.has(s.type)) {
 			const defaults = slideDefaults[s.type] || {};
@@ -178,7 +169,7 @@
 </script>
 
 {#if step === 'welcome'}
-	<div class="fixed inset-0 flex flex-col items-center justify-center z-[100] p-4">
+	<div use:dialog class="fixed inset-0 flex flex-col items-center justify-center z-[100] p-4">
 		<!-- Wallpaper background -->
 		<div class="fixed inset-0 -z-20 bg-surface">
 			{#if wallpaperUrl}
@@ -237,11 +228,13 @@
 	</div>
 
 {:else if step === 'onboarding'}
-	<div class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in">
-		<div class="bg-surface-modal-card backdrop-blur-[120px] border border-border-modal-card rounded-2xl w-full max-w-[480px] overflow-hidden animate-modal-enter shadow-theme">
+	<div use:dialog={{ label: 'Welcome' }} class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in">
+		<div class="bg-surface-modal-card backdrop-blur-[120px] border border-border-modal-card rounded-2xl w-full max-w-[480px] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden animate-modal-enter shadow-theme">
 
-			<!-- Slide content -->
-			<div class="p-8 pb-0 flex flex-col overflow-x-hidden {slideHeight ? '' : 'min-h-[200px]'}" style={slideHeight ? `height: ${slideHeight}px` : ''}>
+			<!-- Slide content: one fixed height for every slide so the card doesn't
+			     jump; on short screens it shrinks and scrolls, keeping the nav bar
+			     on-screen. -->
+			<div class="p-8 pb-0 flex flex-col overflow-x-hidden min-h-0 {slideHeight ? '' : 'h-[27rem] max-md:h-[33.5rem]'}" style={slideHeight ? `height: ${slideHeight}px` : ''}>
 				{#key slide}
 				<div class="flex-1 flex flex-col items-center justify-center animate-slide-in overflow-y-auto min-h-0">
 				{#if currentSlideType() === 'welcome'}
@@ -250,9 +243,9 @@
 						{#if brandLogo}
 							<img src={brandLogo} alt="" class="w-9 h-9" />
 						{:else}
-							<svg viewBox="4 4 24 24" class="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="16" cy="16" r="9" fill="none" stroke="white" stroke-width="1.5"/>
-								<circle cx="16" cy="16" r="3" fill="white"/>
+							<svg viewBox="4 4 24 24" class="w-9 h-9 text-content" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+								<circle cx="16" cy="16" r="3" fill="currentColor"/>
 							</svg>
 						{/if}
 						</div>
@@ -272,11 +265,11 @@
 								<div class="flex items-center gap-3 px-2 py-2.5 min-w-0 overflow-hidden">
 									<AppIcon icon={svc.icon} name={svc.name} size="w-4 h-4" wrapSize="w-6 h-6" wrap />
 									<span class="text-[0.8rem] text-content font-medium shrink-0">{svc.name}</span>
-									{#if svc.desc}<span class="text-[0.7rem] text-content-dim ml-auto text-right max-md:text-[0.6rem] truncate">{svc.desc}</span>{/if}
+									{#if svc.desc}<span class="text-[0.7rem] text-content-dim ml-auto text-right truncate">{svc.desc}</span>{/if}
 								</div>
 							{/each}
 						</div>
-						<p class="text-content-dim/50 text-[0.65rem] mt-auto pt-4 text-center">All self-hosted on our hardware. Your data never leaves.</p>
+						<p class="text-content-dim/50 text-[0.7rem] mt-auto pt-4 text-center">All self-hosted on our hardware. Your data never leaves.</p>
 					</div>
 
 				{:else if currentSlideType() === 'privacy' || currentSlideType() === 'security' || currentSlideType() === 'list'}
@@ -305,46 +298,23 @@
 							{/each}
 						</div>
 						{#if s.footer}
-							<p class="text-content-dim/50 text-[0.65rem] mt-auto pt-4 text-center">{s.footer}</p>
+							<p class="text-content-dim/50 text-[0.7rem] mt-auto pt-4 text-center">{s.footer}</p>
 						{/if}
 					</div>
 
-				{:else if currentSlideType() === 'weather'}
-					<div class="flex flex-col w-full">
-						<div class="flex items-center justify-center mb-4">
-							<svg viewBox="0 0 24 24" class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="12" cy="12" r="4" class="text-content-muted"/>
-								<path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" class="text-content-dim"/>
-							</svg>
-						</div>
-						<h2 class="text-[1.2rem] font-semibold mb-1 text-center">Local Weather</h2>
-						<p class="text-content-dim text-[0.75rem] mb-5 text-center">Optional — stays on your device</p>
-						<p class="text-content-muted text-[0.8rem] leading-relaxed text-center px-4 mb-6">
-							Allow location access to show weather on your dashboard.
-						</p>
-						<div class="flex flex-col items-center gap-2 mt-auto">
-							<button
-								class="w-full max-w-[280px] py-3 px-4 border-none rounded-[10px] text-[0.85rem] font-medium font-mono cursor-pointer transition-[opacity,background] duration-200 bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong"
-								onclick={allowLocation}
-							>Allow Location</button>
-							<button
-								class="text-[0.75rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono"
-								onclick={finish}
-							>Skip, I'll set it later</button>
-						</div>
-					</div>
 				{/if}
 				</div>
 				{/key}
 			</div>
 
 			<!-- Bottom bar: dots + navigation -->
-			<div class="p-6 pt-4 flex items-center justify-between">
+			<div class="p-6 pt-4 flex items-center justify-between shrink-0">
 				<!-- Dot indicators -->
-				<div class="flex gap-1.5">
+				<div class="flex gap-3">
 					{#each Array(totalSlides) as _, i}
+						<!-- 6px dot, ~18x30px tap area via ::before -->
 						<button
-							class="w-1.5 h-1.5 rounded-full border-none cursor-pointer transition-all duration-200 p-0 {i === slide ? 'dot-active w-4' : 'dot-inactive'}"
+							class="relative w-1.5 h-1.5 rounded-full border-none cursor-pointer transition-all duration-200 p-0 before:absolute before:content-[''] before:-inset-x-1.5 before:-inset-y-3 {i === slide ? 'dot-active w-4' : 'dot-inactive'}"
 							onclick={() => slide = i}
 						></button>
 					{/each}
@@ -357,7 +327,7 @@
 						disabled={slide === 0}
 						onclick={back}
 					>Back</button>
-					{#if slide === totalSlides - 1 && currentSlideType() !== 'weather'}
+					{#if slide === totalSlides - 1}
 					<button
 						class="py-2 px-5 rounded-lg text-[0.8rem] font-mono cursor-pointer transition-colors duration-150 login-btn"
 						onclick={finish}

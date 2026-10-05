@@ -1,5 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
+	import { prefersReducedMotion } from 'svelte/motion';
 
 	let { value, duration = 600, decimals = 0 } = $props();
 
@@ -15,8 +16,9 @@
 			return;
 		}
 
-		if (!browser || prevValue === value) {
+		if (!browser || prevValue === value || prefersReducedMotion.current) {
 			displayValue = value;
+			prevValue = value;
 			return;
 		}
 

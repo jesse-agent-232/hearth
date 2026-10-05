@@ -37,7 +37,4 @@ export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
 	'July', 'August', 'September', 'October', 'November', 'December'];
 export const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Fallback coordinates — config.yml weather.default_lat/lon takes priority
-export const FALLBACK_LAT = 40.7128;
-export const FALLBACK_LON = -74.0060;
 export const WEATHER_TTL = 30 * 60 * 1000;

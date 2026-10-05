@@ -8,19 +8,6 @@ function createAdminAppsStore() {
 		subscribe,
 		set,
 
-		async load() {
-			if (!browser) return;
-			try {
-				const res = await fetch('/api/prefs/admin-apps');
-				if (res.ok) {
-					const data = await res.json();
-					set(data.adminApps || []);
-					return true;
-				}
-			} catch { /* server unavailable — stay with current state */ }
-			return false;
-		},
-
 		async add(app) {
 			if (!browser) return null;
 			try {

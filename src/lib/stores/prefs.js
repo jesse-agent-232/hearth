@@ -108,21 +108,21 @@ function createPrefsStore() {
 			_set(restored);
 		},
 
-		/** Pull prefs from server, merge over localStorage. One-time on mount. */
-		async syncFromServer() {
+		/**
+		 * Merge prefs the server rendered with the page over localStorage.
+		 * Synchronous apart from the one-time migration PUT, so the dashboard
+		 * can render on hydration instead of waiting on a /api/prefs round trip.
+		 */
+		applyServerPrefs(serverPrefs) {
 			if (!browser) return;
 			try {
-				const res = await fetch('/api/prefs');
-				if (!res.ok) return; // no auth or server error — stay localStorage-only
-
-				const data = await res.json();
-				const serverPrefs = data.prefs || {};
+				serverPrefs = serverPrefs || {};
 				const localPrefs = loadPrefs();
 
 				// Migration: if server is empty but local has data, seed the server
 				if (Object.keys(serverPrefs).length === 0 && Object.keys(localPrefs).length > 0) {
 					const { name, username, groups, adminApps, ...toSync } = localPrefs;
-					await fetch('/api/prefs', {
+					fetch('/api/prefs', {
 						method: 'PUT',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify(toSync)

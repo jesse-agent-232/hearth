@@ -7,7 +7,9 @@
 	let isIOS = $state(false);
 	let dismissed = $state(false);
 
-	let { devMode = false } = $props();
+	// ready=false holds the bar back (e.g. while first-login screens are up)
+	// without missing an early beforeinstallprompt event.
+	let { devMode = false, ready = true } = $props();
 
 	onMount(() => {
 		// Don't show if already installed as standalone
@@ -55,7 +57,7 @@
 	}
 </script>
 
-{#if showPrompt && !dismissed}
+{#if showPrompt && ready && !dismissed}
 	<div class="install-prompt fixed bottom-0 left-0 right-0 flex items-center justify-center gap-4 py-3.5 px-6 glass-card rounded-none border-t border-border-card z-[60] animate-slide-up" style="padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px))">
 		{#if isIOS}
 			<span class="text-base text-content-dim">

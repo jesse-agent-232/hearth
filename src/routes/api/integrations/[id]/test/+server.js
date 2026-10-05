@@ -3,6 +3,9 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { isRedacted } from '$lib/server/integrations/serialize.js';
+import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
+
+const TEST_TIMEOUT_MS = 8000;
 
 // POST /api/integrations/:id/test   body: { config }
 // Runs the adapter's test() against the submitted config WITHOUT persisting
@@ -31,13 +34,16 @@ export async function POST({ cookies, url, request, params, fetch }) {
 	const merged = mergeForTest(adapter, existing?.config || {}, submitted);
 
 	try {
-		const result = await adapter.test({ config: merged, fetch });
+		const result = await adapter.test({
+			config: merged,
+			fetch: withDeadline(fetch, TEST_TIMEOUT_MS)
+		});
 		return json({
 			ok: !!result?.ok,
 			message: result?.message || (result?.ok ? 'Connection OK' : 'Connection failed')
 		});
 	} catch (err) {
-		return json({ ok: false, message: `Adapter error: ${err.message}` });
+		return json({ ok: false, message: `Adapter error: ${describeFetchError(err, TEST_TIMEOUT_MS)}` });
 	}
 }
 

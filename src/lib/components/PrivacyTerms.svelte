@@ -1,4 +1,5 @@
 <script>
+	import { dialog } from '$lib/actions/dialog.js';
 	import { getContext } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -33,6 +34,7 @@
 {#if open}
 	<div
 		use:portal
+		use:dialog={{ label: 'Privacy & Terms' }}
 		class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in"
 		onclick={() => open = false}
 	>

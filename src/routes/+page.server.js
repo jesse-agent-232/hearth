@@ -2,6 +2,7 @@ import { dev } from '$app/environment';
 import { fetchNews } from '$lib/server/news.js';
 import { getAuth, getNewsConfig } from '$lib/server/config.js';
 import { getSessionUser, isAdmin } from '$lib/server/session.js';
+import { getUserPrefs, getAdminApps } from '$lib/server/db.js';
 
 export async function load({ cookies, url }) {
 	const authConfig = getAuth();
@@ -30,7 +31,10 @@ export async function load({ cookies, url }) {
 			authName: authName || (authConfig.enabled ? null : 'Guest'),
 			authUsername: authUsername || null,
 			isAdmin: isAdmin(user, authConfig),
-			devMode: dev
+			devMode: dev,
+			// Seed the client stores in the page payload (no /api/prefs round trip)
+			prefs: user ? await getUserPrefs(user.username) : null,
+			adminApps: user ? await getAdminApps() : []
 		};
 	}
 

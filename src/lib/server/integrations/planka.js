@@ -32,6 +32,24 @@ function setCachedCards(cacheKey, cards) {
 	cardCache.set(cacheKey, { cards, expiresAt: Date.now() + getCacheTtl() });
 }
 
+// One crawl per cacheKey at a time: keystrokes arriving while the cache is
+// cold join the crawl already running instead of each starting their own.
+const inFlight = new Map();
+
+function loadCards(cacheKey, base, config, fetch) {
+	let pending = inFlight.get(cacheKey);
+	if (!pending) {
+		pending = fetchAllCards(base, config, fetch)
+			.then((cards) => {
+				setCachedCards(cacheKey, cards);
+				return cards;
+			})
+			.finally(() => inFlight.delete(cacheKey));
+		inFlight.set(cacheKey, pending);
+	}
+	return pending;
+}
+
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
 	id: 'planka',
@@ -95,11 +113,7 @@ const adapter = {
 				const base = stripTrailingSlash(config.url);
 				const cacheKey = `${config.url}:${config.apiKey}`;
 
-				let allCards = getCachedCards(cacheKey);
-				if (!allCards) {
-					allCards = await fetchAllCards(base, config, fetch);
-					setCachedCards(cacheKey, allCards);
-				}
+				const allCards = getCachedCards(cacheKey) || (await loadCards(cacheKey, base, config, fetch));
 
 				// Filter by name, exclude closed cards
 				const matches = allCards

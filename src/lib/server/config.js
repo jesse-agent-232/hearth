@@ -1,4 +1,4 @@
-import { readFileSync, watchFile } from 'fs';
+import { readFileSync, statSync, watchFile } from 'fs';
 import { resolve, dirname } from 'path';
 import yaml from 'js-yaml';
 import { marked } from 'marked';
@@ -48,7 +48,7 @@ function loadConfig() {
 
 function getDefaults() {
 	return {
-		branding: { name: 'Hearth', short_name: 'hearth', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap' }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
+		branding: { name: 'Hearth', short_name: 'hearth', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: null }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
 		auth: { enabled: false, oidc: {}, admin_usernames: [], password_change_url: null, registration: { enabled: false, url: null } },
 		apps: [],
 		customization: { enabled: false },
@@ -126,15 +126,24 @@ export function getIntegrationsConfig() {
 	return getConfig().integrations || {};
 }
 
+// Rendered once per file version: isomorphic-dompurify runs on jsdom, which
+// leaks ~110 KB per sanitize call, and this runs on every layout load.
+let _privacyCache = { key: null, html: null };
+
 async function loadPrivacyHtml(config) {
 	const file = config.privacy?.file;
 	if (!file) return null;
 	try {
 		const configPath = process.env.CONFIG_PATH || 'config.yml';
 		const base = dirname(resolve(configPath));
-		const md = readFileSync(resolve(base, file), 'utf-8');
+		const path = resolve(base, file);
+		const key = `${path}:${statSync(path).mtimeMs}`;
+		if (_privacyCache.key === key) return _privacyCache.html;
+		const md = readFileSync(path, 'utf-8');
 		const { default: DOMPurify } = await import('isomorphic-dompurify');
-		return DOMPurify.sanitize(marked.parse(md));
+		const html = DOMPurify.sanitize(marked.parse(md));
+		_privacyCache = { key, html };
+		return html;
 	} catch {
 		return null;
 	}
@@ -168,7 +177,7 @@ export async function getClientConfig({ authenticated = true } = {}) {
 		news: { enabled: config.news?.enabled ?? false },
 		search: getSearchConfig(),
 		wallpapers: { enabled: config.wallpapers?.enabled ?? false },
-		weather: { enabled: config.weather?.enabled ?? false, default_lat: config.weather?.default_lat, default_lon: config.weather?.default_lon },
+		weather: { enabled: config.weather?.enabled ?? false },
 		onboarding: getOnboardingConfig(),
 		privacy: { ...getPrivacyConfig(), html: await loadPrivacyHtml(config) },
 		tips: getTipsConfig()

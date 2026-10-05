@@ -23,21 +23,13 @@ self.addEventListener('fetch', (event) => {
 
 	const url = new URL(event.request.url);
 
-	// Skip API calls and external requests — always go to network
-	if (url.pathname.startsWith('/api/') || url.origin !== self.location.origin) return;
+	// Only the app's own build assets and static files are served from cache.
+	// Pages and __data.json carry per-user data, so they always go to the
+	// network and are never stored: a cached dashboard would outlive logout
+	// and be shown to the next person on a shared device.
+	if (url.origin !== self.location.origin || !ASSETS.includes(url.pathname)) return;
 
 	event.respondWith(
-		caches.match(event.request).then((cached) => {
-			// Return cached assets immediately, fetch pages network-first
-			if (cached && ASSETS.includes(url.pathname)) return cached;
-
-			return fetch(event.request).then((response) => {
-				if (response.status === 200) {
-					const clone = response.clone();
-					caches.open(CACHE).then((cache) => cache.put(event.request, clone));
-				}
-				return response;
-			}).catch(() => cached || caches.match('/'));
-		})
+		caches.match(event.request).then((cached) => cached || fetch(event.request))
 	);
 });

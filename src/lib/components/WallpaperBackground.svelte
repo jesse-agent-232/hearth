@@ -20,7 +20,7 @@
 		<img
 			src={imgSrc}
 			alt=""
-			loading="lazy"
+			fetchpriority="high"
 			class="w-full h-full object-cover transition-opacity duration-700 {loaded ? 'opacity-100' : 'opacity-0'}"
 			onload={() => loaded = true}
 			onerror={() => failed = true}
