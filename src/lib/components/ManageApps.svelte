@@ -22,7 +22,7 @@
 	let wallpaperId = $state($prefs.wallpaperId || null);
 	let openInNewTab = $state($prefs.openInNewTab ?? true);
 	let wallpaperPage = $state(0);
-	let enabledWidgets = $state(new Set($prefs.enabledWidgets || ['weather', 'news', 'search']));
+	let enabledWidgets = $state(new Set($prefs.enabledWidgets || ['weather', 'search']));
 	const WALLPAPERS_PER_PAGE = 12;
 	const totalPages = Math.ceil(TOTAL_WALLPAPERS / WALLPAPERS_PER_PAGE);
 
@@ -36,7 +36,7 @@
 		wallpaperId = $prefs.wallpaperId || null;
 		openInNewTab = $prefs.openInNewTab ?? true;
 		wallpaperPage = wallpaperId ? Math.floor((wallpaperId - 1) / WALLPAPERS_PER_PAGE) : 0;
-		enabledWidgets = new Set($prefs.enabledWidgets || ['weather', 'news', 'search']);
+		enabledWidgets = new Set($prefs.enabledWidgets || ['weather', 'search']);
 	}
 	$effect(() => {
 		if (open && !prevOpen) {
@@ -339,7 +339,6 @@
 				</div>
 				{@const widgets = [
 					{ id: 'weather', name: 'Weather', desc: 'Temperature and conditions for your location', icon: '☀️' },
-					{ id: 'news', name: 'News', desc: 'Headlines from your RSS feed', icon: '📰' },
 					{ id: 'search', name: 'Search', desc: 'Quick search bar with keyboard shortcut', icon: '🔍' }
 				]}
 				{#each widgets as widget}

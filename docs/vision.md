@@ -41,7 +41,7 @@ A user's surface is a grid of widgets they arrange by drag and resize. **There a
 ### Built-in non-app widgets
 
 - **Bookmarks** — user's external links, picked from a built-in default list (YouTube, Reddit, GitHub, etc.) or custom URLs.
-- **Integration widgets** — the existing set: weather, RSS, Immich, Paperless, Nextcloud, Planka, Karakeep. admin wires creds; user picks which to display.
+- **Integration widgets** — the existing set: weather, Immich, Paperless, Nextcloud, Planka, Karakeep. admin wires creds; user picks which to display.
 
 Bookmarks and apps stay separate widget types. Mixing them ("recently used" across both) sounds tempting but quickly produces weird rows.
 

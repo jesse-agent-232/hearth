@@ -133,10 +133,6 @@ All list-based types (`privacy`, `security`, `list`) support: `icon`, `title`, `
 ## Optional Features
 
 ```yaml
-news:
-  enabled: true
-  rss_url: "https://news.google.com/rss"
-
 search:
   enabled: true
   url: "https://www.google.com/search"

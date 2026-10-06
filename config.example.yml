@@ -149,11 +149,6 @@ apps:
     default_visible: true
     tags: ["admin"]
 
-# ── News Headlines ──────────────────────────────────────────
-news:
-  enabled: true
-  rss_url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
-
 # ── Search Bar ──────────────────────────────────────────────
 # The fallback web search provider. Shows in the unified search dropdown as
 # "Suggestions". When the user presses Enter, the query is submitted to this

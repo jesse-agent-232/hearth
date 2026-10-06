@@ -41,13 +41,11 @@
 	const footerEnabled = siteConfig?.branding?.show_footer !== false;
 
 	const searchConfigEnabled = siteConfig?.search?.enabled ?? false;
-	const newsConfigEnabled = siteConfig?.news?.enabled ?? false;
 
 	// Widget visibility: config enables feature, user prefs toggle per-user
-	const userWidgets = $derived(new Set($prefs.enabledWidgets || ['weather', 'news', 'search']));
+	const userWidgets = $derived(new Set($prefs.enabledWidgets || ['weather', 'search']));
 	const weatherEnabled = $derived(weatherConfigEnabled && userWidgets.has('weather'));
 	const searchEnabled = $derived(searchConfigEnabled && userWidgets.has('search'));
-	const newsEnabled = $derived(newsConfigEnabled && userWidgets.has('news'));
 
 	const { apps: allApps, setupGuides } = buildAppsFromConfig(siteConfig?.apps);
 	const tipApps = Object.fromEntries(
@@ -187,7 +185,7 @@
 <DynamicFavicon />
 	<div class="w-full max-w-[1200px] px-16 pb-16 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] max-lg:px-12 max-md:px-5 max-md:pb-[calc(6rem+env(safe-area-inset-bottom,0px))] max-md:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] max-md:max-w-full max-xs:px-4 max-xs:pt-[calc(5.25rem+env(safe-area-inset-top,0px))] {viewPrefs.iconStyle === 'grayed' ? 'grayed-widgets' : ''} {wallpapersEnabled && theme === 'auto' && viewPrefs.wallpaperEnabled !== false ? 'wallpaper-active' : ''}">
 		<div class="dashboard-header-wrap opacity-0 animate-fade-in [animation-fill-mode:both]">
-			<Header lat={$prefs.lat} lon={$prefs.lon} placeName={$prefs.locationSource === 'manual' ? $prefs.locationName : ''} locationSource={$prefs.locationSource} showWeather={weatherEnabled} headlines={newsEnabled ? data.news : []} />
+			<Header lat={$prefs.lat} lon={$prefs.lon} placeName={$prefs.locationSource === 'manual' ? $prefs.locationName : ''} locationSource={$prefs.locationSource} showWeather={weatherEnabled} />
 
 		</div>
 		<div class="launcher-host opacity-0 animate-fade-in-up [animation-fill-mode:both] [animation-delay:75ms] relative z-20">

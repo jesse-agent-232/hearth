@@ -2,13 +2,12 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import Weather from './Weather.svelte';
-	import NewsPill from './NewsPill.svelte';
 	import { DAYS, MONTHS } from '$lib/constants.js';
 	import { fetchWeather, reverseGeocode } from '$lib/weather.js';
 	// lat/lon are the user's chosen location (device or a searched place);
 	// without one, the weather pill offers to set it. placeName is set for a
 	// searched place, which needs no reverse lookup.
-	let { lat, lon, placeName = '', locationSource = null, showWeather = true, headlines = [] } = $props();
+	let { lat, lon, placeName = '', locationSource = null, showWeather = true } = $props();
 
 	let weatherData = $state(null);
 	let weatherLoaded = $state(false);
@@ -65,7 +64,6 @@
 		<span class="text-content-muted">{formatDate()}</span>
 	</div>
 	<div class="flex items-center gap-3 shrink-0">
-		{#if headlines.length > 0}<NewsPill {headlines} />{/if}
 		{#if showWeather}<Weather {weatherData} {weatherLoaded} {locationName} hasLocation={!!(lat && lon)} source={locationSource === 'manual' ? 'manual' : 'device'} />{/if}
 	</div>
 </div>

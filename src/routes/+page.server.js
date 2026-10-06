@@ -1,6 +1,5 @@
 import { dev } from '$app/environment';
-import { fetchNews } from '$lib/server/news.js';
-import { getAuth, getNewsConfig } from '$lib/server/config.js';
+import { getAuth } from '$lib/server/config.js';
 import { getSessionUser, isAdmin } from '$lib/server/session.js';
 import { getUserPrefs, getAdminApps } from '$lib/server/db.js';
 
@@ -23,11 +22,7 @@ export async function load({ cookies, url }) {
 	const isAuthenticated = !authConfig.enabled || !!authName;
 
 	if (isAuthenticated) {
-		const newsConfig = getNewsConfig();
-		const news = newsConfig.enabled ? await fetchNews() : [];
-
 		return {
-			news,
 			authName: authName || (authConfig.enabled ? null : 'Guest'),
 			authUsername: authUsername || null,
 			isAdmin: isAdmin(user, authConfig),
@@ -38,5 +33,5 @@ export async function load({ cookies, url }) {
 		};
 	}
 
-	return { news: [], authName: null, authUsername: null, isAdmin: false, devMode: dev };
+	return { authName: null, authUsername: null, isAdmin: false, devMode: dev };
 }

@@ -67,10 +67,6 @@ apps:
     url: "https://wikipedia.org"
     icon: "di:wikipedia"
 
-news:
-  enabled: true
-  rss_url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
-
 search:
   enabled: true
   url: "https://duckduckgo.com/"
