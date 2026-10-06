@@ -84,11 +84,28 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 - Admins add apps from a searchable directory of ~90 self-hosted apps
 - Brand tiles, Dashboard Icons and Simple Icons, custom mono icons
 - Launcher: frecency ranking, `!photos`-style scopes, `!settings` / `!theme` / `!wall` commands, `/?q=` and OpenSearch so it can be your browser's search engine
-- Integrations with per-user encrypted credentials: Immich, Paperless-ngx, Nextcloud, Planka, Karakeep, Jellyfin (Quick Connect)
+- Search inside your apps with per-user encrypted credentials ([supported apps](#supported-apps))
 - Weather (Open-Meteo) and a configurable fallback search engine
 - Onboarding slides, setup guides, inline tips, Markdown privacy policy
 - Installable PWA; on phones the search docks above the keyboard
 - Config-driven branding and fonts
+
+## Supported apps
+
+**Tiles: any app.** Anything with a URL can be a tile. List it in `config.yml` and Holm looks up the icon by name from Dashboard Icons or Simple Icons.
+
+**Search integrations** let each user search inside an app from Holm's search bar, using their own credentials:
+
+| App | Search |
+|---|---|
+| Immich | Photos |
+| Paperless-ngx | Documents |
+| Nextcloud | Files |
+| Jellyfin | Movies, shows and music (Quick Connect sign-in) |
+| Planka | Boards and cards |
+| Karakeep | Bookmarks |
+
+Adding an integration is one adapter file and one import line. [docs/integrations.md](docs/integrations.md) covers enabling, connecting, the security model and writing a new adapter.
 
 ## Development
 
