@@ -912,49 +912,44 @@
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
 	{@const guide = setupGuides[guideApp.name]}
-	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
-		<div class="glass-card rounded-2xl w-full max-w-[480px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
-			<!-- Header with icon color glow + close -->
-			<div class="p-8 pb-6 border-b border-border-card relative">
+	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4" onclick={() => (guideApp = null)}>
+		<div class="glass-card rounded-2xl w-full max-w-[400px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
+			<!-- Header: app icon on its dashboard tile + close -->
+			<div class="px-6 pt-5 pb-4 border-b border-border-card relative">
 				<button
-					class="absolute top-4 right-5 bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
+					class="absolute top-3 right-4 bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
 					onclick={() => (guideApp = null)}
 					aria-label="Close"
 				>&times;</button>
-				<div class="flex items-center gap-3.5 mb-1 pr-8">
-					<div class="app-icon-wrap w-12 h-12 rounded-[14px] flex items-center justify-center relative overflow-hidden shrink-0">
-						{#if iconStyle === 'colored' && guideApp.icon?.colored}
-							<img src={guideApp.icon.colored} alt="" class="absolute inset-0 w-full h-full scale-150 blur-xl opacity-40 pointer-events-none" />
-						{/if}
-						<AppIcon icon={guideApp.icon} name={guideApp.name} size="w-7 h-7" {iconStyle} className={iconStyle === 'colored' ? 'relative z-10' : ''} />
-					</div>
+				<div class="flex items-center gap-3 pr-8">
+					<AppIcon icon={guideApp.icon} name={guideApp.name} size="w-6 h-6" wrapSize="w-10 h-10" {iconStyle} wrap />
 					<div class="min-w-0">
-						<h3 class="text-[1.2rem] font-semibold text-content m-0 truncate">{guide.title}</h3>
-						<p class="text-[0.8rem] text-content-dim m-0 truncate">{guide.subtitle}</p>
+						<h3 class="text-[1rem] font-semibold text-content m-0 truncate">{guide.title}</h3>
+						<p class="text-[0.75rem] text-content-dim m-0 truncate">{guide.subtitle}</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- Steps -->
-			<div class="px-8 pt-6 pb-4 max-h-[300px] overflow-y-auto">
+			<div class="px-6 pt-4 pb-3 max-h-[260px] overflow-y-auto">
 				{#each guide.steps as step, i}
-					<div class="flex gap-3.5 {i < guide.steps.length - 1 ? 'mb-5' : ''}">
+					<div class="flex gap-3 {i < guide.steps.length - 1 ? 'mb-3' : ''}">
 						<div class="flex flex-col items-center">
-							<span class="w-7 h-7 rounded-full bg-surface-card-strong text-[0.75rem] font-semibold text-content-muted flex items-center justify-center shrink-0">{i + 1}</span>
+							<span class="w-6 h-6 rounded-full bg-surface-card-strong text-[0.7rem] font-semibold text-content-muted flex items-center justify-center shrink-0">{i + 1}</span>
 							{#if i < guide.steps.length - 1}
-								<div class="w-px flex-1 bg-surface-card mt-2"></div>
+								<div class="w-px flex-1 bg-surface-card mt-1.5"></div>
 							{/if}
 						</div>
-						<div class="pt-0.5 pb-1">
-							<p class="text-[0.9rem] text-content font-medium m-0">{step.label}</p>
-							<p class="text-[0.8rem] text-content-dim m-0 mt-1 leading-relaxed">{step.desc}</p>
+						<div class="pb-0.5">
+							<p class="text-[0.82rem] text-content font-medium m-0 leading-6">{step.label}</p>
+							<p class="text-[0.75rem] text-content-dim m-0 leading-snug">{step.desc}</p>
 						</div>
 					</div>
 				{/each}
 			</div>
 
 			<!-- Server URL -->
-			<div class="mx-8 {guideApp.ios || guideApp.android ? 'mb-5' : 'mb-8'} pl-4 pr-2 py-2.5 bg-surface-input border border-border-card rounded-xl flex items-center gap-3">
+			<div class="mx-6 {guideApp.ios || guideApp.android ? 'mb-3' : 'mb-6'} pl-3.5 pr-2 py-2 bg-surface-input border border-border-card rounded-xl flex items-center gap-3">
 				<div class="min-w-0 flex-1">
 					<span class="text-[0.65rem] text-content-dim uppercase tracking-[0.15em]">Server URL</span>
 					<p class="text-[0.85rem] text-content-muted font-mono m-0 mt-0.5 truncate">{guideApp.url}</p>
@@ -968,14 +963,14 @@
 
 			<!-- Actions -->
 			{#if guideApp.ios || guideApp.android}
-			<div class="px-8 pb-8 flex gap-2.5">
+			<div class="px-6 pb-6 flex gap-2">
 				{#if guideApp.ios}
-					<a href={guideApp.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] text-[0.85rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
+					<a href={guideApp.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] text-[0.8rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
 						<img src="/icons/appstore.svg" alt="" class="w-4 h-4 icon-white" /> App Store
 					</a>
 				{/if}
 				{#if guideApp.android}
-					<a href={guideApp.android} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] text-[0.85rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
+					<a href={guideApp.android} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] text-[0.8rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
 						<img src="/icons/googleplay.svg" alt="" class="w-4 h-4 icon-white" /> Play Store
 					</a>
 				{/if}
@@ -1174,7 +1169,7 @@
 		max-height: 280px;
 		overflow-y: auto;
 		padding: 0.25rem;
-		background: var(--hero-search-bg);
+		background: var(--glass-menu-bg);
 		backdrop-filter: var(--glass-blur);
 		border: 1px solid var(--hero-search-border);
 		border-radius: 0.6rem;
