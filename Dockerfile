@@ -1,4 +1,8 @@
-FROM node:22-alpine AS build
+# The build stage runs on the runner's own platform: its output is plain
+# JavaScript and no production dependency ships a native binary, so only the
+# small final stage needs emulation for arm64. Running npm ci under QEMU hung
+# the multi-platform release build.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
