@@ -188,7 +188,10 @@
 		     the search bar whenever the content grows, e.g. entering edit mode.
 		     The flex-1 spacer below pushes the footer to the viewport bottom. -->
 		<div class="shrink-0 h-[18vh] max-md:hidden"></div>
-		<div class="dashboard-header-wrap opacity-0 animate-fade-in [animation-fill-mode:both]">
+		<!-- Fill mode backwards, not both: a filled opacity animation keeps the
+		     wrapper a backdrop root, and the weather menu's glass inside it
+		     would stop blurring the search bar below. -->
+		<div class="dashboard-header-wrap animate-fade-in [animation-fill-mode:backwards]">
 			<Header lat={$prefs.lat} lon={$prefs.lon} placeName={$prefs.locationSource === 'manual' ? $prefs.locationName : ''} locationSource={$prefs.locationSource} showWeather={weatherEnabled} />
 
 		</div>

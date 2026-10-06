@@ -301,7 +301,7 @@
 									class="relative aspect-video rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-150 bg-surface-card {wallpaperId == id ? 'border-white/60 shadow-lg' : 'border-transparent hover:border-border-pill'}"
 									onclick={() => selectWallpaper(id)}
 								>
-									<div class="absolute inset-0 bg-surface-card-strong animate-pulse-status"></div>
+									<div class="absolute inset-0 shimmer"></div>
 									<img
 										src={getWallpaperThumbUrl(id)}
 										alt="Wallpaper {id}"
