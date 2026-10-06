@@ -42,14 +42,15 @@ Secrets use `${ENV_VAR}` syntax — substituted at runtime, never committed. Ses
 
 Any OIDC provider works. Two details trip people up:
 
-- **The issuer must match the provider's exactly.** Copy it from the provider's `/.well-known/openid-configuration`. Holm retries once with or without a trailing slash, and if discovery still fails, the login page shows the reason.
+- **The issuer must match the provider's exactly.** Copy it from the provider's `/.well-known/openid-configuration`. Holm retries once with or without a trailing slash. If discovery still fails, the login page says sign-in is unavailable and the server log has the reason.
 - **Log out ends the provider session only if the provider supports it.** When the discovery document lists an `end_session_endpoint`, Log out sends the user there, so the next login asks for a password. Without one (Authelia, for example), Log out only clears Holm's session, and the next login goes straight back in while the provider session lasts.
 
 ### Authentik
 
 1. **Applications → Applications → Create with provider**, provider type **OAuth2/OpenID**.
-2. Client type **Confidential**. Copy the client ID and secret into `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`.
+2. Client type **Confidential**. Copy the client ID and secret into `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`. If the provider lists grant types (Authentik 2026.x), make sure **Authorization Code** is enabled. A provider without it rejects the login with "The request is otherwise malformed".
 3. Redirect URI (strict): `https://dash.example.com/auth/callback`, the same host as `redirect_base`.
+   On Authentik 2026.5 or later, also add `https://dash.example.com/` as a redirect URI of type **Logout**, so Log out returns to Holm. Without it, users end up on Authentik's login page. Earlier versions always do that.
 4. **Invalidation flow: `default-invalidation-flow`.** The default `default-provider-invalidation-flow` logs the user out of Holm only and offers an Authentik logout as an extra button. On a shared device you want the full logout.
 5. Leave the default scopes (`openid`, `email`, `profile`). Authentik sends `groups` as part of `profile`, so `admin_groups` works without a `groups` scope.
 
