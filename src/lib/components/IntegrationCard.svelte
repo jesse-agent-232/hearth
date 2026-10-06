@@ -67,7 +67,7 @@
 		try {
 			const res = await integrationsStore.signIn(integration.id, { action: 'start', config: formConfig });
 			if (seq !== flowSeq) return;
-			signFlow = { flowId: res.flowId, code: res.code };
+			signFlow = { flowId: res.flowId, code: res.code, link: res.link };
 			schedulePoll(seq);
 		} catch (err) {
 			if (seq === flowSeq) signError = err.message || 'Sign-in failed';
@@ -361,9 +361,9 @@
 							{#if integration.signIn.help}
 								<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(integration.signIn.help)}</div>
 							{/if}
-							{#if formConfig.url}
+							{#if signFlow.link}
 								<a
-									href="{formConfig.url.replace(/\/$/, '')}/web/#/quickconnect"
+									href={signFlow.link}
 									target="_blank"
 									rel="noopener noreferrer"
 									class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"

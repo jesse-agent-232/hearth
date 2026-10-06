@@ -6,8 +6,9 @@
 // Auth is Subsonic token auth: every call sends t = md5(password + salt) and
 // the salt. Holm takes the password once, computes the token with a random
 // salt in `prepareConfig`, and stores only the username, salt and token, so
-// the password itself never reaches the database. The token still works for
-// the Subsonic API until the password changes; it can't be reversed into it.
+// the password itself never reaches the database. The token is encrypted at
+// rest like any secret, but it works for the Subsonic API until the password
+// changes, and with the salt beside it a weak password can be brute-forced.
 
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -45,18 +46,30 @@ const adapter = {
 			key: 'password',
 			type: 'secret',
 			label: 'Password',
-			help: 'Your Navidrome password. Holm uses it once to compute a Subsonic token and doesn’t store it. Leave empty to keep the current token.'
+			help: 'Your Navidrome password. Holm uses it once to compute a Subsonic token and doesn’t store it. Leave empty to keep the current token.',
+			// Spaces at either end are part of the password.
+			trim: false
 		},
-		// Computed from the password in prepareConfig, never typed.
+		// Computed from the password in prepareConfig, never typed. The token
+		// is labelled Password so a save without one reads "Missing required
+		// field: Password".
 		{ key: 'salt', type: 'text', label: 'Salt', hidden: true },
-		{ key: 'token', type: 'secret', label: 'Token', required: true, hidden: true }
+		{ key: 'token', type: 'secret', label: 'Password', required: true, hidden: true },
+		{ key: 'tokenUser', type: 'text', label: 'Token user', hidden: true }
 	],
 
 	// Swaps a submitted password for a salted token before saving. Without a
-	// new password the stored token is kept, so editing the URL alone works.
+	// new password the stored token is kept, so editing the URL alone works,
+	// unless the username changed: that token belongs to the old user, so it
+	// is dropped and the save asks for the password.
 	prepareConfig({ config }) {
 		const { password, ...rest } = config;
-		return password ? { ...rest, ...tokenFor(password) } : rest;
+		if (password) return { ...rest, ...tokenFor(password), tokenUser: rest.username };
+		if (rest.tokenUser !== rest.username) {
+			const { token, salt, tokenUser, ...keep } = rest;
+			return keep;
+		}
+		return rest;
 	},
 
 	async test({ config, fetch }) {

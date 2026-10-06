@@ -6,8 +6,10 @@
 // Auth is Plex's PIN flow: Holm shows a code, the user enters it at
 // plex.tv/link while signed in to Plex, and Holm receives that account's
 // token. Holm trades it straight away for the access token of the one server
-// at the configured URL and keeps only that, so a stolen row can't reach the
-// rest of the user's Plex account or other servers.
+// at the configured URL and keeps only that. For a server shared with the
+// user, that is a server-only token. For a server the user owns, Plex hands
+// back the account token itself, so the stored row is as sensitive as the
+// Plex account. Revoking means removing the "Holm" device in Plex.
 
 const PLEX_TV = 'https://plex.tv';
 
@@ -69,7 +71,7 @@ const adapter = {
 			if (!res.ok) return { error: `Couldn’t get a code from plex.tv (${res.status})` };
 			const pin = await res.json();
 			if (!pin?.id || !pin?.code) return { error: 'plex.tv sent an unexpected reply' };
-			return { code: String(pin.code), state: { pinId: pin.id, clientId, machineId } };
+			return { code: String(pin.code), link: `${PLEX_TV}/link`, state: { pinId: pin.id, clientId, machineId } };
 		},
 
 		async poll({ state, fetch }) {

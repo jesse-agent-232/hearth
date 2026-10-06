@@ -17,6 +17,7 @@
  * @property {{ baseKey: string, path: string, label: string }} [helpUrl]  Clickable link built from config[baseKey] + path
  * @property {string} [fromOperatorDefault]     If set, the form pre-fills from `integrations.<id>.<value>` in config.yml
  * @property {boolean} [hidden]                 Stored and redacted like any field, but never rendered — filled by `signIn`
+ * @property {boolean} [trim]                   Defaults to true; set false where surrounding spaces matter (a password)
  */
 
 /**
@@ -69,7 +70,7 @@
  *
  * @property {string} label                                    Button text, e.g. 'Sign in with Quick Connect'
  * @property {string} [help]                                   Markdown shown next to the code
- * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<{ code: string, state: object } | { error: string }>} start
+ * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<{ code: string, link?: string, state: object } | { error: string }>} start  `link` is where the user enters the code
  * @property {(ctx: { config: object, state: object, fetch: typeof fetch }) => Promise<{ status: 'pending' } | { status: 'done', config: object } | { status: 'error', error: string }>} poll
  */
 

@@ -92,7 +92,7 @@ function mergeConfig(adapter, existing, submitted) {
 		// A bullet-redacted secret means "don't change this" — keep existing.
 		if (field.type === 'secret' && isRedacted(v)) continue;
 		if (typeof v === 'string') {
-			merged[field.key] = v.trim();
+			merged[field.key] = field.trim === false ? v : v.trim();
 		} else {
 			merged[field.key] = v;
 		}
