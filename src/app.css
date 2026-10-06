@@ -1702,6 +1702,32 @@ body.search-active .hero-area {
 .launcher-more { padding: 8px; text-align: center; font-size: 12px; line-height: 1.3; }
 .launcher-thumb-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .launcher-thumb-fallback { width: 20px; height: 20px; }
+/* Loading state: shimmer across the tile until the thumbnail decodes, then
+   fade it in. The kind icon underneath stays hidden meanwhile so a slow
+   photo doesn't flash a document glyph first. */
+.launcher-thumb-wrap img,
+.launcher-icon-box img { transition: opacity 200ms ease-out; }
+.launcher-thumb-wrap img.is-loading,
+.launcher-icon-box img.is-loading { opacity: 0; }
+.launcher-thumb-wrap:has(img.is-loading) > svg,
+.launcher-icon-box:has(img.is-loading) > svg { visibility: hidden; }
+.launcher-thumb-wrap:has(img.is-loading)::before,
+.launcher-icon-box:has(img.is-loading)::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(100deg, transparent 20%, var(--hero-search-chip-border) 50%, transparent 80%);
+	background-size: 200% 100%;
+	animation: thumb-shimmer 1.2s linear infinite;
+}
+@keyframes thumb-shimmer {
+	from { background-position: 150% 0; }
+	to { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.launcher-thumb-wrap:has(img.is-loading)::before,
+	.launcher-icon-box:has(img.is-loading)::before { animation: none; }
+}
 .launcher-item.is-selected .launcher-thumb-wrap {
 	box-shadow: 0 0 0 2px var(--hero-search-bg), 0 0 0 4px var(--launcher-sel-ring);
 }
