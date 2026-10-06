@@ -35,7 +35,7 @@
 	<div
 		use:portal
 		use:dialog={{ label: 'Privacy & Terms' }}
-		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in"
+		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4"
 		onclick={() => open = false}
 	>
 	<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[80vh] overflow-hidden shadow-theme animate-modal-enter flex flex-col relative" onclick={(e) => e.stopPropagation()}>

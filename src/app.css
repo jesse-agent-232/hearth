@@ -177,14 +177,14 @@
 	--bloom-ring: rgba(255, 255, 255, 0.18);
 
 	/* Hero search palette + default app tile. The :root values target the
-	   "auto / dynamic" theme. The palette uses the same dark surface as the
-	   tile context menu (.glass-card.menu-surface), so the two popovers over
-	   the wallpaper match; white tiles still read as the lit foreground.
+	   "auto / dynamic" theme. The open palette uses the same clear glass as
+	   the modals (.glass-card), so it reads as one of them; the page behind
+	   is already dimmed and blurred while search is open.
 	   .theme-dark below flips the tile to a dark variant for the
 	   no-wallpaper dark theme. The bar's interior (text/icons/kbd/chip) is
 	   themed by the bar's own bg, not the page, so we expose dedicated
 	   --hero-search-* tokens. */
-	--hero-search-bg: var(--glass-menu-bg);
+	--hero-search-bg: var(--glass-bg);
 	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.50);
@@ -198,7 +198,7 @@
    the white tile flips to a quiet translucent zinc. The bar keeps the
    dark palette it already has in auto. */
 .theme-dark {
-	--hero-search-bg: var(--glass-menu-bg);
+	--hero-search-bg: var(--glass-bg);
 	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.50);
@@ -404,6 +404,13 @@ body {
 	z-index: -1;
 	background: var(--overlay);
 	backdrop-filter: blur(6px);
+	animation: veil-in 200ms var(--ease-standard, ease-out);
+}
+/* Fade the dim and the blur in together. The wrapper must not fade its own
+   opacity: an ancestor with opacity below 1 is a backdrop root too, so the
+   blur would switch on only when the fade ended, which reads as a flash. */
+@keyframes veil-in {
+	from { background: transparent; backdrop-filter: blur(0); }
 }
 
 /* Checkbox drawn to match the glass: a translucent box that fills with the
@@ -960,6 +967,12 @@ body.search-active .hero-area {
 		0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 
+/* Light theme: the open palette is the same white glass as the modals;
+   only the resting bar stays solid white. */
+.theme-light .hero-search.is-open {
+	--hero-search-bg: var(--glass-bg);
+}
+
 /* Suggestions / results dropdown — mirrors the input pill so the two
    surfaces don't tonal-flip from white pill → dark dropdown. */
 .hero-search-results {
@@ -1046,8 +1059,10 @@ body.search-active .hero-area {
 .hero-search-results .focus\:bg-surface-card-hover:focus {
 	background: var(--hero-search-chip-bg) !important;
 }
-/* Brand-colored tiles keep their inline brand background. */
-.hero-search-results .bg-surface-card-strong:not(.is-brand) {
+/* Brand-colored tiles keep their inline brand background, and app icons
+   keep the page's tile (white except in Dark) so they look the same here
+   as on the dashboard. */
+.hero-search-results .bg-surface-card-strong:not(.is-brand):not(.app-icon-wrap) {
 	background: var(--hero-search-chip-bg) !important;
 }
 .hero-search-results .border-border-card {
@@ -1764,7 +1779,7 @@ body.search-active .hero-area {
 	width: min(280px, calc(100% - 16px));
 	padding: 6px;
 	border-radius: 12px;
-	background: var(--hero-search-bg);
+	background: var(--glass-menu-bg);
 	backdrop-filter: var(--glass-blur);
 	border: 1px solid var(--launcher-sel-ring);
 	box-shadow: var(--glass-highlight), 0 16px 40px -12px rgba(0, 0, 0, 0.6);

@@ -159,7 +159,7 @@
 	<div
 		use:portal
 		use:dialog={{ label: 'Configure' }}
-		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in"
+		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4"
 		onclick={requestClose}
 	>
 		<div

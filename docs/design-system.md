@@ -285,11 +285,15 @@ from the login card. The tokens live in `src/app.css` (`--glass-*`).
 | `segmented` / `segmented-item` | Two-to-four-way choices (Theme, Icon style) |
 | `glass-check`             | Checkboxes                                |
 
-Two rules the browser enforces:
+Three rules the browser enforces:
 
 - **Never put `backdrop-filter` on a modal's wrapper.** It becomes the
   backdrop root and the card inside blurs nothing. `modal-veil` paints its dim
   and blur on a `::before` layer for that reason.
+- **Don't fade a modal's wrapper with opacity** (`animate-fade-in`). Opacity
+  below 1 also makes it a backdrop root, so the blur appears only when the
+  fade ends and the modal flashes. `modal-veil` fades its own layer instead;
+  animate the card, not the wrapper.
 - **Write only the unprefixed `backdrop-filter`.** The build adds the
   `-webkit-` copy; writing both by hand makes the minifier keep only the
   prefixed one, which Chrome ignores.
