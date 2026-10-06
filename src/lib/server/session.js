@@ -9,7 +9,7 @@ function getSigningKey() {
 	const auth = getAuth();
 	const secret = auth?.oidc?.client_secret;
 	if (secret && !secret.startsWith('${')) {
-		_signingKey = createHmac('sha256', 'hearth-session').update(secret).digest('hex');
+		_signingKey = createHmac('sha256', 'holm-session').update(secret).digest('hex');
 	} else {
 		// Fallback: random key (sessions invalidated on restart, acceptable for dev)
 		_signingKey = randomBytes(32).toString('hex');

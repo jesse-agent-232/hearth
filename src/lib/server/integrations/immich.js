@@ -111,7 +111,7 @@ const adapter = {
 					results: items.map((asset) => ({
 						id: asset.id,
 						title: asset.originalFileName || asset.id,
-						// Browser fetches thumbnails through Hearth so the API key
+						// Browser fetches thumbnails through Holm so the API key
 						// never reaches the browser. The proxy route resolves the
 						// user's stored config and forwards to Immich with x-api-key.
 						// Using size=thumbnail (256x256, ~20KB) instead of preview
@@ -129,7 +129,7 @@ const adapter = {
 	},
 
 	proxy: {
-		// Thumbnail / preview byte-streaming proxy. Browser fetches a Hearth URL
+		// Thumbnail / preview byte-streaming proxy. Browser fetches a Holm URL
 		// like /api/integrations/immich/proxy/thumbnail/<asset-id>?size=preview
 		// and the server forwards to Immich with the user's stored API key.
 		thumbnail: {

@@ -6,7 +6,7 @@
 	const config = data.config;
 	setContext('config', config);
 
-	const brandName = config?.branding?.name || 'Hearth';
+	const brandName = config?.branding?.name || 'Holm';
 	const brandDesc = config?.branding?.description || 'Self-hosted dashboard';
 	const themeColor = config?.branding?.theme_color || '#09090b';
 	const accentColor = config?.branding?.accent_color || '#f5b942';

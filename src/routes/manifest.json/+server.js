@@ -20,8 +20,8 @@ export function GET() {
 	}
 
 	const manifest = {
-		name: branding.name || 'Hearth',
-		short_name: branding.short_name || branding.name?.toLowerCase() || 'hearth',
+		name: branding.name || 'Holm',
+		short_name: branding.short_name || branding.name?.toLowerCase() || 'holm',
 		description: branding.description || 'Self-hosted dashboard',
 		start_url: '/',
 		display: 'standalone',

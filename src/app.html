@@ -3,8 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
-	<link rel="search" type="application/opensearchdescription+xml" title="Hearth" href="/opensearch.xml">
-	<title>Hearth</title>
+	<link rel="search" type="application/opensearchdescription+xml" title="Holm" href="/opensearch.xml">
+	<title>Holm</title>
 	<meta name="description" content="Self-hosted dashboard">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,8 +17,8 @@
 	<script>
 		// Apply theme from localStorage before first paint to prevent flash
 		try {
-			const p = JSON.parse(localStorage.getItem('hearth_prefs'));
-			const t = p?.theme || localStorage.getItem('hearth_theme');
+			const p = JSON.parse(localStorage.getItem('holm_prefs'));
+			const t = p?.theme || localStorage.getItem('holm_theme');
 			if (t === 'light') document.body.classList.add('theme-light');
 			else if (t === 'dark') document.body.classList.add('theme-dark');
 		} catch {}

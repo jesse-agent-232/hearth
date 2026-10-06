@@ -30,7 +30,7 @@ function saveToDisk() {
 		writeFileSync(tmpPath, Buffer.from(data));
 		renameSync(tmpPath, dbPath);
 	} catch (err) {
-		console.error('[hearth] Failed to save database:', err.message);
+		console.error('[holm] Failed to save database:', err.message);
 	}
 }
 
@@ -45,12 +45,12 @@ async function ensureInit() {
 
 		if (dbConfig.enabled === false) {
 			db = false;
-			console.log('[hearth] Database disabled in config — using localStorage-only mode');
+			console.log('[holm] Database disabled in config — using localStorage-only mode');
 			return;
 		}
 
 		try {
-			dbPath = process.env.DATABASE_PATH || dbConfig.path || './data/hearth.db';
+			dbPath = process.env.DATABASE_PATH || dbConfig.path || './data/holm.db';
 			mkdirSync(dirname(dbPath), { recursive: true });
 
 			const SQL = await initSqlJs();
@@ -93,10 +93,10 @@ async function ensureInit() {
 			`);
 
 			saveToDisk();
-			console.log('[hearth] SQLite database initialized (sql.js)');
+			console.log('[holm] SQLite database initialized (sql.js)');
 		} catch (err) {
 			db = false;
-			console.log('[hearth] SQLite failed to initialize:', err.message);
+			console.log('[holm] SQLite failed to initialize:', err.message);
 		}
 	})();
 

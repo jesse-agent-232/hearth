@@ -1,18 +1,18 @@
 services:
-  hearth:
+  holm:
     build: .
     ports:
       - "3000:3000"
     environment:
       - CONFIG_PATH=/app/config.yml
-      - DATABASE_PATH=/app/data/hearth.db
+      - DATABASE_PATH=/app/data/holm.db
       - NODE_ENV=production
       # OIDC secrets (set via .env or here):
       # - OIDC_CLIENT_ID=
       # - OIDC_CLIENT_SECRET=
     volumes:
       - ./config.yml:/app/config.yml:ro
-      - hearth-data:/app/data
+      - holm-data:/app/data
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -21,4 +21,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  hearth-data:
+  holm-data:

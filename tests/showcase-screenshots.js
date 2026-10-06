@@ -73,7 +73,7 @@ async function setupPage(browser, vp, prefs) {
 	await page.route('**/api/prefs', route => {
 		route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ prefs }) });
 	});
-	await page.addInitScript((p) => localStorage.setItem('hearth_prefs', JSON.stringify(p)), prefs);
+	await page.addInitScript((p) => localStorage.setItem('holm_prefs', JSON.stringify(p)), prefs);
 	return page;
 }
 
@@ -213,7 +213,7 @@ async function run() {
 				for (const theme of THEMES) {
 					const page = await browser.newPage({ viewport: VIEWPORTS[vp] });
 					await page.addInitScript((t) => {
-						localStorage.setItem('hearth_prefs', JSON.stringify({ theme: t, wallpaperEnabled: true, wallpaperId: 1 }));
+						localStorage.setItem('holm_prefs', JSON.stringify({ theme: t, wallpaperEnabled: true, wallpaperId: 1 }));
 					}, theme);
 					await page.goto(BASE, { waitUntil: 'networkidle', timeout: 30000 });
 					await page.waitForSelector('text=Welcome', { timeout: 10000 }).catch(() => {});
@@ -244,7 +244,7 @@ async function run() {
 				// We need to fake being logged in — set auth cookies
 				const page = await browser.newPage({ viewport: VIEWPORTS[vp] });
 				await page.addInitScript(() => {
-					localStorage.setItem('hearth_prefs', JSON.stringify({
+					localStorage.setItem('holm_prefs', JSON.stringify({
 						theme: 'dark', onboarded: false, wallpaperEnabled: true, wallpaperId: 1,
 						name: 'Alex', username: 'alex', firstLoginAt: new Date().toISOString()
 					}));

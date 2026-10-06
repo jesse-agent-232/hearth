@@ -3,7 +3,7 @@ import { getTodayWallpaperId } from '$lib/wallpaper.js';
 
 // /api/wallpaper/today is the wallpaper of the day, picked in the server's
 // time zone, so other apps (e.g. a sign-in page) can show the same image as
-// the dashboard without knowing how Hearth picks it.
+// the dashboard without knowing how Holm picks it.
 export async function GET({ params }) {
 	const today = params.id === 'today';
 	const id = today ? getTodayWallpaperId() : params.id.replace(/[^0-9]/g, '').padStart(4, '0');

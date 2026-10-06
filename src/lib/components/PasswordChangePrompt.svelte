@@ -7,7 +7,7 @@
 
 	const siteConfig = getContext('config');
 	const passwordChangeUrl = siteConfig?.auth?.password_change_url;
-	const brandName = siteConfig?.branding?.name || 'Hearth';
+	const brandName = siteConfig?.branding?.name || 'Holm';
 	const brandLogo = siteConfig?.branding?.logo;
 
 	let wallpaperUrl = $state('');

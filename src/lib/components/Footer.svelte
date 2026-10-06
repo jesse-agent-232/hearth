@@ -2,7 +2,7 @@
 	import { getContext } from 'svelte';
 
 	const siteConfig = getContext('config');
-	const brandName = siteConfig?.branding?.name || 'Hearth';
+	const brandName = siteConfig?.branding?.name || 'Holm';
 	const privacyEnabled = siteConfig?.privacy?.enabled !== false;
 
 	let { onOpenPrivacy = null } = $props();

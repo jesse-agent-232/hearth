@@ -13,7 +13,7 @@
 	// without missing an early beforeinstallprompt event.
 	let { devMode = false, ready = true } = $props();
 
-	const brandName = getContext('config')?.branding?.name || 'Hearth';
+	const brandName = getContext('config')?.branding?.name || 'Holm';
 
 	onMount(() => {
 		// Don't show if already installed as standalone

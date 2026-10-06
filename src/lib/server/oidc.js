@@ -10,7 +10,7 @@ export async function getOIDCConfig() {
 	const oidc = auth.oidc || {};
 
 	if (!oidc.issuer) {
-		throw new Error('[hearth] auth.oidc.issuer is required when auth is enabled');
+		throw new Error('[holm] auth.oidc.issuer is required when auth is enabled');
 	}
 
 	const issuerUrl = new URL(oidc.issuer);
@@ -24,6 +24,6 @@ export async function getOIDCConfig() {
 		redirect_base: oidc.redirect_base || ''
 	};
 
-	console.log('[hearth] OIDC discovery complete for', oidc.issuer);
+	console.log('[holm] OIDC discovery complete for', oidc.issuer);
 	return _config;
 }

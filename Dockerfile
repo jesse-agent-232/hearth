@@ -16,7 +16,7 @@ COPY config.example.yml ./config.example.yml
 RUN mkdir -p /app/data
 
 ENV CONFIG_PATH=/app/config.yml
-ENV DATABASE_PATH=/app/data/hearth.db
+ENV DATABASE_PATH=/app/data/holm.db
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000

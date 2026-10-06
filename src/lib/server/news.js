@@ -4,7 +4,7 @@ const NEWS_TTL = 15 * 60 * 1000; // 15 minutes
 let cache = { ts: 0, items: [] };
 
 // Feed links are rendered straight into <a href>, so keep only http(s):
-// a `javascript:` link in a feed would otherwise run as Hearth when clicked.
+// a `javascript:` link in a feed would otherwise run as Holm when clicked.
 function safeLink(raw) {
 	try {
 		const u = new URL(raw);
