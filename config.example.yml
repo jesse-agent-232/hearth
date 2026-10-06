@@ -31,7 +31,7 @@ auth:
     # token_endpoint: "/api/oidc/token"
     # userinfo_endpoint: "/api/oidc/userinfo"
   admin_groups:                               # OIDC groups claim — users in these groups see admin-only apps
-    - "lldap_admin"
+    - "admins"                                # e.g. "lldap_admin" for LLDAP, "authentik Admins" for authentik
   admin_usernames:                            # Fallback: username-based admin check (when groups unavailable)
     - "admin"
   password_change_url: null                   # If set, shows "Change password" in settings menu
@@ -198,7 +198,7 @@ integrations:
     enabled: true                             # Omit or set false to hide entirely
     name: "Photos"                            # Optional — overrides adapter's default display name
     shortcut: "photos"                        # Optional — !<shortcut> in the search bar scopes results to this integration (adapter default shown)
-    default_url: "https://immich.example.com" # Optional — pre-fills & locks the URL field for users
+    default_url: "https://photos.example.com" # Optional — pre-fills & locks the URL field for users
     surfaces:                                 # Which surfaces this instance is allowed to power
       search: true                            # Photo search in the search bar
       widgets: false                          # Reserved — widget rendering ships in a follow-up
@@ -288,6 +288,8 @@ onboarding:
 # Option A: Use a markdown file (recommended)
 #   file: "privacy.md"               # Path relative to config.yml
 # Option B: Inline sections (below)
+# These are promises to your users. Edit them to match what your server
+# really does (backups, TLS, retention) before you turn this on.
 privacy:
   enabled: true
   last_updated: "March 2026"
