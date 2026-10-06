@@ -28,7 +28,7 @@ const PREFS = {
 
 async function setPrefs(page, overrides = {}) {
 	const prefs = { ...PREFS, ...overrides };
-	await page.addInitScript((p) => localStorage.setItem('hearth_prefs', JSON.stringify(p)), prefs);
+	await page.addInitScript((p) => localStorage.setItem('holm_prefs', JSON.stringify(p)), prefs);
 }
 
 async function waitForReady(page) {

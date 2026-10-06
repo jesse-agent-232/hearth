@@ -1,5 +1,5 @@
 // Frecency for launcher items: how often and how recently something was
-// opened from Hearth. Kept in this browser only — it's a ranking hint, not
+// opened from Holm. Kept in this browser only — it's a ranking hint, not
 // a preference worth syncing.
 const KEY = 'launcher_frecency';
 const HALF_LIFE_DAYS = 14;

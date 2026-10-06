@@ -46,7 +46,7 @@
 
 /**
  * @typedef {Object} ProxyHandler
- * Proxies an authenticated upstream resource through Hearth so the browser
+ * Proxies an authenticated upstream resource through Holm so the browser
  * never sees the integration's API key. Used for thumbnails, previews,
  * downloads — anything that needs to land in an `<img src>` or `<a href>`
  * without leaking credentials.
@@ -61,10 +61,10 @@
 
 /**
  * @typedef {Object} SignIn
- * A device-code style sign-in (e.g. Jellyfin Quick Connect): Hearth shows a
+ * A device-code style sign-in (e.g. Jellyfin Quick Connect): Holm shows a
  * code, the user approves it inside the other app, and the adapter trades the
  * approval for that user's own token. No password or admin key passes through
- * Hearth. The generic /api/integrations/:id/signin route keeps `state`
+ * Holm. The generic /api/integrations/:id/signin route keeps `state`
  * server-side and saves the connection when `poll` reports done.
  *
  * @property {string} label                                    Button text, e.g. 'Sign in with Quick Connect'

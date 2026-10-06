@@ -348,7 +348,7 @@
 	const openAppsInNewTab = $derived($prefs.openInNewTab ?? true);
 
 	// Result links come from integrations (bookmarks, files), so only follow
-	// http(s): a stored `javascript:` link would otherwise run as Hearth.
+	// http(s): a stored `javascript:` link would otherwise run as Holm.
 	function safeUrl(url) {
 		try {
 			const u = new URL(url, window.location.href);

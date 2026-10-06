@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-const PREFS_KEY = 'hearth_prefs';
-const THEME_KEY = 'hearth_theme';
-const ICON_KEY = 'hearth_icon_style';
+const PREFS_KEY = 'holm_prefs';
+const THEME_KEY = 'holm_theme';
+const ICON_KEY = 'holm_icon_style';
 const SCREENSHOTS = 'screenshots/theme-persistence';
 
 // Set localStorage prefs before navigation
 async function setPrefs(page, prefs) {
 	await page.evaluate(({ key, prefs }) => {
 		localStorage.setItem(key, JSON.stringify(prefs));
-		if (prefs.theme) localStorage.setItem('hearth_theme', prefs.theme);
-		if (prefs.iconStyle) localStorage.setItem('hearth_icon_style', prefs.iconStyle);
+		if (prefs.theme) localStorage.setItem('holm_theme', prefs.theme);
+		if (prefs.iconStyle) localStorage.setItem('holm_icon_style', prefs.iconStyle);
 	}, { key: PREFS_KEY, prefs });
 }
 
@@ -20,7 +20,7 @@ async function simulateLogout(page) {
 		localStorage.removeItem(key);
 		localStorage.removeItem('weather_cache');
 		localStorage.removeItem('weather_location');
-		// hearth_theme and hearth_icon_style intentionally kept
+		// holm_theme and holm_icon_style intentionally kept
 	}, PREFS_KEY);
 }
 
@@ -42,9 +42,9 @@ async function goToLogin(page) {
 // Get persistent keys from localStorage
 async function getPersistentKeys(page) {
 	return page.evaluate(() => ({
-		theme: localStorage.getItem('hearth_theme'),
-		iconStyle: localStorage.getItem('hearth_icon_style'),
-		hasPrefs: !!localStorage.getItem('hearth_prefs')
+		theme: localStorage.getItem('holm_theme'),
+		iconStyle: localStorage.getItem('holm_icon_style'),
+		hasPrefs: !!localStorage.getItem('holm_prefs')
 	}));
 }
 

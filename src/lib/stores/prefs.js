@@ -1,11 +1,11 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-const STORAGE_KEY = 'hearth_prefs';
+const STORAGE_KEY = 'holm_prefs';
 
-const THEME_KEY = 'hearth_theme';
-const ICON_STYLE_KEY = 'hearth_icon_style';
-const WALLPAPER_KEY = 'hearth_wallpaper';
+const THEME_KEY = 'holm_theme';
+const ICON_STYLE_KEY = 'holm_icon_style';
+const WALLPAPER_KEY = 'holm_wallpaper';
 
 function loadPrefs() {
 	if (!browser) return {};
@@ -87,7 +87,7 @@ function createPrefsStore() {
 				localStorage.removeItem(STORAGE_KEY);
 				localStorage.removeItem('weather_cache');
 				localStorage.removeItem('weather_location');
-				// hearth_theme and hearth_icon_style intentionally kept — survive logout
+				// holm_theme and holm_icon_style intentionally kept — survive logout
 			}
 			// Restore persisted visual prefs into the empty state
 			const restored = {};

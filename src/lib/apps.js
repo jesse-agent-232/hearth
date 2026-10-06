@@ -14,7 +14,7 @@ function normalizeAppsInput(appsConfig) {
 		if (!warnedOnLegacyShape) {
 			warnedOnLegacyShape = true;
 			console.warn(
-				"[hearth] config: nested 'category/items' apps shape is deprecated. " +
+				"[holm] config: nested 'category/items' apps shape is deprecated. " +
 					'Flatten apps: into a single list. The category labels are silently ignored.'
 			);
 		}
@@ -55,7 +55,7 @@ export function buildAppsFromConfig(appsConfig) {
 	return { apps, setupGuides };
 }
 
-// Served through Hearth's own cache (routes/api/icon), not the CDNs directly.
+// Served through Holm's own cache (routes/api/icon), not the CDNs directly.
 const DI_CDN = '/api/icon/di';
 const SI_CDN = '/api/icon/si';
 

@@ -1,4 +1,4 @@
-# Hearth Dashboard Configuration
+# Holm Dashboard Configuration
 # Copy this to config.yml and customize for your setup.
 # Secrets use ${ENV_VAR} syntax — substituted at load time from environment variables.
 
@@ -45,7 +45,7 @@ auth:
 # Path can also be set via DATABASE_PATH env var.
 database:
   enabled: true
-  # path: "./data/hearth.db"                     # Default SQLite path
+  # path: "./data/holm.db"                     # Default SQLite path
 
 # ── Customization ───────────────────────────────────────────
 # When enabled, authenticated users get a Configure panel to:
@@ -57,7 +57,7 @@ customization:
   enabled: true
 
 # ── Apps ────────────────────────────────────────────────────
-# Flat list of apps the operator wants to expose. Hearth surfaces each app as
+# Flat list of apps the operator wants to expose. Holm surfaces each app as
 # its own widget tile — there are no operator-defined categories anymore. Users
 # arrange tiles on a per-user grid via the dashboard's edit mode. The legacy
 # "category + items" shape is silently flattened with a one-time warning, so
@@ -177,18 +177,18 @@ search:
 #
 # Each integration only appears in user settings if it's listed here. Users
 # then connect to it (paste credentials, hit Test) on a per-account basis;
-# credentials are encrypted at rest with HEARTH_SECRET_KEY.
+# credentials are encrypted at rest with HOLM_SECRET_KEY.
 #
 # ── Master encryption key ─────────────────────────────────
 # Per-user integration credentials are encrypted at rest with AES-256-GCM.
 # Resolution order:
-#   1. HEARTH_SECRET_KEY env var  — 32 bytes hex or base64. RECOMMENDED for prod.
+#   1. HOLM_SECRET_KEY env var  — 32 bytes hex or base64. RECOMMENDED for prod.
 #   2. ./data/.integrations-key   — auto-generated on first boot, chmod 0600.
 #
 # Threat model: with the file fallback, the key sits next to the SQLite DB.
 # An attacker who exfiltrates the whole ./data/ directory has both the
 # ciphertext and the key. The env-var path is the only one that protects
-# against whole-data-dir leaks. Set HEARTH_SECRET_KEY in production.
+# against whole-data-dir leaks. Set HOLM_SECRET_KEY in production.
 #
 # Generate one with:
 #   openssl rand -hex 32

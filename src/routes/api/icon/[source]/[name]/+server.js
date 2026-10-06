@@ -1,7 +1,7 @@
 // GET /api/icon/:source/:name
 //
 // Same-origin cache in front of the public icon CDNs, so a dashboard load
-// costs one round-trip to Hearth instead of ~40 to jsdelivr/simpleicons, and
+// costs one round-trip to Holm instead of ~40 to jsdelivr/simpleicons, and
 // visitors' IPs and Referer never reach those CDNs. Only the three known
 // sources and plain slugs are accepted: this is not an open proxy.
 
@@ -42,7 +42,7 @@ async function fetchIcon(url) {
 }
 
 // Upstream SVGs are third-party content served from our origin; sandbox them
-// so opening one directly can't run script as Hearth.
+// so opening one directly can't run script as Holm.
 const SVG_HEADERS = {
 	'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
 	'x-content-type-options': 'nosniff'

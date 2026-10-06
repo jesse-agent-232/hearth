@@ -1,12 +1,12 @@
-# Hearth Vision
+# Holm Vision
 
 > The "why" and "what" — implementation choices push against this doc.
 
 ## Premise
 
-Hearth is a self-hosted dashboard an **admin sets up once** for everyone they share a homelab with — family, housemates, team. It is not a status console. It is a **glance**: a personal start page each user makes their own, hosted by someone who already runs the infrastructure.
+Holm is a self-hosted dashboard an **admin sets up once** for everyone they share a homelab with — family, housemates, team. It is not a status console. It is a **glance**: a personal start page each user makes their own, hosted by someone who already runs the infrastructure.
 
-This is what separates Hearth from Homarr, Dashy, Homepage, and Glance: those are admin tools where one person configures everything for one viewer. Hearth is multi-user from the floor up — the admin never authors a user's surface, and a user never edits the admin's catalog.
+This is what separates Holm from Homarr, Dashy, Homepage, and Glance: those are admin tools where one person configures everything for one viewer. Holm is multi-user from the floor up — the admin never authors a user's surface, and a user never edits the admin's catalog.
 
 ## Roles
 
@@ -14,7 +14,7 @@ This is what separates Hearth from Homarr, Dashy, Homepage, and Glance: those ar
 
 - Catalog of self-hosted apps (with `default_visible` per app)
 - Integration credentials — wired once
-- Custom CSS theme — re-skin Hearth to feel like Glance, Homarr, or anything else; default theme ships as today
+- Custom CSS theme — re-skin Holm to feel like Glance, Homarr, or anything else; default theme ships as today
 - Onboarding slides — composable from built-in types
 - Per-app setup guides
 
@@ -61,7 +61,7 @@ The existing `services` slide, per-app `setup_guide`, and inline tips system con
 
 ## Non-goals
 
-- **Technical dashboards.** No CPU, disk, container-health widgets. Tools that do that already exist; Hearth is a glance, not a console.
+- **Technical dashboards.** No CPU, disk, container-health widgets. Tools that do that already exist; Holm is a glance, not a console.
 - **admin-defined categories.** Replaced by smart built-in widgets and optional tags-as-filters.
 - **Per-user CSS.** Theming is admin-only.
 - **Pushing content at the user.** Surfaces show what the user opted into. No surprise widgets, no auto-injected suggestions after first-run.

@@ -4,7 +4,7 @@
 	import { browser } from '$app/environment';
 
 	const siteConfig = getContext('config');
-	const brandName = siteConfig?.branding?.name || 'Hearth';
+	const brandName = siteConfig?.branding?.name || 'Holm';
 	const privacyConfig = siteConfig?.privacy || {};
 	const sections = privacyConfig.sections || [];
 	const lastUpdated = privacyConfig.last_updated || '';

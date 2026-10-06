@@ -10,7 +10,7 @@ let _config = null;
 const configPath = process.env.CONFIG_PATH || 'config.yml';
 try {
 	watchFile(configPath, { interval: 2000 }, () => {
-		console.log('[hearth] Config file changed, reloading on next request');
+		console.log('[holm] Config file changed, reloading on next request');
 		_config = null;
 	});
 } catch { /* file may not exist yet */ }
@@ -35,8 +35,8 @@ function loadConfig() {
 	try {
 		raw = readFileSync(configPath, 'utf-8');
 	} catch (err) {
-		console.error(`[hearth] Could not read config at ${configPath}: ${err.message}`);
-		console.error('[hearth] Copy config.example.yml to config.yml to get started.');
+		console.error(`[holm] Could not read config at ${configPath}: ${err.message}`);
+		console.error('[holm] Copy config.example.yml to config.yml to get started.');
 		_config = getDefaults();
 		return _config;
 	}
@@ -48,7 +48,7 @@ function loadConfig() {
 
 function getDefaults() {
 	return {
-		branding: { name: 'Hearth', short_name: 'hearth', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: null }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
+		branding: { name: 'Holm', short_name: 'holm', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: null }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
 		auth: { enabled: false, oidc: {}, admin_usernames: [], password_change_url: null, registration: { enabled: false, url: null } },
 		apps: [],
 		customization: { enabled: false },

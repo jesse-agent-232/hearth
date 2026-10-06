@@ -3,8 +3,8 @@
 // Surfaces:
 //   - searchProviders.media — searches movies, shows, episodes, albums and artists
 //
-// Auth is Quick Connect: Hearth shows a code, the user approves it in their
-// own Jellyfin session, and Hearth keeps that user's access token. No API key
+// Auth is Quick Connect: Holm shows a code, the user approves it in their
+// own Jellyfin session, and Holm keeps that user's access token. No API key
 // (those are server-wide and see every library) and no password (Jellyfin
 // signs in with the LLDAP password, which unlocks every other app too).
 // Tokens go in `Authorization: MediaBrowser …, Token="..."`; the X-Emby-Token
@@ -57,8 +57,8 @@ const adapter = {
 		async start({ config, fetch }) {
 			const base = stripTrailingSlash(config.url);
 			// One device id per sign-in: Jellyfin keeps one session per device,
-			// so this shows up as its own "Hearth" entry under Devices.
-			const deviceId = `hearth-${crypto.randomUUID()}`;
+			// so this shows up as its own "Holm" entry under Devices.
+			const deviceId = `holm-${crypto.randomUUID()}`;
 			const headers = authHeaders({ deviceId });
 			const enabled = await fetch(`${base}/QuickConnect/Enabled`, { headers });
 			if (!enabled.ok) return { error: `Jellyfin returned ${enabled.status} — is the URL right?` };
@@ -103,7 +103,7 @@ const adapter = {
 		}
 	},
 
-	// Ends the Hearth session in Jellyfin, so the token stops working.
+	// Ends the Holm session in Jellyfin, so the token stops working.
 	async signOut({ config, fetch }) {
 		if (!config?.url || !config?.accessToken) return;
 		await fetch(`${stripTrailingSlash(config.url)}/Sessions/Logout`, {
@@ -213,7 +213,7 @@ function stripTrailingSlash(url) {
 
 // Jellyfin wants client details on every call, signed in or not.
 function authHeaders({ deviceId, accessToken }) {
-	const parts = [`Client="Hearth"`, `Device="Hearth"`, `DeviceId="${quoteSafe(deviceId || 'hearth')}"`, `Version="1.0"`];
+	const parts = [`Client="Holm"`, `Device="Holm"`, `DeviceId="${quoteSafe(deviceId || 'holm')}"`, `Version="1.0"`];
 	if (accessToken) parts.push(`Token="${quoteSafe(accessToken)}"`);
 	return { Authorization: `MediaBrowser ${parts.join(', ')}`, accept: 'application/json' };
 }

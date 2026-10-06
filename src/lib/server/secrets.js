@@ -5,14 +5,14 @@ import { dirname } from 'path';
 // AES-256-GCM master key for encrypting per-user integration credentials.
 //
 // Resolution order:
-//   1. process.env.HEARTH_SECRET_KEY  — 32 bytes hex or base64. Production-grade.
+//   1. process.env.HOLM_SECRET_KEY  — 32 bytes hex or base64. Production-grade.
 //   2. ./data/.integrations-key       — 32 random bytes auto-generated on first
 //                                       boot, chmod 0600. Frictionless for dev.
 //
 // Threat model: with the auto-generated file fallback, the key sits next to
 // the SQLite DB. An attacker who exfiltrates the whole ./data/ directory has
 // both the key and the ciphertext. Operators running production deployments
-// should set HEARTH_SECRET_KEY in the environment to keep the key out of the
+// should set HOLM_SECRET_KEY in the environment to keep the key out of the
 // data directory entirely.
 
 const KEY_FILE_PATH = './data/.integrations-key';
@@ -39,28 +39,28 @@ function loadOrGenerateKeyFile() {
 	if (existsSync(KEY_FILE_PATH)) {
 		const buf = readFileSync(KEY_FILE_PATH);
 		if (buf.length === KEY_LENGTH) return buf;
-		console.warn(`[hearth] ${KEY_FILE_PATH} has unexpected length ${buf.length}, regenerating`);
+		console.warn(`[holm] ${KEY_FILE_PATH} has unexpected length ${buf.length}, regenerating`);
 	}
 	mkdirSync(dirname(KEY_FILE_PATH), { recursive: true });
 	const fresh = randomBytes(KEY_LENGTH);
 	writeFileSync(KEY_FILE_PATH, fresh);
 	try { chmodSync(KEY_FILE_PATH, 0o600); } catch { /* best-effort on non-POSIX */ }
-	console.log(`[hearth] Generated new integrations master key at ${KEY_FILE_PATH}`);
+	console.log(`[holm] Generated new integrations master key at ${KEY_FILE_PATH}`);
 	return fresh;
 }
 
 export function getMasterKey() {
 	if (_masterKey) return _masterKey;
 
-	const envKey = decodeEnvKey(process.env.HEARTH_SECRET_KEY);
+	const envKey = decodeEnvKey(process.env.HOLM_SECRET_KEY);
 	if (envKey) {
 		_masterKey = envKey;
-		console.log('[hearth] Integrations master key loaded from HEARTH_SECRET_KEY env');
+		console.log('[holm] Integrations master key loaded from HOLM_SECRET_KEY env');
 		return _masterKey;
 	}
 
-	if (process.env.HEARTH_SECRET_KEY) {
-		console.warn('[hearth] HEARTH_SECRET_KEY is set but malformed (need 32 bytes hex or base64) — falling back to key file');
+	if (process.env.HOLM_SECRET_KEY) {
+		console.warn('[holm] HOLM_SECRET_KEY is set but malformed (need 32 bytes hex or base64) — falling back to key file');
 	}
 
 	_masterKey = loadOrGenerateKeyFile();
@@ -113,7 +113,7 @@ export function decryptConfig(username, integrationId, blob) {
 		const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 		return JSON.parse(plaintext.toString('utf8'));
 	} catch (err) {
-		console.warn(`[hearth] decryptConfig failed for ${username}/${integrationId}: ${err.message}`);
+		console.warn(`[holm] decryptConfig failed for ${username}/${integrationId}: ${err.message}`);
 		return null;
 	}
 }

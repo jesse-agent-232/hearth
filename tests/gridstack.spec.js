@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 async function setPrefs(page, prefs) {
 	await page.goto('/');
-	await page.evaluate((p) => localStorage.setItem('hearth_prefs', JSON.stringify(p)), prefs);
+	await page.evaluate((p) => localStorage.setItem('holm_prefs', JSON.stringify(p)), prefs);
 }
 
 async function waitForHydration(page) {
@@ -43,7 +43,7 @@ test.describe('Widget surface', () => {
 
 	test('widgetLayout is persisted in prefs', async ({ page }) => {
 		const layout = await page.evaluate(() => {
-			const raw = localStorage.getItem('hearth_prefs');
+			const raw = localStorage.getItem('holm_prefs');
 			const p = raw ? JSON.parse(raw) : {};
 			return p.widgetLayout;
 		});
@@ -71,7 +71,7 @@ test.describe('Widget surface migration', () => {
 		await page.goto('/');
 		await page.evaluate(() => {
 			localStorage.setItem(
-				'hearth_prefs',
+				'holm_prefs',
 				JSON.stringify({
 					onboarded: true,
 					name: 'demo',
@@ -91,7 +91,7 @@ test.describe('Widget surface migration', () => {
 		await page.waitForTimeout(1500);
 
 		const after = await page.evaluate(() => {
-			const raw = localStorage.getItem('hearth_prefs');
+			const raw = localStorage.getItem('holm_prefs');
 			return raw ? JSON.parse(raw) : {};
 		});
 		expect(Array.isArray(after.widgetLayout)).toBe(true);

@@ -9,7 +9,7 @@
 	import AppIcon from '$lib/components/AppIcon.svelte';
 
 	const siteConfig = getContext('config');
-	const brandName = siteConfig?.branding?.name || 'Hearth';
+	const brandName = siteConfig?.branding?.name || 'Holm';
 	const brandLogo = siteConfig?.branding?.logo;
 
 	const iconStyle = $derived($prefs.iconStyle || 'colored');

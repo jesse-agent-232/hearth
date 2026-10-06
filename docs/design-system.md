@@ -1,6 +1,6 @@
-# Hearth Design System v1
+# Holm Design System v1
 
-A small visual vocabulary for Hearth, built on Tailwind v4 tokens. Every UI surface in the app should compose from this vocabulary instead of hand-rolling pixel values.
+A small visual vocabulary for Holm, built on Tailwind v4 tokens. Every UI surface in the app should compose from this vocabulary instead of hand-rolling pixel values.
 
 The source of truth lives in [`src/app.css`](../src/app.css) inside the `@theme { ... }` block. Tailwind generates utility classes from those tokens automatically; this doc explains what each token means and when to reach for it.
 
@@ -137,7 +137,7 @@ Three durations + one easing. Everything that moves should use one of these.
 | `duration-300`    | 300 | Modal enter/exit, drawer slides               |
 | `ease-standard`   | —   | Apple-ish spring: `cubic-bezier(0.2,0.8,0.2,1)` |
 
-`duration-150/200/300` are Tailwind defaults but the canonical Hearth durations. Don't introduce new ones (no `duration-180`, no `duration-700`).
+`duration-150/200/300` are Tailwind defaults but the canonical Holm durations. Don't introduce new ones (no `duration-180`, no `duration-700`).
 
 ```html
 <button class="transition-colors duration-200 ease-standard hover:bg-surface-card-hover">
@@ -164,7 +164,7 @@ If you're using a `surface-*` composite class you don't need to apply blur separ
 
 ## Focus
 
-Hearth had no consistent focus pattern before v1 (only 2 `focus:ring-*` instances site-wide). Now there's one:
+Holm had no consistent focus pattern before v1 (only 2 `focus:ring-*` instances site-wide). Now there's one:
 
 ```html
 <input class="bg-surface-input rounded-md px-3 py-2 bloom-focus" />
