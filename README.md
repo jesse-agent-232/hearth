@@ -23,6 +23,7 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 Search reaches inside the apps people have connected, with their own login: one query for "spring" finds a film in Jellyfin, documents in Paperless and photos in Immich.
 
 ![Launcher searching Jellyfin, Paperless and Immich at once](docs/screenshots/integrations.jpg)
+<sub>Mock data. <i>Spring</i> poster: Blender Studio, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</sub>
 
 Pick a light or dark theme, or let the wallpaper set the mood:
 
