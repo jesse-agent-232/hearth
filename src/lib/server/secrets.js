@@ -1,13 +1,15 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { readFileSync, writeFileSync, chmodSync, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join, resolve } from 'path';
+import { resolveDbPath } from './db.js';
 
 // AES-256-GCM master key for encrypting per-user integration credentials.
 //
 // Resolution order:
 //   1. process.env.HOLM_SECRET_KEY  — 32 bytes hex or base64. Production-grade.
-//   2. ./data/.integrations-key       — 32 random bytes auto-generated on first
-//                                       boot, chmod 0600. Frictionless for dev.
+//   2. .integrations-key next to the SQLite DB (DATABASE_PATH / database.path,
+//      default ./data/) — 32 random bytes auto-generated on first boot,
+//      chmod 0600. Frictionless for dev.
 //
 // Threat model: with the auto-generated file fallback, the key sits next to
 // the SQLite DB. An attacker who exfiltrates the whole ./data/ directory has
@@ -15,7 +17,9 @@ import { dirname } from 'path';
 // should set HOLM_SECRET_KEY in the environment to keep the key out of the
 // data directory entirely.
 
-const KEY_FILE_PATH = './data/.integrations-key';
+// Where the key file lived before it followed the DB. Read once so installs
+// that moved DATABASE_PATH but also kept ./data/ don't lose their key.
+const LEGACY_KEY_FILE_PATH = './data/.integrations-key';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 12;  // 96 bits — recommended for GCM
 const TAG_LENGTH = 16; // 128 bits
@@ -36,17 +40,29 @@ function decodeEnvKey(raw) {
 }
 
 function loadOrGenerateKeyFile() {
-	if (existsSync(KEY_FILE_PATH)) {
-		const buf = readFileSync(KEY_FILE_PATH);
+	const keyPath = join(dirname(resolveDbPath()), '.integrations-key');
+	if (existsSync(keyPath)) {
+		const buf = readFileSync(keyPath);
 		if (buf.length === KEY_LENGTH) return buf;
-		console.warn(`[holm] ${KEY_FILE_PATH} has unexpected length ${buf.length}, regenerating`);
+		console.warn(`[holm] ${keyPath} has unexpected length ${buf.length}, regenerating`);
+	} else if (resolve(keyPath) !== resolve(LEGACY_KEY_FILE_PATH) && existsSync(LEGACY_KEY_FILE_PATH)) {
+		const buf = readFileSync(LEGACY_KEY_FILE_PATH);
+		if (buf.length === KEY_LENGTH) {
+			writeKeyFile(keyPath, buf);
+			console.log(`[holm] Copied integrations master key from ${LEGACY_KEY_FILE_PATH} to ${keyPath}`);
+			return buf;
+		}
 	}
-	mkdirSync(dirname(KEY_FILE_PATH), { recursive: true });
 	const fresh = randomBytes(KEY_LENGTH);
-	writeFileSync(KEY_FILE_PATH, fresh);
-	try { chmodSync(KEY_FILE_PATH, 0o600); } catch { /* best-effort on non-POSIX */ }
-	console.log(`[holm] Generated new integrations master key at ${KEY_FILE_PATH}`);
+	writeKeyFile(keyPath, fresh);
+	console.log(`[holm] Generated new integrations master key at ${keyPath}`);
 	return fresh;
+}
+
+function writeKeyFile(keyPath, buf) {
+	mkdirSync(dirname(keyPath), { recursive: true });
+	writeFileSync(keyPath, buf);
+	try { chmodSync(keyPath, 0o600); } catch { /* best-effort on non-POSIX */ }
 }
 
 export function getMasterKey() {

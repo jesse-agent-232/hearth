@@ -5,6 +5,12 @@ import { getConfig } from './config.js';
 
 let db = null;
 let dbPath = null;
+
+// Also decides where the integrations key file lives (secrets.js), so the
+// key stays on whatever volume holds the database.
+export function resolveDbPath() {
+	return process.env.DATABASE_PATH || getConfig().database?.path || './data/holm.db';
+}
 let initPromise = null;
 
 // Serializes async read-modify-write sequences (e.g. mergeUserPrefs) so two
@@ -50,7 +56,7 @@ async function ensureInit() {
 		}
 
 		try {
-			dbPath = process.env.DATABASE_PATH || dbConfig.path || './data/holm.db';
+			dbPath = resolveDbPath();
 			mkdirSync(dirname(dbPath), { recursive: true });
 
 			const SQL = await initSqlJs();

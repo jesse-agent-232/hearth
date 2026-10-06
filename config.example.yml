@@ -178,10 +178,10 @@ search:
 # Per-user integration credentials are encrypted at rest with AES-256-GCM.
 # Resolution order:
 #   1. HOLM_SECRET_KEY env var  — 32 bytes hex or base64. RECOMMENDED for prod.
-#   2. ./data/.integrations-key   — auto-generated on first boot, chmod 0600.
+#   2. .integrations-key next to the SQLite DB — auto-generated on first boot, chmod 0600.
 #
 # Threat model: with the file fallback, the key sits next to the SQLite DB.
-# An attacker who exfiltrates the whole ./data/ directory has both the
+# An attacker who exfiltrates the whole data directory has both the
 # ciphertext and the key. The env-var path is the only one that protects
 # against whole-data-dir leaks. Set HOLM_SECRET_KEY in production.
 #
