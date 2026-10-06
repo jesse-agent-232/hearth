@@ -17,15 +17,10 @@
 	<div class="mb-3">
 		<div class="flex items-center gap-2">
 			<div class="text-[0.85rem] font-semibold text-content">Integrations</div>
-			<span class="text-[0.65rem] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-card-strong text-content-muted border border-border-card">Alpha</span>
+			<span class="text-[0.65rem] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-surface-input text-content-dim border border-border-card">Alpha</span>
 		</div>
 		<div class="text-[0.7rem] text-content-dim mt-0.5">Connect your apps to search and interact with them from Holm.</div>
-	</div>
-
-	<div class="mb-4 px-3 py-2 rounded-lg bg-surface-card border border-border-card">
-		<p class="text-[0.7rem] text-content-dim leading-relaxed m-0 font-mono">
-			This framework is in active development. Expect breaking changes in future versions &mdash; connected accounts may need to be re-linked.
-		</p>
+		<div class="text-[0.7rem] text-content-dim mt-1.5">Still early: after an update you may need to connect an app again.</div>
 	</div>
 
 	{#if $integrationsStore.loading && !$integrationsStore.loaded}

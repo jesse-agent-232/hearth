@@ -51,7 +51,7 @@
 				</svg>
 			{/if}
 			<span class="text-[0.65rem] text-content-muted uppercase tracking-[0.2em] mb-3 block">{brandName}</span>
-			<h2 class="text-[1.2rem] font-semibold mb-2">Change Your Password</h2>
+			<h2 class="text-[1.2rem] font-semibold mb-2">Change your password</h2>
 			<p class="text-content-muted text-[0.85rem] mb-6">
 				Change your default password to something only you know before continuing.
 			</p>
@@ -60,7 +60,7 @@
 				href={passwordChangeUrl}
 				style="border: none;"
 				class="block w-full py-3 px-4 rounded-[10px] text-[0.9rem] font-medium font-mono text-center no-underline cursor-pointer transition-[opacity,background] duration-200 login-btn mb-2"
-			>Reset Password</a>
+			>Reset password</a>
 
 			<button
 				class="w-full py-3 px-4 rounded-[10px] text-[0.9rem] font-medium font-mono cursor-pointer transition-colors duration-200 bg-surface-card-strong text-content border border-border-card mt-3 hover:bg-surface-card-strong"

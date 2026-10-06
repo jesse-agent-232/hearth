@@ -144,10 +144,12 @@
 	--card-bg-strong: rgba(255, 255, 255, 0.12);
 	--card-border: rgba(255, 255, 255, 0.12);
 	--card-hover: rgba(255, 255, 255, 0.05);
-	--overlay: rgba(0, 0, 0, 0.6);
+	/* Light veil under modals, like the login screen's, so the glass
+	   cards on top still show the wallpaper through them. */
+	--overlay: rgba(0, 0, 0, 0.35);
 	--overlay-strong: rgba(0, 0, 0, 0.8);
 	--modal-bg: rgba(24, 24, 27, 1);
-	--toggle-on: rgba(255, 255, 255, 0.45);
+	--toggle-on: var(--accent, #f5b942);
 	--toggle-off: rgba(255, 255, 255, 0.1);
 	--toggle-knob: #ffffff;
 	--input-bg: rgba(255, 255, 255, 0.06);
@@ -182,8 +184,8 @@
 	   no-wallpaper dark theme. The bar's interior (text/icons/kbd/chip) is
 	   themed by the bar's own bg, not the page, so we expose dedicated
 	   --hero-search-* tokens. */
-	--hero-search-bg: #18181b;
-	--hero-search-border: rgba(255, 255, 255, 0.10);
+	--hero-search-bg: var(--glass-menu-bg);
+	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.50);
 	--hero-search-text-strong: rgba(255, 255, 255, 0.85);
@@ -196,14 +198,28 @@
    the white tile flips to a quiet translucent zinc. The bar keeps the
    dark palette it already has in auto. */
 .theme-dark {
-	--hero-search-bg: #18181b;
-	--hero-search-border: rgba(255, 255, 255, 0.10);
+	--hero-search-bg: var(--glass-menu-bg);
+	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.50);
 	--hero-search-text-strong: rgba(255, 255, 255, 0.85);
 	--hero-search-chip-bg: rgba(255, 255, 255, 0.06);
 	--hero-search-chip-border: rgba(255, 255, 255, 0.10);
 	--tile-bg-default: rgba(255, 255, 255, 0.06);
+}
+
+/* Auto theme, resting bar: over a wallpaper the dark bar sinks into the
+   photo, so at rest it is white like the tiles and reads as the primary
+   control. Once the palette opens it takes the dark tokens above, so the
+   joined bar + results match the tile context menu. */
+body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-form {
+	--hero-search-bg: #ffffff;
+	--hero-search-border: rgba(0, 0, 0, 0.10);
+	--hero-search-text: #18181b;
+	--hero-search-text-dim: rgba(0, 0, 0, 0.45);
+	--hero-search-text-strong: rgba(0, 0, 0, 0.85);
+	--hero-search-chip-bg: rgba(0, 0, 0, 0.05);
+	--hero-search-chip-border: rgba(0, 0, 0, 0.10);
 }
 
 
@@ -220,7 +236,7 @@
 	--overlay: rgba(0, 0, 0, 0.15);
 	--overlay-strong: rgba(0, 0, 0, 0.25);
 	--modal-bg: #ffffff;
-	--toggle-on: #3f3f46;
+	--toggle-on: var(--accent, #f5b942);
 	--toggle-off: rgba(0, 0, 0, 0.1);
 	--toggle-knob: #ffffff;
 	--input-bg: rgba(0, 0, 0, 0.04);
@@ -348,40 +364,108 @@ body {
 	filter: invert(0) opacity(0.45);
 }
 
-/* Glass card — Apple-style frosted glass */
+/* Glass — the login card's frosted recipe, shared by every card, modal,
+   menu and popover. Modals sit on the light modal veil, so they take the
+   login card's clear glass. Menus, popovers and the search palette open
+   over white tiles with no veil, so they get the same blur with a darker
+   tint to keep their text readable. */
+:root {
+	--glass-bg: rgba(255, 255, 255, 0.08);
+	--glass-menu-bg: rgba(28, 28, 32, 0.58);
+	--glass-border: rgba(255, 255, 255, 0.14);
+	--glass-blur: blur(40px) saturate(1.6);
+	--glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	--segment-on: rgba(255, 255, 255, 0.16);
+}
+.theme-light {
+	--glass-bg: rgba(255, 255, 255, 0.72);
+	--glass-menu-bg: rgba(255, 255, 255, 0.80);
+	--glass-border: rgba(0, 0, 0, 0.08);
+	--glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+	--segment-on: #ffffff;
+}
 .glass-card {
-	background: rgba(255, 255, 255, 0.06);
-	backdrop-filter: blur(24px) saturate(1.3);
-	-webkit-backdrop-filter: blur(24px) saturate(1.3);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-blur);
+	border: 1px solid var(--glass-border);
+	box-shadow: var(--glass-highlight), var(--shadow-theme);
 }
-
-.theme-light .glass-card {
-	background: rgba(255, 255, 255, 0.78);
-	backdrop-filter: blur(32px) saturate(1.5);
-	-webkit-backdrop-filter: blur(32px) saturate(1.5);
-	border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-/* Modal cards and popovers (the weather menu) sit over the white hero search
-   bar, which showed through the 6%-white glass and washed out their text.
-   Give them an opaque-ish base. */
-[role='dialog'] .glass-card,
-.glass-card[role='dialog'] {
-	background: rgba(24, 24, 27, 0.82);
-}
-/* Menus and popovers sit over tiles and the search bar; at glass opacity
-   whatever is underneath competes with the menu text. */
 .glass-card.menu-surface {
-	background: #18181b;
+	background: var(--glass-menu-bg);
 }
-.theme-light .glass-card.menu-surface {
-	background: #ffffff;
+/* Modal backdrop: dim + soft blur painted by a pseudo-layer rather than
+   the wrapper itself. A wrapper with backdrop-filter becomes the backdrop
+   root for the card inside it, and the card's glass would then blur
+   nothing; the page would show through sharp. */
+.modal-veil::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background: var(--overlay);
+	backdrop-filter: blur(6px);
 }
-.theme-light [role='dialog'] .glass-card,
-.theme-light .glass-card[role='dialog'] {
-	background: rgba(255, 255, 255, 0.78);
+
+/* Checkbox drawn to match the glass: a translucent box that fills with the
+   text colour when ticked, instead of the browser's default control. */
+.glass-check {
+	appearance: none;
+	width: 1rem;
+	height: 1rem;
+	border-radius: 4px;
+	border: 1px solid var(--glass-border);
+	background: var(--glass-bg);
+	display: grid;
+	place-content: center;
+	transition: background 0.15s, border-color 0.15s;
 }
+.glass-check::after {
+	content: '';
+	width: 0.55rem;
+	height: 0.55rem;
+	clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+	background: var(--bg, #09090b);
+	transform: scale(0);
+	transition: transform 0.15s;
+}
+.glass-check:checked {
+	background: var(--text);
+	border-color: var(--text);
+}
+.glass-check:checked::after { transform: scale(1); }
+.glass-check:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* Segmented control (Theme, Icon style): one glass track, the chosen
+   option raised on a lighter pill. */
+.segmented {
+	display: inline-flex;
+	gap: 2px;
+	padding: 3px;
+	border-radius: 10px;
+	background: var(--input-bg);
+	border: 1px solid var(--glass-border);
+}
+.segmented-item {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	padding: 0.35rem 0.9rem;
+	border-radius: 7px;
+	font-family: inherit;
+	font-size: 0.8rem;
+	color: var(--text-dim);
+	transition: background 0.15s, color 0.15s;
+}
+.segmented-item:hover { color: var(--text-muted); }
+.segmented-item[aria-checked='true'] {
+	background: var(--segment-on);
+	color: var(--text);
+	box-shadow: var(--glass-highlight), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Karakeep's dashboard-icon is a white-only glyph, invisible on the white
+   default tile; flip it to black wherever that tile is white. */
+body:not(.theme-dark) :is(.app-icon-wrap, .app-tile-icon) img[src$="/di/karakeep.svg"] { filter: invert(1); }
 
 /* Category card — border-only fieldset with centered legend */
 .category-card {
@@ -433,6 +517,25 @@ body {
 
 /* Wallpaper text shadow — improves readability over bright wallpaper areas */
 .wallpaper-active { text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+/* Over a photo the dim footer text and the Edit pill's faint outline vanish;
+   lift them to white and give the pill a small glass backing. */
+.wallpaper-active .dashboard-footer,
+.wallpaper-active .dashboard-footer button { color: rgba(255,255,255,0.75); }
+.wallpaper-active .dashboard-footer button:hover { color: #fff; }
+.wallpaper-active .surface-footer .edit-chip,
+.wallpaper-active .surface-actions .tray-reset,
+.wallpaper-active .surface-actions .tray-done {
+	background: rgba(0,0,0,0.22);
+	backdrop-filter: blur(12px);
+	border-color: rgba(255,255,255,0.22);
+	color: rgba(255,255,255,0.85);
+	opacity: 1;
+}
+.wallpaper-active .surface-footer .edit-chip:hover,
+.wallpaper-active .surface-footer .edit-chip:focus-visible,
+.wallpaper-active .surface-actions button:hover,
+.wallpaper-active .surface-actions button:focus-visible { background: rgba(0,0,0,0.35); color: #fff; }
+.wallpaper-active div.edit-hint { color: rgba(255,255,255,0.8); opacity: 1; }
 .wallpaper-active .category-card,
 .wallpaper-active .app-icon-wrap,
 .wallpaper-active .hero-search-form,
@@ -835,8 +938,7 @@ body.search-active .hero-area {
 	box-shadow:
 		0 4px 14px -4px rgba(0, 0, 0, 0.30),
 		0 1px 3px -1px rgba(0, 0, 0, 0.10);
-	backdrop-filter: none;
-	-webkit-backdrop-filter: none;
+	backdrop-filter: var(--glass-blur);
 	transition:
 		box-shadow 220ms var(--ease-standard),
 		border-color 220ms var(--ease-standard);
@@ -861,6 +963,7 @@ body.search-active .hero-area {
 /* Suggestions / results dropdown — mirrors the input pill so the two
    surfaces don't tonal-flip from white pill → dark dropdown. */
 .hero-search-results {
+	backdrop-filter: var(--glass-blur);
 	background: var(--hero-search-bg) !important;
 	border-color: var(--hero-search-border) !important;
 	color: var(--hero-search-text);
@@ -1405,7 +1508,7 @@ body.search-active .hero-area {
 }
 .theme-light {
 	--launcher-sel: rgba(0, 0, 0, 0.06);
-	--launcher-sel-ring: rgba(0, 0, 0, 0.14);
+	--launcher-sel-ring: rgba(0, 0, 0, 0.35);
 }
 .launcher-panel {
 	position: absolute;
@@ -1434,7 +1537,10 @@ body.search-active .hero-area {
 	min-height: 0;
 	overflow-y: auto;
 	overscroll-behavior: contain;
-	padding: 4px 6px 6px;
+	padding: 4px 6px 20px;
+	/* Fade the bottom edge so a cut-off row reads as "scroll for more". The
+	   20px bottom padding keeps the last row clear of the fade at the end. */
+	mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
 }
 .launcher-section-label {
 	display: flex;
@@ -1487,6 +1593,17 @@ body.search-active .hero-area {
 }
 .launcher-icon-box svg { width: 15px; height: 15px; }
 .launcher-icon-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The inset outline sits under the image; redraw it on top so white
+   document thumbnails keep an edge on the light theme. */
+.launcher-icon-box::after,
+.launcher-thumb-wrap::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
+	pointer-events: none;
+}
 .launcher-text {
 	display: flex;
 	align-items: baseline;
@@ -1648,8 +1765,9 @@ body.search-active .hero-area {
 	padding: 6px;
 	border-radius: 12px;
 	background: var(--hero-search-bg);
-	border: 1px solid var(--hero-search-border);
-	box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+	backdrop-filter: var(--glass-blur);
+	border: 1px solid var(--launcher-sel-ring);
+	box-shadow: var(--glass-highlight), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
 	animation: launcher-in 120ms var(--ease-standard, ease-out);
 }
 .launcher-actions-title {
@@ -1683,7 +1801,7 @@ body.search-active .hero-area {
 .launcher-action-hint { display: inline-flex; gap: 3px; }
 
 /* Inputs at 16px on phones so iOS doesn't zoom on focus. */
-.hero-search-input { font-size: 16px; }
+.hero-search-input { font-size: 16px; text-overflow: ellipsis; }
 @media (min-width: 768px) {
 	.hero-search-input { font-size: 0.95rem; }
 }

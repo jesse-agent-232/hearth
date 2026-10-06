@@ -319,7 +319,7 @@
 				{#each visibleFields as field}
 					{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
 					<label class="block">
-						<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{field.required ? ' *' : ''}</span>
+						<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
 						<input
 							type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
 							bind:value={formConfig[field.key]}

@@ -159,7 +159,7 @@
 	<div
 		use:portal
 		use:dialog={{ label: 'Configure' }}
-		class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in"
+		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in"
 		onclick={requestClose}
 	>
 		<div
@@ -237,10 +237,12 @@
 				<!-- Theme -->
 				<div class="mb-5">
 					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Theme</div>
-					<div class="flex gap-6">
+					<div class="segmented" role="radiogroup">
 						{#each themes as t}
 							<button
-								class="bg-transparent border-none cursor-pointer p-0 text-[0.85rem] font-mono transition-all duration-150 {theme === t.id ? 'text-content font-semibold' : 'text-content-dim hover:text-content-muted'}"
+								role="radio"
+								aria-checked={theme === t.id}
+								class="segmented-item"
 								onclick={() => setTheme(t.id)}
 							>{t.label}</button>
 						{/each}
@@ -250,10 +252,12 @@
 				<!-- Icon style -->
 				<div class="mb-5">
 					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2">Icon style</div>
-					<div class="flex gap-6">
+					<div class="segmented" role="radiogroup">
 						{#each iconStyles as style}
 							<button
-								class="bg-transparent border-none cursor-pointer p-0 text-[0.85rem] font-mono transition-all duration-150 {iconStyle === style.id ? 'text-content font-semibold' : 'text-content-dim hover:text-content-muted'}"
+								role="radio"
+								aria-checked={iconStyle === style.id}
+								class="segmented-item"
 								onclick={() => setIconStyle(style.id)}
 							>{style.label}</button>
 						{/each}
@@ -335,18 +339,20 @@
 				<!-- ═══ WIDGETS TAB ═══ -->
 				<div class="mb-4">
 					<div class="text-[0.85rem] font-semibold text-content">Widgets</div>
-					<div class="text-[0.7rem] text-content-dim mt-0.5">Header chrome — always at the top of the page. Surface widgets (apps, integrations) are added from the dashboard's edit-mode tray.</div>
+					<div class="text-[0.7rem] text-content-dim mt-0.5">Turn parts of your page on or off. To add or move apps, use Edit on the dashboard.</div>
 				</div>
 				{@const widgets = [
-					{ id: 'weather', name: 'Weather', desc: 'Temperature and conditions for your location', icon: '☀️' },
-					{ id: 'search', name: 'Search', desc: 'Quick search bar with keyboard shortcut', icon: '🔍' }
+					{ id: 'weather', name: 'Weather', desc: 'Temperature and conditions for your location', icon: 'M12 3v2M12 19v2M5.6 5.6 7 7M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
+					{ id: 'search', name: 'Search', desc: 'Search apps and files from the middle of the page', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4' }
 				]}
 				{#each widgets as widget}
 					<button
 						class="flex items-center gap-3 w-full px-2 py-3 bg-transparent border-none border-b border-border-card text-left font-mono cursor-pointer hover:bg-surface-card-hover"
 						onclick={() => toggleWidget(widget.id)}
 					>
-						<span class="text-base shrink-0">{widget.icon}</span>
+						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0 text-content-muted">
+							<svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={widget.icon} /></svg>
+						</span>
 						<div class="flex-1 min-w-0">
 							<div class="text-[0.8rem] text-content font-medium">{widget.name}</div>
 							<div class="text-[0.7rem] text-content-dim">{widget.desc}</div>

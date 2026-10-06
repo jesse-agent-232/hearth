@@ -220,10 +220,14 @@
 	// placed. Hidden once the operator has filled the surface or matched any
 	// popular slug into their own customApps.
 	const popularSuggestions = $derived.by(() => {
-		const customIds = new Set(($prefs.customApps || []).map((a) => a.id));
-		const customUrls = new Set(($prefs.customApps || []).map((a) => a.url));
+		// Catalog apps count too, so an app the operator already ships (GitHub,
+		// say) isn't offered twice under "Your apps" and "Popular".
+		const known = [...catalog, ...($prefs.customApps || [])];
+		const ids = new Set(known.map((a) => a.id));
+		const urls = new Set(known.map((a) => a.url));
+		const names = new Set(known.map((a) => a.name?.toLowerCase()));
 		return POPULAR_APPS.filter(
-			(p) => !placedAppIds.has(p.id) && !customIds.has(p.id) && !customUrls.has(p.url)
+			(p) => !placedAppIds.has(p.id) && !ids.has(p.id) && !urls.has(p.url) && !names.has(p.name.toLowerCase())
 		);
 	});
 
@@ -238,6 +242,16 @@
 			const next = [appId, ...prev.filter((id) => id !== appId)].slice(0, 16);
 			return { ...p, recentApps: next };
 		});
+	}
+
+	let guideUrlCopied = $state(false);
+	let guideUrlCopiedTimer;
+	function copyGuideUrl(url) {
+		navigator.clipboard?.writeText(url).then(() => {
+			guideUrlCopied = true;
+			clearTimeout(guideUrlCopiedTimer);
+			guideUrlCopiedTimer = setTimeout(() => (guideUrlCopied = false), 1500);
+		}).catch(() => {});
 	}
 
 	function placeAppOnSurface(appId) {
@@ -898,7 +912,7 @@
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
 	{@const guide = setupGuides[guideApp.name]}
-	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
+	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in" onclick={() => (guideApp = null)}>
 		<div class="glass-card rounded-2xl w-full max-w-[480px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
 			<!-- Header with icon color glow + close -->
 			<div class="p-8 pb-6 border-b border-border-card relative">
@@ -922,7 +936,7 @@
 			</div>
 
 			<!-- Steps -->
-			<div class="px-8 pb-4 max-h-[300px] overflow-y-auto">
+			<div class="px-8 pt-6 pb-4 max-h-[300px] overflow-y-auto">
 				{#each guide.steps as step, i}
 					<div class="flex gap-3.5 {i < guide.steps.length - 1 ? 'mb-5' : ''}">
 						<div class="flex flex-col items-center">
@@ -940,12 +954,20 @@
 			</div>
 
 			<!-- Server URL -->
-			<div class="mx-8 mb-5 px-4 py-2.5 glass-card rounded-xl">
-				<span class="text-[0.65rem] text-content-dim uppercase tracking-[0.15em]">Server URL</span>
-				<p class="text-[0.85rem] text-content-muted font-mono m-0 mt-0.5">{guideApp.url}</p>
+			<div class="mx-8 {guideApp.ios || guideApp.android ? 'mb-5' : 'mb-8'} pl-4 pr-2 py-2.5 bg-surface-input border border-border-card rounded-xl flex items-center gap-3">
+				<div class="min-w-0 flex-1">
+					<span class="text-[0.65rem] text-content-dim uppercase tracking-[0.15em]">Server URL</span>
+					<p class="text-[0.85rem] text-content-muted font-mono m-0 mt-0.5 truncate">{guideApp.url}</p>
+				</div>
+				<button
+					type="button"
+					class="shrink-0 bg-transparent border border-border-card rounded-lg px-3 py-1.5 text-[0.75rem] font-mono text-content-muted cursor-pointer hover:text-content hover:bg-surface-card transition-colors"
+					onclick={() => copyGuideUrl(guideApp.url)}
+				>{guideUrlCopied ? 'Copied' : 'Copy'}</button>
 			</div>
 
 			<!-- Actions -->
+			{#if guideApp.ios || guideApp.android}
 			<div class="px-8 pb-8 flex gap-2.5">
 				{#if guideApp.ios}
 					<a href={guideApp.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] text-[0.85rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
@@ -958,6 +980,7 @@
 					</a>
 				{/if}
 			</div>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -1152,6 +1175,7 @@
 		overflow-y: auto;
 		padding: 0.25rem;
 		background: var(--hero-search-bg);
+		backdrop-filter: var(--glass-blur);
 		border: 1px solid var(--hero-search-border);
 		border-radius: 0.6rem;
 		box-shadow:
@@ -1338,12 +1362,12 @@
 		position: absolute;
 		top: 2px;
 		right: 2px;
-		width: 18px;
-		height: 18px;
+		width: 22px;
+		height: 22px;
 		border-radius: 9999px;
 		background: rgba(0, 0, 0, 0.7);
 		color: #fff;
-		font-size: 0.85rem;
+		font-size: 1rem;
 		line-height: 1;
 		border: none;
 		cursor: pointer;
@@ -1355,7 +1379,7 @@
 	.app-tile-remove:hover {
 		background: rgba(220, 38, 38, 0.85);
 	}
-	/* 18px badge, ~34px hit area */
+	/* 22px badge, ~38px hit area */
 	.app-tile-remove::before {
 		content: '';
 		position: absolute;

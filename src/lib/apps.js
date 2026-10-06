@@ -45,7 +45,7 @@ export function buildAppsFromConfig(appsConfig) {
 	for (const item of items) {
 		if (item.setup_guide) {
 			setupGuides[item.name] = {
-				title: `${item.name} Setup`,
+				title: `${item.name} setup`,
 				subtitle: item.setup_guide.subtitle || item.name,
 				steps: item.setup_guide.steps || []
 			};
