@@ -130,8 +130,9 @@
 				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true }));
 			}
 		},
-		...['dark', 'light', 'auto'].map((t) => ({
-			id: `theme-${t}`, bang: 'theme', arg: t, label: `Theme: ${t[0].toUpperCase()}${t.slice(1)}`, keywords: [t, `${t} mode`], icon: ICONS.theme,
+		// 'auto' is the stored value; Configure calls it Dynamic, so both work.
+		...[['dark', 'Dark'], ['light', 'Light'], ['auto', 'Dynamic']].map(([t, name]) => ({
+			id: `theme-${t}`, bang: 'theme', arg: t, argAlias: name.toLowerCase(), label: `Theme: ${name}`, keywords: [t, name.toLowerCase(), `${t} mode`], icon: ICONS.theme,
 			exec: () => prefs.update((p) => ({ ...p, theme: t }))
 		})),
 		...['colored', 'white', 'grayed'].map((s) => ({
@@ -151,7 +152,7 @@
 		const hits = ACTIONS.filter((a) => a.bang === bang);
 		if (!hits.length) return [];
 		if (!argFilter) return hits;
-		return hits.filter((a) => !a.arg || a.arg.includes(argFilter));
+		return hits.filter((a) => !a.arg || a.arg.includes(argFilter) || a.argAlias?.includes(argFilter));
 	});
 
 	function runAction(action) {
@@ -434,7 +435,30 @@
 			out.push({ id: 'commands', label: 'Commands', items: matchedActions.map(commandItem) });
 			return out;
 		}
-		if (q.startsWith('!') && !activeScope) return out;
+		// A bare or partial bang ("!", "!th"): list the commands and scopes
+		// it could still become, so "!" doubles as the command list.
+		if (q.startsWith('!') && !activeScope) {
+			const m = q.match(/^!([a-zA-Z0-9_-]*)$/);
+			if (!m) return out;
+			const prefix = m[1].toLowerCase();
+			const cmds = ACTIONS.filter((a) => a.bang.startsWith(prefix));
+			if (cmds.length) out.push({ id: 'commands', label: 'Commands', items: cmds.map(commandItem) });
+			const scopes = [];
+			for (const [key, id] of shortcutMap) {
+				if (!key.startsWith(prefix)) continue;
+				const it = $integrationsStore.integrations.find((i) => i.id === id);
+				if (!it) continue;
+				scopes.push({
+					key: `scope:${id}`,
+					title: `Search in ${it.name}`,
+					subtitle: `!${key}`,
+					appIcon: it.icon ? resolveIcon(it.icon) : null,
+					actions: [{ label: `Search ${it.name}`, run: () => { activeScope = id; query = ''; inputEl?.focus(); } }]
+				});
+			}
+			if (scopes.length) out.push({ id: 'scopes', label: 'Scopes', items: scopes });
+			return out;
+		}
 
 		// Nothing typed yet: recents first, then a few commands.
 		if (!q && !activeScope) {
@@ -506,7 +530,7 @@
 					};
 				}), ...(results.length > max && p.searchUrl ? [{
 					key: `more:${p.providerId}`,
-					title: `${results.length - max}+ more in ${p.integrationName}`,
+					title: `More in ${p.integrationName}`,
 					more: true,
 					url: p.searchUrl,
 					svg: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
@@ -789,7 +813,7 @@
 
 	const listId = 'launcher-list';
 	const emptyText = $derived(
-		(query || '').trim().startsWith('!') && !activeScope ? 'No command or scope by that name. Try !settings, !theme or !wall.' : ''
+		(query || '').trim().startsWith('!') && !activeScope ? 'No command or scope by that name. Type ! on its own to see them all.' : ''
 	);
 </script>
 
