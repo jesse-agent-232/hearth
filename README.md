@@ -20,6 +20,14 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
   <img src="docs/screenshots/mobile.jpg" alt="Holm on a phone" width="28%">
 </p>
 
+Search reaches inside the apps people have connected, with their own login: one query for "spring" finds a film in Jellyfin, documents in Paperless and photos in Immich.
+
+![Launcher searching Jellyfin, Paperless and Immich at once](docs/screenshots/integrations.jpg)
+
+Pick a light or dark theme, or let the wallpaper set the mood:
+
+![Light and dark themes](docs/screenshots/themes.jpg)
+
 ## Try it in one command
 
 No identity provider needed; this runs the bundled demo with login turned off:
