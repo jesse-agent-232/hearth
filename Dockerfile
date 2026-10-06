@@ -12,7 +12,7 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/package.json .
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/static ./static
-COPY config.example.yml ./config.example.yml
+COPY config.example.yml config.demo.yml ./
 RUN mkdir -p /app/data
 
 ENV CONFIG_PATH=/app/config.yml
