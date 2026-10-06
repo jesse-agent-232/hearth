@@ -83,6 +83,7 @@
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<TestResult>} test
  * @property {SignIn} [signIn]                                 Replaces the Test/Connect buttons with a code-approval flow
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<void>} [signOut]  Best-effort token revoke on disconnect
+ * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, object>} [widgets]                Reserved — widget rendering is out of scope for this PR

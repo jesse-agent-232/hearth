@@ -26,7 +26,8 @@ export async function PUT({ cookies, url, request, params }) {
 
 	const submitted = body.config || {};
 	const existing = await getConnection(user.username, adapter.id);
-	const merged = mergeConfig(adapter, existing?.config || {}, submitted);
+	let merged = mergeConfig(adapter, existing?.config || {}, submitted);
+	if (adapter.prepareConfig) merged = adapter.prepareConfig({ config: merged });
 
 	const validation = validateConfig(adapter, merged);
 	if (!validation.ok) return json({ error: validation.message }, { status: 400 });
