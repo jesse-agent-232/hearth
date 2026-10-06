@@ -8,7 +8,7 @@ export async function GET({ cookies }) {
 		oidc = await getOIDCConfig();
 	} catch (err) {
 		console.error('[OIDC] Discovery failed:', err.message);
-		error(502, `Sign-in provider unreachable or misconfigured: ${err.message}. Check auth.oidc.issuer in config.yml.`);
+		error(502, 'Sign-in is unavailable: Holm could not reach the sign-in provider. The server log has the details.');
 	}
 	const { config, scopes, redirect_base } = oidc;
 	const redirectUri = `${redirect_base}/auth/callback`;
