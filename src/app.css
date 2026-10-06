@@ -661,6 +661,18 @@ body.search-active .hero-eyebrow {
 	pointer-events: none;
 	transition: opacity 180ms ease-out, filter 180ms ease-out;
 }
+/* The app tiles sit directly under the open palette, and even blurred
+   behind its glass they read as white blobs. Configure has a veil between
+   it and the page; the palette can't (the tiles share its stacking
+   context), so the tiles step out entirely and the palette floats over
+   the dimmed wallpaper like a modal. */
+body.search-active .grid-stack,
+body.search-active .flat-apps,
+body.search-active .surface-header,
+body.search-active .surface-footer,
+body.search-active .edit-hint {
+	opacity: 0;
+}
 /* Footer is small fine-print text — even at 0.25 opacity it remains
    readable, which fights the modal-palette feel. Hide it fully while
    the search is active. */
