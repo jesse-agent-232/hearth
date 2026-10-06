@@ -29,8 +29,11 @@
 	});
 
 	function onError(e) {
+		const before = e.target.getAttribute('src');
 		if (icon) handleIconError(e, icon);
-		if (!e.target.src || e.target.src === window.location.href) {
+		// No fallback to swap to (the failing URL already was the fallback):
+		// show the letter now rather than a blank tile.
+		if (e.target.getAttribute('src') === before || !e.target.src || e.target.src === window.location.href) {
 			failed = true;
 		} else {
 			e.target.onerror = () => { failed = true; };

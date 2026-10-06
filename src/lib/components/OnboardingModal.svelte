@@ -190,7 +190,7 @@
 			<h2 class="text-[1.2rem] font-semibold mb-2">Welcome</h2>
 			<p class="text-content-muted text-[0.85rem] mb-6">Sign in to continue.</p>
 			<label class="inline-flex items-center gap-2.5 text-xs text-content-muted mb-5 cursor-pointer">
-				<input type="checkbox" bind:checked={acceptedTerms} class="w-4 h-4 accent-zinc-300 shrink-0 cursor-pointer">
+				<input type="checkbox" bind:checked={acceptedTerms} class="glass-check shrink-0 cursor-pointer">
 				<span>I agree to the <button type="button" class="bg-transparent border-none text-content font-mono text-xs cursor-pointer underline underline-offset-2 p-0 hover:text-content-dim" onclick={() => showTerms = !showTerms}>Privacy & Terms</button></span>
 			</label>
 			{#if showTerms}
@@ -209,8 +209,12 @@
 			<button
 				class="w-full py-3 px-4 border-none rounded-[10px] text-[0.9rem] font-medium font-mono cursor-pointer transition-[opacity,background] duration-200 login-btn mb-2 disabled:opacity-30 disabled:cursor-not-allowed"
 				disabled={!acceptedTerms}
+				title={acceptedTerms ? undefined : 'Agree to the Privacy & Terms first'}
 				onclick={() => window.location.href = devMode ? '/?user=demo' : '/auth/login'}
 			>Sign in</button>
+			{#if registrationConfig?.enabled && registrationConfig?.url}
+				<p class="text-[0.75rem] text-content-dim mt-4 mb-0">Don't have an account? <a href={registrationConfig.url} class="text-content hover:text-content-muted underline underline-offset-2 font-mono text-[0.75rem]">Register</a></p>
+			{/if}
 			{#if isMobile && !isStandalone}
 				{#if isIOS}
 					<p class="text-[0.75rem] text-content-dim mt-4">Tap <strong class="text-content-dim">Share</strong> then <strong class="text-content-dim">Add to Home Screen</strong> to install as an app</p>
@@ -222,13 +226,10 @@
 				{/if}
 			{/if}
 		</div>
-		{#if registrationConfig?.enabled && registrationConfig?.url}
-		<p class="text-[0.75rem] text-content-dim mt-4 text-center animate-modal-enter">Don't have an account? <a href={registrationConfig.url} class="text-content-muted hover:text-content no-underline font-mono text-[0.75rem]">Register</a></p>
-		{/if}
 	</div>
 
 {:else if step === 'onboarding'}
-	<div use:dialog={{ label: 'Welcome' }} class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in">
+	<div use:dialog={{ label: 'Welcome' }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in">
 		<div class="bg-surface-modal-card backdrop-blur-[120px] border border-border-modal-card rounded-2xl w-full max-w-[480px] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden animate-modal-enter shadow-theme">
 
 			<!-- Slide content: one fixed height for every slide so the card doesn't
@@ -264,12 +265,14 @@
 							{#each services as svc, i}
 								<div class="flex items-center gap-3 px-2 py-2.5 min-w-0 overflow-hidden">
 									<AppIcon icon={svc.icon} name={svc.name} size="w-4 h-4" wrapSize="w-6 h-6" wrap />
-									<span class="text-[0.8rem] text-content font-medium shrink-0">{svc.name}</span>
-									{#if svc.desc}<span class="text-[0.7rem] text-content-dim ml-auto text-right truncate">{svc.desc}</span>{/if}
+									<div class="flex flex-col min-w-0">
+										<span class="text-[0.8rem] text-content font-medium">{svc.name}</span>
+										{#if svc.desc}<span class="text-[0.7rem] text-content-dim truncate">{svc.desc}</span>{/if}
+									</div>
 								</div>
 							{/each}
 						</div>
-						<p class="text-content-dim/50 text-[0.7rem] mt-auto pt-4 text-center">All self-hosted on our hardware. Your data never leaves.</p>
+						<p class="text-content-dim text-[0.7rem] mt-auto pt-4 text-center">All self-hosted on our hardware. Your data never leaves.</p>
 					</div>
 
 				{:else if currentSlideType() === 'privacy' || currentSlideType() === 'security' || currentSlideType() === 'list'}
@@ -331,7 +334,7 @@
 					<button
 						class="py-2 px-5 rounded-lg text-[0.8rem] font-mono cursor-pointer transition-colors duration-150 login-btn"
 						onclick={finish}
-					>Get Started</button>
+					>Get started</button>
 					{:else}
 					<button
 						class="py-2 px-5 rounded-lg text-[0.8rem] font-mono cursor-pointer transition-colors duration-150 bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong disabled:opacity-0 disabled:cursor-default"

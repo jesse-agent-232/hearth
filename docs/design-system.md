@@ -23,7 +23,7 @@ The 12 utilities you'll use most. Pin this section if nothing else.
 | Eyebrow / uppercase mini-label      | `text-micro uppercase tracking-widest`    |
 | Standard interaction transition     | `transition-colors duration-200`          |
 | Modal entrance                      | `animate-fade-in-up`                      |
-| Dimmed backdrop overlay             | `bg-surface-overlay backdrop-blur-soft`   |
+| Dimmed backdrop overlay             | `modal-veil` (see Glass)                  |
 
 ---
 
@@ -223,8 +223,8 @@ Copy-paste these for common components.
 ### Modal
 
 ```html
-<div class="fixed inset-0 bg-surface-overlay backdrop-blur-soft z-[100] flex items-center justify-center p-4">
-  <div class="surface-3 rounded-xl w-full max-w-[480px] p-8 animate-fade-in-up">
+<div class="fixed inset-0 modal-veil z-[100] flex items-center justify-center p-4">
+  <div class="glass-card rounded-xl w-full max-w-[480px] p-8 animate-fade-in-up">
     <h2 class="text-title text-content mb-4">Modal title</h2>
     …
   </div>
@@ -272,6 +272,30 @@ Copy-paste these for common components.
 
 ---
 
+## Glass
+
+Modals, menus and the search palette share one frosted-glass recipe, taken
+from the login card. The tokens live in `src/app.css` (`--glass-*`).
+
+| Class                     | Use for                                   |
+| ------------------------- | ----------------------------------------- |
+| `glass-card`              | Modals and first-run cards: clear glass   |
+| `glass-card menu-surface` | Menus and popovers: same blur, darker tint so text stays readable over white tiles |
+| `modal-veil`              | The full-screen wrapper behind a modal    |
+| `segmented` / `segmented-item` | Two-to-four-way choices (Theme, Icon style) |
+| `glass-check`             | Checkboxes                                |
+
+Two rules the browser enforces:
+
+- **Never put `backdrop-filter` on a modal's wrapper.** It becomes the
+  backdrop root and the card inside blurs nothing. `modal-veil` paints its dim
+  and blur on a `::before` layer for that reason.
+- **Write only the unprefixed `backdrop-filter`.** The build adds the
+  `-webkit-` copy; writing both by hand makes the minifier keep only the
+  prefixed one, which Chrome ignores.
+
+---
+
 ## Don'ts
 
 - **No raw pixel sizes**: `text-[0.8rem]`, `rounded-[10px]`, `backdrop-blur-[12px]`. Use the named scale.
@@ -295,7 +319,7 @@ For the gradual refactor of existing components, here's the legacy → v1 mappin
 | `bg-surface-modal backdrop-blur-xl border border-border-card` (dropdowns) | `surface-2` |
 | `.glass-card`                               | `surface-1` (or `surface-2` if it sits over content) |
 | `bg-surface-card/30 backdrop-blur-sm` (inline tip) | `surface-0` or `surface-1`         |
-| `bg-surface-overlay backdrop-blur-[6px]` (modal scrim) | `bg-surface-overlay backdrop-blur-soft` |
+| `bg-surface-overlay backdrop-blur-[6px]` (modal scrim) | `modal-veil` |
 | `shadow-theme`                              | `shadow-lift` (or inherit from `surface-*`) |
 | `rounded-[10px]`                            | `rounded-md`                              |
 | `rounded-2xl` on modals                     | `rounded-xl`                              |

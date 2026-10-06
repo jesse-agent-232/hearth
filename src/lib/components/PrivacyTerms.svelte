@@ -35,7 +35,7 @@
 	<div
 		use:portal
 		use:dialog={{ label: 'Privacy & Terms' }}
-		class="fixed inset-0 bg-surface-overlay backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in"
+		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4 animate-fade-in"
 		onclick={() => open = false}
 	>
 	<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[80vh] overflow-hidden shadow-theme animate-modal-enter flex flex-col relative" onclick={(e) => e.stopPropagation()}>
@@ -52,7 +52,7 @@
 		<!-- Body -->
 		<div class="p-8 pt-5 overflow-y-auto text-content-dim text-[0.78rem] leading-[1.7]">
 			{#if lastUpdated}
-			<p class="opacity-50 text-[0.7rem] mt-0">Last updated: {lastUpdated}</p>
+			<p class="text-content-dim text-[0.7rem] mt-0">Last updated: {lastUpdated}</p>
 			{/if}
 
 			{#if privacyHtml}
@@ -60,7 +60,7 @@
 			{:else}
 				{#each sections as section}
 					<h3 class="text-[0.8rem] font-semibold text-content mt-5 mb-1">{section.title}</h3>
-					<ul class="pl-5 my-1">
+					<ul class="pl-5 my-1 list-disc marker:text-content-dim">
 						{#each section.items as item}
 							<li class="mb-0.5">{item}</li>
 						{/each}
@@ -85,7 +85,7 @@
 	.privacy-md :global(h2) { font-size: 0.85rem; }
 	.privacy-md :global(h3) { font-size: 0.8rem; }
 	.privacy-md :global(p) { margin: 0.5rem 0; }
-	.privacy-md :global(ul) { padding-left: 1.25rem; margin: 0.25rem 0; }
+	.privacy-md :global(ul) { padding-left: 1.25rem; margin: 0.25rem 0; list-style: disc; }
 	.privacy-md :global(li) { margin-bottom: 0.125rem; }
 	.privacy-md :global(a) { color: var(--text-muted); text-decoration: underline; }
 	.privacy-md :global(a:hover) { color: var(--text); }
