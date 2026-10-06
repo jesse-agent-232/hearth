@@ -60,16 +60,9 @@ Every option is documented in [`config.example.yml`](config.example.yml) and [do
 
 ## How it compares
 
-| | Holm | Homepage / Homarr / Dashy / Glance |
-|---|---|---|
-| Built for | everyone who uses your server | the person who runs it |
-| Per-user layout & bookmarks | ✅ | ❌ (or one shared layout) |
-| SSO sign-in, admin by group | ✅ | varies |
-| Search inside your apps, per user | ✅ | ❌ |
-| Onboarding & setup guides | ✅ | ❌ |
-| Server stats, container health | ❌ by design | ✅ |
+Homepage and Glance have no user accounts: everyone sees the page the admin wrote. Dashy and Homarr add sign-in, users and groups, and the admin decides which boards or sections each person can see. Holm flips it: you publish a catalog of apps once, and each person builds their own page from it. Nobody needs edit rights on a shared board, and there's no board per person for you to maintain. Searches inside apps use each person's own login.
 
-If you want a console for yourself, those tools are great. Holm is the page you hand to everyone else.
+What Holm deliberately leaves out: server stats, container health, uptime widgets. If you want a console for yourself, those tools do it well. Holm is the page you hand to everyone else.
 
 ## Features
 
