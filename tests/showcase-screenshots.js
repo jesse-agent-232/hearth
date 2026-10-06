@@ -39,11 +39,10 @@ const ICON_STYLES = ['colored', 'white', 'grayed'];
 
 // ── Helpers ──────────────────────────────────────────
 
-function createConfig(configPath, { auth = false, news = false } = {}) {
+function createConfig(configPath, { auth = false } = {}) {
 	const tmpPath = configPath.replace('.yml', '.screenshot-tmp.yml');
 	let content = readFileSync(configPath, 'utf-8');
 	if (!auth) content = content.replace(/auth:\s*\n\s*enabled:\s*true/, 'auth:\n  enabled: false');
-	if (!news) content = content.replace(/news:\s*\n\s*enabled:\s*true/, 'news:\n  enabled: false');
 	writeFileSync(tmpPath, content);
 	return tmpPath;
 }
@@ -123,7 +122,7 @@ async function run() {
 		// DASHBOARD (auth disabled for clean shots)
 		// ════════════════════════════════════════════
 		console.log('📸 Dashboard\n');
-		const dashConfig = createConfig(persona.config, { auth: false, news: false });
+		const dashConfig = createConfig(persona.config, { auth: false });
 		let server;
 		try { server = await startServer(dashConfig); } catch (e) { console.error(`  ✗ ${e.message}`); continue; }
 		await new Promise(r => setTimeout(r, 2000));
@@ -204,7 +203,7 @@ async function run() {
 		const hasAuth = /auth:\s*\n\s*enabled:\s*true/.test(rawConfig);
 		if (hasAuth) {
 			console.log('\n🔐 Welcome\n');
-			const authConfig = createConfig(persona.config, { auth: true, news: false });
+			const authConfig = createConfig(persona.config, { auth: true });
 			let authServer;
 			try { authServer = await startServer(authConfig); } catch (e) { console.error(`  ✗ ${e.message}`); continue; }
 			await new Promise(r => setTimeout(r, 2000));
@@ -234,7 +233,7 @@ async function run() {
 		if (hasOnboarding) {
 			console.log('\n🎓 Onboarding\n');
 			// Need auth enabled for onboarding to show, but we fake the session
-			const onbConfig = createConfig(persona.config, { auth: true, news: false });
+			const onbConfig = createConfig(persona.config, { auth: true });
 			let onbServer;
 			try { onbServer = await startServer(onbConfig); } catch (e) { console.error(`  ✗ ${e.message}`); continue; }
 			await new Promise(r => setTimeout(r, 2000));

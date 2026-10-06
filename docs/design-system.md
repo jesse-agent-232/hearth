@@ -76,7 +76,7 @@ Five named steps. **Don't use raw pixel radii** (`rounded-[10px]`).
 | `rounded-md`  | 10px  | Inputs, buttons, form rows                    |
 | `rounded-lg`  | 14px  | Cards, list items, integration cards          |
 | `rounded-xl`  | 20px  | Modals, hero search, dropdowns                |
-| `rounded-pill`| ∞     | Recent chips, news pill, toggles, status dots |
+| `rounded-pill`| ∞     | Recent chips, toggles, status dots |
 
 Inputs and buttons should always be `rounded-md`. Mixing radii on adjacent controls makes the toolbar look glitchy.
 

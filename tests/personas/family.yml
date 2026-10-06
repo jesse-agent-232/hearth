@@ -166,9 +166,6 @@ apps:
         tile_color: "#1ED760"
         default_visible: true
 
-news:
-  enabled: false
-
 search:
   enabled: true
   url: "https://www.google.com/search"

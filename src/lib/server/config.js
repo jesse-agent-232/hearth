@@ -52,7 +52,6 @@ function getDefaults() {
 		auth: { enabled: false, oidc: {}, admin_usernames: [], password_change_url: null, registration: { enabled: false, url: null } },
 		apps: [],
 		customization: { enabled: false },
-		news: { enabled: false },
 		search: { enabled: true, url: 'https://www.google.com/search', param: 'q' },
 		wallpapers: { enabled: false },
 		weather: { enabled: false },
@@ -92,10 +91,6 @@ export function getAppsConfig() {
 		}
 	}
 	return items;
-}
-
-export function getNewsConfig() {
-	return getConfig().news || { enabled: false };
 }
 
 export function getSearchConfig() {
@@ -174,7 +169,6 @@ export async function getClientConfig({ authenticated = true } = {}) {
 		auth: { ...auth, password_change_url: config.auth?.password_change_url || null },
 		apps: getAppsConfig(),
 		customization: { enabled: config.customization?.enabled ?? false },
-		news: { enabled: config.news?.enabled ?? false },
 		search: getSearchConfig(),
 		wallpapers: { enabled: config.wallpapers?.enabled ?? false },
 		weather: { enabled: config.weather?.enabled ?? false },

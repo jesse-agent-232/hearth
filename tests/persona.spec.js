@@ -207,12 +207,11 @@ test.describe.serial('Persona: Developer', () => {
 		await expect(page.locator('button', { hasText: 'Privacy & Terms' })).not.toBeVisible();
 	});
 
-	test('no search bar when news disabled', async ({ page }) => {
+	test('search bar shows', async ({ page }) => {
 		await setPrefs(page, { onboarded: true, name: 'dev', username: 'dev', passwordVerified: true });
 		await page.goto('/?user=demo');
 		await page.waitForTimeout(3000);
 
-		// Search is enabled but news is not — search bar should still show
 		const searchForm = page.locator('form').filter({ has: page.locator('input[type="text"]') });
 		await expect(searchForm).toBeVisible();
 	});

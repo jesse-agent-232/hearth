@@ -23,7 +23,7 @@ const PREFS = {
 	iconStyle: 'colored',
 	wallpaperEnabled: false,
 	openInNewTab: true,
-	enabledWidgets: ['weather', 'news', 'search']
+	enabledWidgets: ['weather', 'search']
 };
 
 async function setPrefs(page, overrides = {}) {
