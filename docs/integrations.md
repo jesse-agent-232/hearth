@@ -15,6 +15,10 @@ Holm has two kinds of app support.
 | Jellyfin | Movies, shows and music | Quick Connect sign-in, no key to copy | `!jf` |
 | Planka | Boards and cards | URL + API key | `!p` |
 | Karakeep | Bookmarks (full text) | URL + API key | `!b` |
+| Plex | Movies, shows and music | Code at plex.tv/link, no key to copy | `!plex` |
+| Navidrome | Artists, albums and songs | URL + username + password (only a derived token is kept) | `!nd` |
+| Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
+| Mealie | Recipes | URL + API token | `!r` |
 
 Integrations are marked Alpha in the UI. Widgets on the dashboard are reserved for a later release.
 
@@ -44,6 +48,10 @@ The key (`immich`) must match the adapter id. If an app in `apps:` has the same 
 
 Jellyfin skips the form: Holm shows a code, the user approves it under Quick Connect in Jellyfin, and Holm receives that user's own token.
 
+Plex works the same way: the user enters Holm's code at [plex.tv/link](https://plex.tv/link). Holm keeps only the access token for the server at the configured URL, not the Plex account token.
+
+Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, never the password. The token keeps working until the password changes.
+
 After connecting, results from the app appear in the search bar. Typing `!<shortcut>` searches only that app.
 
 ## Security
@@ -51,7 +59,7 @@ After connecting, results from the app appear in the search bar. Typing `!<short
 - **Per-user credentials.** Each user connects with their own key, so search results respect that user's permissions in the app.
 - **Encrypted at rest** with AES-256-GCM. Set `HOLM_SECRET_KEY` to 32 bytes, hex or base64 (`openssl rand -hex 32`). Without it, Holm generates `.integrations-key` next to the database, so anyone with a copy of the data directory also has the key. See [configuration.md](configuration.md#integration-credentials).
 - **Never sent back to the browser.** API responses redact secret fields. Thumbnails and previews are fetched through Holm (`/api/integrations/<id>/proxy/…`), so the key never appears in an `<img src>`.
-- **Disconnect** deletes the stored credentials. Jellyfin also revokes its token.
+- **Disconnect** deletes the stored credentials. Jellyfin also revokes its token. To revoke a Plex sign-in, remove the "Holm" device under **Authorized Devices** in Plex.
 
 ## Adding an integration
 
@@ -98,4 +106,4 @@ An integration is one file plus one import line. The settings form, API routes a
 2. Import it in `src/lib/server/integrations/index.js` and add it to `KNOWN_ADAPTERS`.
 3. Add an example entry under `integrations:` in `config.example.yml`.
 
-The full contract, including `signIn` for device-code flows like Quick Connect and `signOut`, is documented in [`_types.js`](../src/lib/server/integrations/_types.js). [`karakeep.js`](../src/lib/server/integrations/karakeep.js) is a short, complete example.
+The full contract, including `signIn` for device-code flows like Quick Connect, `signOut`, and `prepareConfig` for swapping a typed secret for a derived one before it is saved, is documented in [`_types.js`](../src/lib/server/integrations/_types.js). [`karakeep.js`](../src/lib/server/integrations/karakeep.js) is a short, complete example.

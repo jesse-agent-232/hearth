@@ -232,6 +232,34 @@ integrations:
     surfaces:
       search: true
       widgets: false
+  plex:
+    enabled: true
+    name: "Plex"
+    default_url: "https://plex.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  navidrome:
+    enabled: true
+    name: "Music"
+    default_url: "https://music.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  audiobookshelf:
+    enabled: true
+    name: "Audiobooks"
+    default_url: "https://audiobooks.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  mealie:
+    enabled: true
+    name: "Recipes"
+    default_url: "https://recipes.example.com"
+    surfaces:
+      search: true
+      widgets: false
 
 # ── Wallpapers ──────────────────────────────────────────────
 wallpapers:

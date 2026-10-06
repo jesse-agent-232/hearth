@@ -15,8 +15,12 @@ import nextcloud from './nextcloud.js';
 import planka from './planka.js';
 import karakeep from './karakeep.js';
 import jellyfin from './jellyfin.js';
+import plex from './plex.js';
+import navidrome from './navidrome.js';
+import audiobookshelf from './audiobookshelf.js';
+import mealie from './mealie.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin];
+const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {
