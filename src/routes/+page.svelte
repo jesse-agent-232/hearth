@@ -195,6 +195,10 @@
 			<Header lat={$prefs.lat} lon={$prefs.lon} placeName={$prefs.locationSource === 'manual' ? $prefs.locationName : ''} locationSource={$prefs.locationSource} showWeather={weatherEnabled} />
 
 		</div>
+		<!-- On mobile the header is fixed and the search bar sits at the bottom,
+		     so nothing moves if the icons centre: this spacer and the flex-1
+		     before the footer split the free height. -->
+		<div class="hidden max-md:block flex-1"></div>
 		<div class="launcher-host opacity-0 animate-fade-in-up [animation-fill-mode:both] [animation-delay:75ms] relative z-20">
 			<WidgetGrid isAdmin={data.isAdmin} bind:guideApp bind:editMode {searchEnabled} {customizationEnabled} onSettingsOpen={() => manageAppsOpen = true} />
 		</div>
