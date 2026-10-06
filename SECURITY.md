@@ -5,6 +5,7 @@ Please report vulnerabilities privately through [GitHub's advisory form](https:/
 ## How Holm handles your users
 
 - **Sign-in** is delegated to your OIDC provider. Holm never sees passwords. Sessions are HMAC-signed cookies keyed from the OIDC client secret.
-- **Integration credentials** (Immich, Paperless, Jellyfin, …) belong to each user and are encrypted at rest with AES-256-GCM. Set `HOLM_SECRET_KEY` in production; otherwise the key is generated into the data directory next to the database.
+- **Integration credentials** (Immich, Paperless, Jellyfin, …) belong to each user and are encrypted at rest with AES-256-GCM. Set `HOLM_SECRET_KEY` in production; otherwise the key is generated into `./data/` (`/app/data` in the container), so keep that directory on a volume.
+- **The person running Holm can read the integration tokens you connect.** Only connect apps that person already runs. Holm stores scoped, revocable tokens (API keys, app passwords, Quick Connect), never your sign-in password.
 - **Links** from news feeds and search results are opened only if they are `http:` or `https:`.
 - **`auth.enabled: false`** makes every visitor the same user. Use it only for a local demo.
