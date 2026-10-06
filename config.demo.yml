@@ -1,6 +1,6 @@
 # Holm demo configuration — try Holm with no identity provider.
 #
-#   docker run --rm -p 3000:3000 -e CONFIG_PATH=/app/config.demo.yml ghcr.io/OWNER/holm:latest
+#   docker run --rm -p 3000:3000 -e CONFIG_PATH=/app/config.demo.yml ghcr.io/man15h/holm:latest
 #
 # Login is OFF: everyone who can reach the port is the same "Guest" user.
 # Use it to look around, never on a network you don't trust. For a real

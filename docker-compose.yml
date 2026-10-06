@@ -1,12 +1,14 @@
 services:
   holm:
-    build: .
+    image: ghcr.io/man15h/holm:latest
+    # build: .                    # build from this checkout instead
     ports:
       - "3000:3000"
     environment:
       - CONFIG_PATH=/app/config.yml
       - DATABASE_PATH=/app/data/holm.db
       - NODE_ENV=production
+      # - HOLM_SECRET_KEY=          # openssl rand -hex 32; encrypts integration logins
       # OIDC secrets (set via .env or here):
       # - OIDC_CLIENT_ID=
       # - OIDC_CLIENT_SECRET=
