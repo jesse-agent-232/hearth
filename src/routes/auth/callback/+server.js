@@ -62,6 +62,10 @@ export async function GET({ url, cookies }) {
 	// Persistent signed session cookie (includes groups for admin detection)
 	const sessionData = signSession({ name, username, groups });
 	cookies.set('session', sessionData, { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 30 });
+	// Kept for logout: the provider's end-session endpoint uses it to know
+	// whose session to end and that the redirect back is legitimate.
+	const idToken = tokens.id_token;
+	if (idToken) cookies.set('oidc_id_token', idToken, { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 30 });
 
 	redirect(302, '/');
 }

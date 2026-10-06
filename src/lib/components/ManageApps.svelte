@@ -9,6 +9,8 @@
 	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
 
 	const siteConfig = getContext('config');
+	// Off when database.enabled is false: credentials would have nowhere to live.
+	const integrationsEnabled = siteConfig?.integrations?.enabled !== false;
 	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
 	const defaultAppIds = catalogApps.filter((a) => a.default !== false).map((a) => a.id);
 
@@ -182,7 +184,7 @@
 					{ id: 'appearance', label: 'Appearance' },
 					{ id: 'widgets', label: 'Widgets' },
 					{ id: 'integrations', label: 'Integrations' }
-				] as tab}
+				].filter((t) => t.id !== 'integrations' || integrationsEnabled) as tab}
 					<button
 						class="flex-1 min-w-fit px-2.5 py-2.5 rounded-lg border-none cursor-pointer text-center text-[0.75rem] font-medium transition-all duration-150 {activeTab === tab.id ? 'bg-surface-card-strong text-content' : 'bg-transparent text-content-dim'}"
 						onclick={() => selectTab(tab.id)}
@@ -199,7 +201,7 @@
 							{ id: 'appearance', label: 'Appearance', svg: '<circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v-2M4.22 4.22l1.42 1.42m12.72 12.72-1.42-1.42M1 12h2m18 0h-2M4.22 19.78l1.42-1.42M18.36 5.64l-1.42 1.42"/>' },
 							{ id: 'widgets', label: 'Widgets', svg: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>' },
 							{ id: 'integrations', label: 'Integrations', svg: '<path d="M9 2v6"/><path d="M15 2v6"/><path d="M12 17v5"/><path d="M5 8h14a2 2 0 0 1 2 2v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-3a2 2 0 0 1 2-2z"/>' }
-						] as tab}
+						].filter((t) => t.id !== 'integrations' || integrationsEnabled) as tab}
 							<button
 								class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border-none cursor-pointer transition-all duration-150 text-left {activeTab === tab.id ? 'bg-surface-card-strong' : 'bg-transparent hover:bg-surface-card-hover'}"
 								onclick={() => selectTab(tab.id)}
