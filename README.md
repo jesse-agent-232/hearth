@@ -13,7 +13,7 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 - **A launcher, not just a grid.** Type anywhere (or `⌘K` / `Ctrl+K`) to find apps, run commands, and search inside Immich, Paperless, Nextcloud, Jellyfin, Planka and Karakeep, each with the user's own login.
 - **Onboarding for non-technical people.** Welcome slides, per-app setup guides with App Store / Play links, and gentle tips for the first week.
 - **One YAML file, hot-reloaded.** No admin UI to keep in sync, no restart on change.
-- **Small and private.** A single container (amd64 / arm64), optional SQLite, no telemetry. Weather comes from Open-Meteo with no API key needed.
+- **Small and private.** A single container (amd64 / arm64) with built-in SQLite, so there's no separate database to run. No telemetry. Weather comes from Open-Meteo with no API key needed.
 
 <p>
   <img src="docs/screenshots/launcher.jpg" alt="Launcher" width="68%">

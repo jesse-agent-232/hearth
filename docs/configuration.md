@@ -40,6 +40,31 @@ auth:
 
 Secrets use `${ENV_VAR}` syntax — substituted at runtime, never committed. Session cookies are HMAC-signed using the OIDC client secret.
 
+Any OIDC provider works. Two details trip people up:
+
+- **The issuer must match the provider's exactly.** Copy it from the provider's `/.well-known/openid-configuration`. Holm retries once with or without a trailing slash, and if discovery still fails, the login page shows the reason.
+- **Log out ends the provider session only if the provider supports it.** When the discovery document lists an `end_session_endpoint`, Log out sends the user there, so the next login asks for a password. Without one (Authelia, for example), Log out only clears Holm's session, and the next login goes straight back in while the provider session lasts.
+
+### Authentik
+
+1. **Applications → Applications → Create with provider**, provider type **OAuth2/OpenID**.
+2. Client type **Confidential**. Copy the client ID and secret into `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`.
+3. Redirect URI (strict): `https://dash.example.com/auth/callback`, the same host as `redirect_base`.
+4. **Invalidation flow: `default-invalidation-flow`.** The default `default-provider-invalidation-flow` logs the user out of Holm only and offers an Authentik logout as an extra button. On a shared device you want the full logout.
+5. Leave the default scopes (`openid`, `email`, `profile`). Authentik sends `groups` as part of `profile`, so `admin_groups` works without a `groups` scope.
+
+```yaml
+auth:
+  enabled: true
+  oidc:
+    issuer: "https://authentik.example.com/application/o/holm/"   # the application slug, trailing slash included
+    client_id: "${OIDC_CLIENT_ID}"
+    client_secret: "${OIDC_CLIENT_SECRET}"
+    scopes: "openid profile email"
+    redirect_base: "https://dash.example.com"
+  admin_groups: ["authentik Admins"]   # or a group you create for Holm admins
+```
+
 ## Database
 
 ```yaml
@@ -48,7 +73,9 @@ database:
   # path: "./data/holm.db"   # can also set via DATABASE_PATH env var
 ```
 
-When enabled, user preferences persist in SQLite and sync across devices. When disabled, preferences are stored in the browser's localStorage only — no server-side state, no data volume needed.
+SQLite is built in (one file in the data volume), so there's no separate database to run. When enabled, user preferences persist there and sync across devices.
+
+When disabled, Holm runs browser-only: preferences live in each browser's localStorage, apps admins add with **+** aren't saved, and integrations are switched off, since they have nowhere to keep credentials.
 
 ## Apps
 

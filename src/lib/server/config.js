@@ -117,8 +117,20 @@ export function getTipsConfig() {
 	return getConfig().tips || { enabled: false };
 }
 
+// Integrations store each user's credentials in the database, so with
+// database.enabled: false they are switched off rather than appearing to
+// connect while nothing is saved.
+let warnedIntegrationsWithoutDb = false;
 export function getIntegrationsConfig() {
-	return getConfig().integrations || {};
+	const config = getConfig();
+	if (config.database?.enabled === false) {
+		if (config.integrations && !warnedIntegrationsWithoutDb) {
+			warnedIntegrationsWithoutDb = true;
+			console.warn('[holm] config: integrations need the database; ignoring integrations: because database.enabled is false');
+		}
+		return {};
+	}
+	return config.integrations || {};
 }
 
 // Rendered once per file version: isomorphic-dompurify runs on jsdom, which
@@ -174,6 +186,7 @@ export async function getClientConfig({ authenticated = true } = {}) {
 		weather: { enabled: config.weather?.enabled ?? false },
 		onboarding: getOnboardingConfig(),
 		privacy: { ...getPrivacyConfig(), html: await loadPrivacyHtml(config) },
-		tips: getTipsConfig()
+		tips: getTipsConfig(),
+		integrations: { enabled: config.database?.enabled !== false }
 	};
 }
