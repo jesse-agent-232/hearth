@@ -53,7 +53,7 @@ function mergeForTest(adapter, existing, submitted) {
 		const v = submitted[field.key];
 		if (v == null) continue;
 		if (field.type === 'secret' && isRedacted(v)) continue;
-		merged[field.key] = typeof v === 'string' ? v.trim() : v;
+		merged[field.key] = typeof v === 'string' && field.trim !== false ? v.trim() : v;
 	}
 	return merged;
 }

@@ -69,7 +69,7 @@ const adapter = {
 			if (!res.ok) return { error: `Couldn’t start Quick Connect (${res.status})` };
 			const data = await res.json();
 			if (!data?.Secret || !data?.Code) return { error: 'Jellyfin sent an unexpected reply' };
-			return { code: String(data.Code), state: { secret: data.Secret, deviceId } };
+			return { code: String(data.Code), link: `${base}/web/#/quickconnect`, state: { secret: data.Secret, deviceId } };
 		},
 
 		async poll({ config, state, fetch }) {

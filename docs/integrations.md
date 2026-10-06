@@ -48,9 +48,9 @@ The key (`immich`) must match the adapter id. If an app in `apps:` has the same 
 
 Jellyfin skips the form: Holm shows a code, the user approves it under Quick Connect in Jellyfin, and Holm receives that user's own token.
 
-Plex works the same way: the user enters Holm's code at [plex.tv/link](https://plex.tv/link). Holm keeps only the access token for the server at the configured URL, not the Plex account token.
+Plex works the same way: the user enters Holm's code at [plex.tv/link](https://plex.tv/link). Holm keeps only the access token for the server at the configured URL. For a server you only have shared access to, that token can't reach anything else. For a server you own, Plex returns your account token itself, so treat the stored connection as being as sensitive as your Plex account.
 
-Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, never the password. The token keeps working until the password changes.
+Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 
 After connecting, results from the app appear in the search bar. Typing `!<shortcut>` searches only that app.
 

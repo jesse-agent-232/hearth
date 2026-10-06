@@ -70,7 +70,8 @@ export async function POST({ cookies, url, request, params, fetch }) {
 				state: res.state,
 				expires: Date.now() + FLOW_TTL_MS
 			});
-			return json({ flowId, code: res.code, expiresIn: FLOW_TTL_MS / 1000 });
+			const link = typeof res.link === 'string' && /^https?:\/\//.test(res.link) ? res.link : null;
+			return json({ flowId, code: res.code, link, expiresIn: FLOW_TTL_MS / 1000 });
 		} catch (err) {
 			return json({ error: `Couldn’t reach the server: ${describeFetchError(err, STEP_TIMEOUT_MS)}` }, { status: 502 });
 		}
