@@ -48,7 +48,17 @@
 	};
 
 	function thumbFailed(e) {
+		e.currentTarget.classList.remove('is-loading');
 		e.currentTarget.style.display = 'none';
+	}
+
+	// Thumbnails start hidden behind a shimmer and fade in once decoded. A
+	// cached image can finish before the handler is attached, so check
+	// `complete` on mount too.
+	function thumbLoading(node) {
+		const done = () => node.classList.remove('is-loading');
+		if (node.complete && node.naturalWidth) done();
+		else node.addEventListener('load', done, { once: true });
 	}
 
 	function scrollIntoView(node, isSelected) {
@@ -92,7 +102,7 @@
 								{:else if section.layout === 'grid' || section.layout === 'poster'}
 									<div class="launcher-thumb-wrap">
 										{#if item.thumbnail}
-											<img src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
+											<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 										{/if}
 										<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
 										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
@@ -108,7 +118,7 @@
 										{:else if item.thumbnail}
 											<span class="launcher-icon-box">
 												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
-												<img src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
+												<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 											</span>
 										{:else}
 											<span class="launcher-icon-box">
