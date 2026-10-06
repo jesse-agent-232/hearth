@@ -175,24 +175,26 @@
 	--bloom-ring: rgba(255, 255, 255, 0.18);
 
 	/* Hero search palette + default app tile. The :root values target the
-	   "auto / dynamic" theme — wallpaper is the canvas, so a white pill +
-	   white tiles read as the lit foreground. .theme-dark below flips both
-	   to a dark variant for the no-wallpaper dark theme. The bar's interior
-	   (text/icons/kbd/chip) is themed by the bar's own bg, not the page,
-	   so we expose dedicated --hero-search-* tokens. */
-	--hero-search-bg: #ffffff;
-	--hero-search-border: rgba(0, 0, 0, 0.08);
-	--hero-search-text: #18181b;
-	--hero-search-text-dim: rgba(0, 0, 0, 0.45);
-	--hero-search-text-strong: rgba(0, 0, 0, 0.85);
-	--hero-search-chip-bg: rgba(0, 0, 0, 0.05);
-	--hero-search-chip-border: rgba(0, 0, 0, 0.10);
+	   "auto / dynamic" theme. The palette uses the same dark surface as the
+	   tile context menu (.glass-card.menu-surface), so the two popovers over
+	   the wallpaper match; white tiles still read as the lit foreground.
+	   .theme-dark below flips the tile to a dark variant for the
+	   no-wallpaper dark theme. The bar's interior (text/icons/kbd/chip) is
+	   themed by the bar's own bg, not the page, so we expose dedicated
+	   --hero-search-* tokens. */
+	--hero-search-bg: #18181b;
+	--hero-search-border: rgba(255, 255, 255, 0.10);
+	--hero-search-text: #fafafa;
+	--hero-search-text-dim: rgba(255, 255, 255, 0.50);
+	--hero-search-text-strong: rgba(255, 255, 255, 0.85);
+	--hero-search-chip-bg: rgba(255, 255, 255, 0.06);
+	--hero-search-chip-border: rgba(255, 255, 255, 0.10);
 	--tile-bg-default: #ffffff;
 }
 
 /* Explicit Dark theme — the operator/user picked Dark, no wallpaper, so
-   the bar adopts the dark palette and the white tile flips to a quiet
-   translucent zinc. */
+   the white tile flips to a quiet translucent zinc. The bar keeps the
+   dark palette it already has in auto. */
 .theme-dark {
 	--hero-search-bg: #18181b;
 	--hero-search-border: rgba(255, 255, 255, 0.10);
@@ -270,7 +272,8 @@
 	--shadow-inset-hi: rgba(255, 255, 255, 0.6);
 	--bloom-ring: rgba(0, 0, 0, 0.18);
 
-	/* Hero search + tile defaults — light theme matches :root (auto). */
+	/* Hero search + tile defaults — light theme gets the white palette,
+	   matching the white menu surface there. */
 	--hero-search-bg: #ffffff;
 	--hero-search-border: rgba(0, 0, 0, 0.10);
 	--hero-search-text: #18181b;
@@ -863,26 +866,24 @@ body.search-active .hero-area {
 	color: var(--hero-search-text);
 }
 
-/* Search results + picker live on the search palette's bg, which on the
-   default/auto palette is white. Icon wrappers default to a white tile —
-   same visual treatment as dashboard tiles — but on a white panel they
-   vanish. Add a faint border + 1px inset highlight so the white tile reads
-   as a distinct chip the way it would against a dark wallpaper. Brand-
-   colored tiles already contrast on their own and the border just becomes
-   a subtle edge. */
+/* Search results + picker live on the search palette's bg, which is
+   dark except in the light theme. On the white light-theme panel the white
+   icon tiles would vanish, so they get a faint border + 1px inset highlight
+   there; on the dark panel, a light hairline. Brand-colored tiles already
+   contrast on their own and the border just becomes a subtle edge. */
 .hero-search-results .app-icon-wrap,
 .hero-search-results .w-8.h-8.rounded,
 .add-picker .picker-icon {
 	box-shadow:
-		inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-		0 1px 2px -1px rgba(0, 0, 0, 0.06);
-}
-.theme-dark .hero-search-results .app-icon-wrap,
-.theme-dark .hero-search-results .w-8.h-8.rounded,
-.theme-dark .add-picker .picker-icon {
-	box-shadow:
 		inset 0 0 0 1px rgba(255, 255, 255, 0.10),
 		0 1px 2px -1px rgba(0, 0, 0, 0.4);
+}
+.theme-light .hero-search-results .app-icon-wrap,
+.theme-light .hero-search-results .w-8.h-8.rounded,
+.theme-light .add-picker .picker-icon {
+	box-shadow:
+		inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+		0 1px 2px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* ── Joined "Raycast" palette surface ─────────────────────────
@@ -1399,12 +1400,12 @@ body.search-active .hero-area {
    the right, and a footer bar saying what Enter does. The surface uses
    the --hero-search-* tokens so it matches the bar in every theme. */
 :root {
-	--launcher-sel: rgba(0, 0, 0, 0.06);
-	--launcher-sel-ring: rgba(0, 0, 0, 0.14);
-}
-.theme-dark {
 	--launcher-sel: rgba(255, 255, 255, 0.08);
 	--launcher-sel-ring: rgba(255, 255, 255, 0.22);
+}
+.theme-light {
+	--launcher-sel: rgba(0, 0, 0, 0.06);
+	--launcher-sel-ring: rgba(0, 0, 0, 0.14);
 }
 .launcher-panel {
 	position: absolute;
