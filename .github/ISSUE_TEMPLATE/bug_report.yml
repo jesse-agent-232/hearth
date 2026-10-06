@@ -1,0 +1,30 @@
+name: Bug report
+description: Something in Holm doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Holm version or image tag
+      placeholder: "e.g. 0.2.1 or sha-abc1234"
+    validations:
+      required: true
+  - type: dropdown
+    id: auth
+    attributes:
+      label: Login
+      options:
+        - OIDC (say which provider below)
+        - Auth disabled
+  - type: textarea
+    id: details
+    attributes:
+      label: Browser, device, provider, logs
+      description: Remove secrets and hostnames before pasting config or logs.

@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest something for Holm
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Who is this for, and what are they trying to do?
+      description: Holm is built for the people who use your server, not just the admin. Tell us whose day this improves.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
