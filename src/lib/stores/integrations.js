@@ -42,6 +42,7 @@ function createIntegrationsStore() {
 	}
 
 	async function save(integrationId, payload) {
+		const wasConnected = !!get(state).integrations.find((it) => it.id === integrationId)?.userState?.connected;
 		const res = await fetch(`/api/integrations/${encodeURIComponent(integrationId)}`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
@@ -59,6 +60,8 @@ function createIntegrationsStore() {
 				it.id === integrationId ? { ...it, userState: data.userState } : it
 			)
 		}));
+		// A new connection can connect others too (Jellyfin → Seerr).
+		if (!wasConnected) load({ force: true });
 		return data;
 	}
 

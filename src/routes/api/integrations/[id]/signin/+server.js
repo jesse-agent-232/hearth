@@ -117,12 +117,13 @@ export async function POST({ cookies, url, request, params, fetch }) {
 		if (res?.status !== 'done') return json({ status: 'error', error: res?.error || 'Sign-in failed' });
 
 		const saved = await saveSignIn(user.username, adapter, { ...flow.config, ...res.config });
-		// One sign-in can connect others too (Jellyfin → Seerr). Its own
+		// One sign-in can connect others too (Jellyfin → Seerr), even one the
+		// user disconnected before: signing in here asks for it again. Its own
 		// deadline: whatever the poll left over may be too little. `forLinked`
 		// is what the sign-in can lend them once (Plex's account token), never
 		// saved.
 		const fresh = res.forLinked ? { [adapter.id]: { ...flow.config, ...res.config, ...res.forLinked } } : {};
-		await autoConnect(user.username, withDeadline(fetch, AUTO_CONNECT_TIMEOUT_MS), fresh).catch(() => {});
+		await autoConnect(user.username, withDeadline(fetch, AUTO_CONNECT_TIMEOUT_MS), { fresh, signedIn: adapter.id }).catch(() => {});
 		return json(saved);
 	}
 
