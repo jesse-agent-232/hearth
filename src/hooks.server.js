@@ -1,5 +1,5 @@
 import { accessSync, existsSync, mkdirSync, constants } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { getConfig, getIntegrationsConfig } from '$lib/server/config.js';
 import { getMasterKey } from '$lib/server/secrets.js';
 import { resolveDbPath } from '$lib/server/db.js';
@@ -8,17 +8,22 @@ import { resolveDbPath } from '$lib/server/db.js';
 // than serving with sign-in off or an encryption key nobody chose.
 export function init() {
 	const config = getConfig();
-	if (config.database?.enabled !== false) {
-		const file = resolveDbPath();
-		const dir = dirname(file);
+	// The data dir holds the DB and, without HOLM_SECRET_KEY, the key file
+	// that encrypts integration tokens and signs sessions.
+	const dbOn = config.database?.enabled !== false;
+	const file = resolveDbPath();
+	const dir = dirname(file);
+	const needsKeyFile = !process.env.HOLM_SECRET_KEY && !existsSync(join(dir, '.integrations-key'));
+	if (dbOn || needsKeyFile) {
 		try {
 			mkdirSync(dir, { recursive: true });
 			accessSync(dir, constants.W_OK);
-			if (existsSync(file)) accessSync(file, constants.W_OK);
+			if (dbOn && existsSync(file)) accessSync(file, constants.W_OK);
 		} catch {
 			throw new Error(
 				`${dir} is not writable by this process (uid ${process.getuid?.()}). ` +
-					'The image runs as the node user (uid 1000): chown -R 1000:1000 the data volume.'
+					'The image runs as the node user (uid 1000): chown -R 1000:1000 the data volume' +
+					(dbOn ? '.' : ', or set HOLM_SECRET_KEY (openssl rand -hex 32).')
 			);
 		}
 	}
