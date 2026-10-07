@@ -4,11 +4,13 @@
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { nowPlaying } from '$lib/stores/player.js';
 	import { prefs } from '$lib/stores/prefs.js';
-	import { TOTAL_WALLPAPERS } from '$lib/wallpaper.js';
 	import { resolveIcon } from '$lib/apps.js';
 	import SearchResults from './SearchResults.svelte';
 	import { isMac } from './Keys.svelte';
 	import { bestScore } from '$lib/launcher/match.js';
+	import { buildActions, matchBang } from '$lib/launcher/actions.js';
+	import { arrangeProviderSections } from '$lib/launcher/sections.js';
+	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
 
 	const siteConfig = getContext('config');
@@ -128,53 +130,9 @@
 		activeScope ? $integrationsStore.integrations.find((it) => it.id === activeScope) : null
 	);
 
-	// ── Quick-action registry ────────────────────────────────────
-	// Icon SVG strings are pre-rendered paths (fed into a <svg> wrapper in the row).
-	const ICONS = {
-		settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
-		theme: '<circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v-2M4.22 4.22l1.42 1.42m12.72 12.72-1.42-1.42M1 12h2m18 0h-2M4.22 19.78l1.42-1.42M18.36 5.64l-1.42 1.42"/>',
-		icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-		wall: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
-		logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
-	};
-
-	const ACTIONS = [
-		{ id: 'settings', bang: 'settings', label: 'Open Configure', keywords: ['settings', 'preferences', 'integrations', 'widgets'], icon: ICONS.settings, exec: () => onSettingsOpen() },
-		// manual: never auto-runs on the last keystroke; needs Enter or a click
-		{ id: 'logout', bang: 'logout', label: 'Log out', keywords: ['sign out', 'logout'], icon: ICONS.logout, manual: true, exec: () => { window.location.href = '/auth/logout'; } },
-		// Wallpapers only show in the Dynamic theme, so switch to it; otherwise
-		// the pick is saved under Light/Dark and nothing visibly changes.
-		...(siteConfig?.wallpapers?.enabled ? [{
-			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', keywords: ['wallpaper', 'background', 'shuffle'], icon: ICONS.wall,
-			exec: () => {
-				const next = Math.floor(Math.random() * TOTAL_WALLPAPERS) + 1;
-				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true, theme: 'auto' }));
-			}
-		}] : []),
-		// 'auto' is the stored value; Configure calls it Dynamic, so both work.
-		...[['dark', 'Dark'], ['light', 'Light'], ['auto', 'Dynamic']].map(([t, name]) => ({
-			id: `theme-${t}`, bang: 'theme', arg: t, argAlias: name.toLowerCase(), label: `Theme: ${name}`, keywords: [t, name.toLowerCase(), `${t} mode`], icon: ICONS.theme,
-			exec: () => prefs.update((p) => ({ ...p, theme: t }))
-		})),
-		...['colored', 'white', 'grayed'].map((s) => ({
-			id: `icon-${s}`, bang: 'icon', arg: s, label: `Icon style: ${s[0].toUpperCase()}${s.slice(1)}`, keywords: [`${s} icons`], icon: ICONS.icon,
-			exec: () => prefs.update((p) => ({ ...p, iconStyle: s }))
-		}))
-	];
-
-	const matchedActions = $derived.by(() => {
-		if (activeScope) return [];
-		const s = (query || '').trimStart();
-		if (!s.startsWith('!')) return [];
-		const m = s.match(/^!([a-zA-Z0-9_-]+)(?:\s+(.*))?$/);
-		if (!m) return [];
-		const bang = m[1].toLowerCase();
-		const argFilter = (m[2] || '').trim().toLowerCase();
-		const hits = ACTIONS.filter((a) => a.bang === bang);
-		if (!hits.length) return [];
-		if (!argFilter) return hits;
-		return hits.filter((a) => !a.arg || a.arg.includes(argFilter) || a.argAlias?.includes(argFilter));
-	});
+	// ── Quick-action registry ───────────────────────────────────
+	const ACTIONS = buildActions({ wallpapers: !!siteConfig?.wallpapers?.enabled, onSettingsOpen: () => onSettingsOpen() });
+	const matchedActions = $derived(activeScope ? [] : matchBang(ACTIONS, query));
 
 	function runAction(action) {
 		try { action.exec(); } catch (err) { console.error('Action failed:', err); }
@@ -238,50 +196,7 @@
 	$effect(() => {
 		if (typeof document === 'undefined') return;
 		if (inlineOpen || query || activeScope) return;
-		let hintIndex = 0;
-		let charIndex = PLACEHOLDER_HINTS[0].length;
-		let phase = 'holding';
-		let timeout;
-		placeholderText = PLACEHOLDER_HINTS[0];
-
-		const step = () => {
-			// Reduced motion: swap whole hints instead of typing them out.
-			if (prefersReducedMotion.current) {
-				hintIndex = (hintIndex + 1) % PLACEHOLDER_HINTS.length;
-				charIndex = PLACEHOLDER_HINTS[hintIndex].length;
-				phase = 'holding';
-				placeholderText = PLACEHOLDER_HINTS[hintIndex];
-				timeout = setTimeout(step, 4000);
-				return;
-			}
-			const target = PLACEHOLDER_HINTS[hintIndex];
-			if (phase === 'holding') {
-				phase = 'erasing';
-				timeout = setTimeout(step, 1800);
-			} else if (phase === 'erasing') {
-				if (charIndex > 0) {
-					charIndex--;
-					placeholderText = target.slice(0, charIndex);
-					timeout = setTimeout(step, 22);
-				} else {
-					phase = 'typing';
-					hintIndex = (hintIndex + 1) % PLACEHOLDER_HINTS.length;
-					timeout = setTimeout(step, 320);
-				}
-			} else if (phase === 'typing') {
-				const next = PLACEHOLDER_HINTS[hintIndex];
-				if (charIndex < next.length) {
-					charIndex++;
-					placeholderText = next.slice(0, charIndex);
-					timeout = setTimeout(step, 45);
-				} else {
-					phase = 'holding';
-					timeout = setTimeout(step, 2200);
-				}
-			}
-		};
-		timeout = setTimeout(step, 2800);
-		return () => clearTimeout(timeout);
+		return cycleHints(PLACEHOLDER_HINTS, (text) => (placeholderText = text), () => prefersReducedMotion.current);
 	});
 
 	async function fireOneProvider(provider, q, signal) {
@@ -521,8 +436,6 @@
 		};
 	}
 
-	const PROVIDER_KIND_ORDER = { media: 0, document: 1, file: 2, card: 3, bookmark: 4, photo: 5 };
-
 	let frecency = $state({});
 	$effect(() => {
 		if (inlineOpen) frecency = frecencyScores();
@@ -691,47 +604,7 @@
 				}] : [])]
 			};
 		});
-		// Providers with shelf: 'video' (Jellyfin, Plex, Seerr) share one
-		// "Movies & TV" shelf: what you can play, then what you can request,
-		// then what's already requested. Only movies and shows move (they're
-		// the ones with a detail view); albums and artists stay in their
-		// provider's row.
-		const mediaSections = provSections.filter((s) => s.shelf === 'video');
-		if (mediaSections.length > 1) {
-			const isTitle = (it) => !it.more && it.showDetail;
-			const seen = new Set();
-			const titles = [
-				...mediaSections.flatMap((s) => s.items.filter((it) => isTitle(it) && it.play)),
-				...mediaSections.flatMap((s) => s.items.filter((it) => isTitle(it) && !it.play && !it.request?.done)),
-				...mediaSections.flatMap((s) => s.items.filter((it) => isTitle(it) && !it.play && it.request?.done))
-			].filter((it) => {
-				// Seerr already folds its own duplicates; this catches the same
-				// film on both Jellyfin and Plex. The playable copy comes first.
-				if (!it.tmdb) return true;
-				if (seen.has(it.tmdb)) return false;
-				seen.add(it.tmdb);
-				return true;
-			});
-			const shelf = {
-				id: 'p-media',
-				label: 'Movies & TV',
-				layout: 'poster',
-				kind: 'media',
-				loading: mediaSections.some((s) => s.loading),
-				skeleton: titles.length ? 0 : Math.max(...mediaSections.map((s) => s.skeleton)),
-				error: mediaSections.filter((s) => s.error).map((s) => `${s.label}: ${s.error}`).join(' · '),
-				items: [...titles, ...mediaSections.flatMap((s) => s.items.filter((it) => it.more))]
-			};
-			provSections.splice(provSections.indexOf(mediaSections[0]), 0, shelf);
-			for (const s of mediaSections) {
-				const rest = s.items.filter((it) => !it.more && !it.showDetail);
-				// What's left is music (albums, artists, songs): same cards as Navidrome.
-				if (rest.length) Object.assign(s, { layout: 'tracks', items: rest.slice(0, 6), loading: false, skeleton: 0, error: '' });
-				else provSections.splice(provSections.indexOf(s), 1);
-			}
-		}
-		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
-		out.push(...provSections);
+		out.push(...arrangeProviderSections(provSections));
 
 		// Fallback: the web search, always last. One row only; each app's
 		// results are already above, and its !shortcut still scopes to it.
