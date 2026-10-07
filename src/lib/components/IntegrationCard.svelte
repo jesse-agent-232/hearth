@@ -59,6 +59,13 @@
 			? `Sign in with ${nameOf(integration.linkedTo[0])}`
 			: integration.signIn?.label
 	);
+	// The app a connected Seerr signed in through, for the link chip.
+	const linkedThrough = $derived.by(() => {
+		const id = connected && VIA[integration.userState?.config?.via] ? integration.userState.config.via : null;
+		const it = id && $integrationsStore.integrations.find((i) => i.id === id);
+		return it ? { name: it.name, icon: resolveIcon(it.icon) } : null;
+	});
+	// The full wording shows when the card is open; closed, the chip says it.
 	const linkNote = $derived.by(() => {
 		if (connected) {
 			const via = VIA[integration.userState?.config?.via];
@@ -290,8 +297,8 @@
 		<div class="flex-1 min-w-0">
 			<span class="text-[0.8rem] text-content font-medium">{integration.name}</span>
 			{#if signedInAs && !expanded}
-				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}{linkNote ? ` · ${linkNote[0].toLowerCase()}${linkNote.slice(1)}` : ''}</span>
-			{:else if linkNote}
+				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}</span>
+			{:else if linkNote && expanded}
 				<span class="block text-[0.7rem] text-content-dim truncate">{linkNote}</span>
 			{/if}
 		</div>
@@ -302,6 +309,16 @@
 					onclick={cancelEdit}
 				>Cancel</button>
 			{:else if connected}
+				{#if linkedThrough}
+					<span
+						class="flex items-center gap-1 text-content-dim px-1.5 py-1 rounded-lg border border-border-card"
+						title="Connected through {linkedThrough.name}"
+						aria-label="Connected through {linkedThrough.name}"
+					>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+						<AppIcon icon={linkedThrough.icon} name={linkedThrough.name} size="w-3.5 h-3.5" {iconStyle} />
+					</span>
+				{/if}
 				<span class="text-[0.7rem] font-mono text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-400/30 bg-emerald-500/5">Connected</span>
 				<div class="relative" bind:this={menuEl}>
 					<button
@@ -450,18 +467,26 @@
 			</div>
 
 			<!-- Surface toggles -->
-			{#if connected && hasSearch}
+			{#if connected}
 				<div class="space-y-2 pt-2 border-t border-border-card">
 					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Use for</div>
-					<button
-						class="flex items-center justify-between w-full bg-transparent border-none cursor-pointer text-left py-1"
-						onclick={() => toggleSurface('search')}
-					>
-						<span class="text-[0.75rem] text-content-muted">Search provider</span>
-						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {formSurfaces.search ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
-							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {formSurfaces.search ? 'translate-x-4' : 'translate-x-0.5'}"></div>
+					{#if hasSearch}
+						<button
+							class="flex items-center justify-between w-full bg-transparent border-none cursor-pointer text-left py-1"
+							onclick={() => toggleSurface('search')}
+						>
+							<span class="text-[0.75rem] text-content-muted">Search provider</span>
+							<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {formSurfaces.search ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
+								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {formSurfaces.search ? 'translate-x-4' : 'translate-x-0.5'}"></div>
+							</div>
+						</button>
+					{/if}
+					<div class="flex items-center justify-between py-1 opacity-50" title="Coming in a future release">
+						<span class="text-[0.75rem] text-content-muted">Widgets <span class="text-[0.7rem] text-content-dim">(soon)</span></span>
+						<div class="w-9 h-5 rounded-full bg-surface-toggle-off relative shrink-0">
+							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow translate-x-0.5"></div>
 						</div>
-					</button>
+					</div>
 				</div>
 			{/if}
 		</div>
