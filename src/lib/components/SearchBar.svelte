@@ -593,7 +593,8 @@
 		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
 		out.push(...provSections);
 
-		// Fallbacks: always reachable, last in the list.
+		// Fallbacks: always reachable, last in the list. Their icons are grey
+		// so they don't pull the eye from the results above.
 		if (q) {
 			const fb = [];
 			if (!activeScope) {
@@ -606,6 +607,7 @@
 						title: `Search ${it.name} for “${q}”`,
 						subtitle: `!${it.shortcut}`,
 						appIcon: it.icon ? resolveIcon(it.icon) : null,
+						iconStyle: 'grayed',
 						actions: [{ label: `Search ${it.name}`, run: () => { activeScope = it.id; inputEl?.focus(); } }]
 					});
 				}
@@ -618,6 +620,7 @@
 					title: `Search the web for “${q}”`,
 					subtitle: searchConfig.name || 'Web',
 					appIcon: searchConfig.icon ? resolveIcon(searchConfig.icon) : undefined,
+					iconStyle: 'grayed',
 					svg: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
 					url,
 					actions: linkActions('web', url, true)
