@@ -48,6 +48,7 @@
  * @typedef {Object} SearchProvider
  * @property {string} label                     Shown in the provider switcher dropdown
  * @property {'inline'|'redirect'} mode         inline = dropdown of results; redirect = form-submit to an external URL
+ * @property {'media'|'photo'} [kind]          Results are posters or photos, so the bar shows placeholders of that shape while the first ones load
  * @property {(ctx: AdapterContext & { query: string, limit: number }) => Promise<{ results: SearchResultItem[] }>} query
  */
 
@@ -109,7 +110,7 @@
  * @property {string[]} [linkedTo]                       Ids of integrations this one can sign in through (Seerr: jellyfin, plex)
  * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, or null
  * @property {Record<string, Action>} [actions]             Writes triggered from search results
- * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, thumbnail?: string, backdrop?: string } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
+ * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, cast?: string[], thumbnail?: string, backdrop?: string } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
  * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')

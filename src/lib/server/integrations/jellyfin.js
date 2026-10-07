@@ -137,6 +137,7 @@ const adapter = {
 	searchProviders: {
 		media: {
 			label: 'Media',
+			kind: 'media',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.accessToken) return { results: [] };
@@ -210,6 +211,7 @@ const adapter = {
 			genres: (item.Genres || []).slice(0, 4),
 			tagline: item.Taglines?.[0] || '',
 			overview: item.Overview || '',
+			cast: (item.People || []).filter((p) => p?.Type === 'Actor').map((p) => p.Name).filter(Boolean).slice(0, 8),
 			thumbnail: imageId ? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}?maxHeight=${POSTER_HEIGHT}` : undefined,
 			backdrop: item.BackdropImageTags?.length ? `/api/integrations/jellyfin/proxy/backdrop/${encodeURIComponent(item.Id)}` : undefined
 		};

@@ -92,6 +92,7 @@ const adapter = {
 	searchProviders: {
 		music: {
 			label: 'Music',
+			kind: 'media',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.token) return { results: [] };

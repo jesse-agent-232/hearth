@@ -31,7 +31,7 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 		searchProviders: Object.fromEntries(
 			Object.entries(adapter.searchProviders || {}).map(([key, p]) => [
 				key,
-				{ label: p.label, mode: p.mode }
+				{ label: p.label, mode: p.mode, kind: p.kind || null }
 			])
 		)
 	};

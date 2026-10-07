@@ -125,7 +125,7 @@
 						{/if}
 						{#if detail.open}
 							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
-								{#if detail.open.label === 'Play'}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
+								{#if detail.open.label.startsWith('Play')}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
 								{detail.open.label}
 							</button>
 						{/if}
@@ -141,6 +141,9 @@
 				<div class="launcher-detail-text">
 					{#if detail.data.tagline}<p class="launcher-detail-tagline">{detail.data.tagline}</p>{/if}
 					{#if detail.data.overview}<p>{detail.data.overview}</p>{/if}
+					{#if detail.data.cast?.length}
+						<p class="launcher-detail-cast"><span>Cast</span> {detail.data.cast.join(' · ')}</p>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -157,6 +160,12 @@
 						<div class="launcher-error">{section.error}</div>
 					{/if}
 					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : 'launcher-rows'}>
+						{#each { length: section.skeleton || 0 } as _}
+							<div class="launcher-item is-skeleton {section.layout === 'grid' ? 'is-tile' : 'is-poster'}" aria-hidden="true">
+								<div class="launcher-thumb-wrap"></div>
+								{#if section.layout === 'poster'}<div class="launcher-skeleton-line"></div><div class="launcher-skeleton-line is-short"></div>{/if}
+							</div>
+						{/each}
 						{#each section.items as item (item.key)}
 							{@const isSel = item.key === selectedKey}
 							<div
@@ -181,27 +190,21 @@
 											<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 										{/if}
 										<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
-										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
-									</div>
-									{#if section.layout === 'poster'}
-										<div class="launcher-poster-title">{item.title}</div>
-										{#if item.subtitle}<div class="launcher-poster-sub">{item.subtitle}</div>{/if}
 										{#if item.play}
 											<button
 												type="button"
-												class="launcher-get"
+												class="launcher-art-action"
 												tabindex="-1"
 												aria-label="Play {item.title}"
 												onmousedown={(e) => e.preventDefault()}
 												onclick={(e) => { e.stopPropagation(); item.play.run(); }}
 											>
 												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
-												Play
 											</button>
 										{:else if item.request}
 											<button
 												type="button"
-												class="launcher-get is-request"
+												class="launcher-request"
 												class:is-busy={item.request.busy}
 												class:is-done={item.request.done}
 												tabindex="-1"
@@ -209,12 +212,21 @@
 												onmousedown={(e) => e.preventDefault()}
 												onclick={(e) => { e.stopPropagation(); item.request.run?.(); }}
 											>
-												{#if item.request.done}
+												{#if item.request.busy}
+													<span class="launcher-spinner" aria-hidden="true"></span>
+												{:else if item.request.done}
 													<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+												{:else}
+													<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
 												{/if}
-												{item.request.busy ? `${item.request.label}…` : item.request.label}
+												{item.request.busy ? 'Requesting' : item.request.label}
 											</button>
 										{/if}
+										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
+									</div>
+									{#if section.layout === 'poster'}
+										<div class="launcher-poster-title">{item.title}</div>
+										{#if item.subtitle}<div class="launcher-poster-sub">{item.subtitle}</div>{/if}
 									{/if}
 								{:else}
 									<span class="launcher-icon">
@@ -258,7 +270,7 @@
 	<div class="launcher-footer">
 		{#if detail}
 			<span class="launcher-footer-hint">
-				<Keys keys="esc" /> back
+				<Keys keys="←" /> <Keys keys="esc" /> back
 			</span>
 			{@const enter = detail.open}
 			{#if enter}

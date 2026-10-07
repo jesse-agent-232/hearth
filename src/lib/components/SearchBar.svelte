@@ -53,6 +53,7 @@
 					integrationIcon: it.icon,
 					providerKey: key,
 					label: prov.label,
+					kind: prov.kind,
 					searchUrl: it.operatorDefaults?.url || it.userState?.config?.url || null
 				});
 			}
@@ -446,6 +447,14 @@
 		detailView = null;
 	}
 
+	// "Play on Jellyfin": Seerr says which server it plays from; a Jellyfin or
+	// Plex result plays on itself.
+	function openOn(p, r) {
+		if (r.openLabel !== 'Play') return r.openLabel || 'Open';
+		const on = r.meta?.merge ? r.meta.playOn : p.integrationName;
+		return on ? `Play on ${on}` : 'Play';
+	}
+
 	const detail = $derived(detailView && {
 		...detailView,
 		title: detailView.data?.title || detailView.r.title,
@@ -453,7 +462,7 @@
 		badge: (actionState[detailView.key]?.ok === false && actionState[detailView.key].message) || '',
 		request: resultAction(detailView.key, detailView.p, detailView.r),
 		open: detailView.r.href
-			? { label: detailView.r.openLabel || 'Open', run: () => { openUrl(detailView.r.href, true); finish(); } }
+			? { label: openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
 			: null
 	});
 
@@ -575,19 +584,19 @@
 			for (const r of providerResults[p.providerId]?.results || []) {
 				if (!r.meta?.tmdb) continue;
 				if (r.meta.merge) merged.add(r.meta.tmdb);
-				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, r.href);
+				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName });
 			}
 		}
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false } }
+				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
 			const results = (data.results || [])
 				.filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb))
 				.map(fromMediaServer);
-			const kind = results[0]?.meta?.kind || 'other';
+			const kind = results[0]?.meta?.kind || p.kind || 'other';
 			const layout = kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list';
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
 			return {
@@ -596,6 +605,8 @@
 				layout,
 				kind,
 				loading: !!data.loading && q.length >= 3,
+				// Placeholder posters until the first results arrive.
+				skeleton: !!data.loading && q.length >= 3 && !results.length && layout !== 'list' ? (layout === 'grid' ? 6 : 5) : 0,
 				error: data.error || '',
 				items: [...results.slice(0, max).map((r) => {
 					const key = `r:${p.providerId}:${r.id}`;
@@ -606,16 +617,17 @@
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
-						// A failed action reports here; success shows on the button. A
-						// Play button already says "Available", so that badge is dropped.
+						// A failed action reports here; success shows on the chip. The
+						// play mark already says "Available", so that badge is dropped.
 						badge: (actionState[key]?.ok === false && actionState[key].message)
 							|| (r.openLabel === 'Play' && r.meta?.status === 'Available' ? '' : r.meta?.status) || '',
-						// A movie or show the user has: a Play button under the title
+						// A movie or show the user has: the play mark on the art
 						// plays it, while a click elsewhere opens its details.
 						play: r.openLabel === 'Play' && r.href
 							? { run: () => { openUrl(r.href, true); finish(); } }
 							: null,
 						request: resultAction(key, p, r),
+						showDetail: r.detail ? () => openDetail(key, p, r) : null,
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',
 						actions: resultActions(key, p, r)
@@ -837,6 +849,21 @@
 			if (detailView) { closeDetail(); return; }
 			moveSelection(e.key === 'ArrowDown' ? 1 : -1);
 			return;
+		}
+		// → opens the selected title's details (once the caret is at the end of
+		// the query, so it still moves through the text), ← goes back.
+		if (e.key === 'ArrowLeft' && detailView) {
+			e.preventDefault();
+			closeDetail();
+			return;
+		}
+		if (e.key === 'ArrowRight' && !detailView && !e.shiftKey && inputEl?.selectionStart === query.length) {
+			const item = flatItems.find((i) => i.key === selectedKey);
+			if (item?.showDetail) {
+				e.preventDefault();
+				item.showDetail();
+				return;
+			}
 		}
 		// Backspace at empty input with a chip → clear the scope and put "!" back in the input
 		if (e.key === 'Backspace' && activeScope && query === '' && inputEl?.selectionStart === 0) {
