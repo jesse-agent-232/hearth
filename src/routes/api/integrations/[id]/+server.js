@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
-import { getAdapter } from '$lib/server/integrations/index.js';
+import { getAdapter, getOperatorDefaults } from '$lib/server/integrations/index.js';
+import { checkUrls, urlOriginChanged, withoutSecrets } from '$lib/server/integrations/urlPolicy.js';
 import {
 	getConnection,
 	upsertConnection,
@@ -27,7 +28,16 @@ export async function PUT({ cookies, url, request, params, fetch }) {
 
 	const submitted = body.config || {};
 	const existing = await getConnection(user.username, adapter.id);
-	let merged = mergeConfig(adapter, existing?.config || {}, submitted);
+	const stored = existing?.config || {};
+	const operator = getOperatorDefaults(adapter.id);
+	let checked = checkUrls(adapter, operator, mergeConfig(adapter, stored, submitted));
+	if (!checked.ok) return json({ error: checked.message }, { status: 400 });
+	// Moving to another server drops what the old one issued: a stored key
+	// or token is never sent to a URL it wasn't saved for.
+	if (urlOriginChanged(adapter, stored, checked.config)) {
+		checked = checkUrls(adapter, operator, mergeConfig(adapter, withoutSecrets(adapter, stored), submitted));
+	}
+	let merged = checked.config;
 	if (adapter.prepareConfig) merged = adapter.prepareConfig({ config: merged });
 
 	const validation = validateConfig(adapter, merged);

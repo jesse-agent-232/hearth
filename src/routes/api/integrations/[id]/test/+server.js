@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
-import { getAdapter } from '$lib/server/integrations/index.js';
+import { getAdapter, getOperatorDefaults } from '$lib/server/integrations/index.js';
+import { checkUrls, urlOriginChanged, withoutSecrets } from '$lib/server/integrations/urlPolicy.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
@@ -31,7 +32,15 @@ export async function POST({ cookies, url, request, params, fetch }) {
 
 	const submitted = body?.config || {};
 	const existing = await getConnection(user.username, adapter.id);
-	const merged = mergeForTest(adapter, existing?.config || {}, submitted);
+	const stored = existing?.config || {};
+	const operator = getOperatorDefaults(adapter.id);
+	let checked = checkUrls(adapter, operator, mergeForTest(adapter, stored, submitted));
+	if (!checked.ok) return json({ ok: false, message: checked.message });
+	// Testing another server never borrows the stored credentials.
+	if (urlOriginChanged(adapter, stored, checked.config)) {
+		checked = checkUrls(adapter, operator, mergeForTest(adapter, withoutSecrets(adapter, stored), submitted));
+	}
+	const merged = checked.config;
 
 	try {
 		const result = await adapter.test({

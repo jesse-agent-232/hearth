@@ -119,11 +119,13 @@ const adapter = {
 				} catch {
 					return new Response('Invalid thumbnail reference', { status: 400 });
 				}
-				// Resolve relative URLs and validate the target is on the configured host
+				// Resolve relative URLs, then require the exact origin of the
+				// configured server: the request carries the user's credentials.
 				const base = stripTrailingSlash(config.url);
-				if (upstreamUrl.startsWith('/')) {
+				if (upstreamUrl.startsWith('/') && !upstreamUrl.startsWith('//')) {
 					upstreamUrl = base + upstreamUrl;
-				} else if (!upstreamUrl.startsWith(base)) {
+				}
+				if (!sameOrigin(upstreamUrl, base)) {
 					return new Response('Thumbnail URL not on configured Nextcloud host', { status: 403 });
 				}
 				return fetch(upstreamUrl, {
@@ -136,6 +138,14 @@ const adapter = {
 
 	widgets: {}
 };
+
+function sameOrigin(url, base) {
+	try {
+		return new URL(url).origin === new URL(base).origin;
+	} catch {
+		return false;
+	}
+}
 
 function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;

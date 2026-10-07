@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import { getSessionUser } from '$lib/server/session.js';
-import { getAdapter } from '$lib/server/integrations/index.js';
+import { getAdapter, getOperatorDefaults } from '$lib/server/integrations/index.js';
+import { checkUrls } from '$lib/server/integrations/urlPolicy.js';
 import { getConnection, upsertConnection } from '$lib/server/integrations/store.js';
 import { redactConfig } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
@@ -50,7 +51,9 @@ export async function POST({ cookies, url, request, params, fetch }) {
 	const stepFetch = withDeadline(fetch, STEP_TIMEOUT_MS);
 
 	if (body?.action === 'start') {
-		const config = visibleConfig(adapter, body.config);
+		const checked = checkUrls(adapter, getOperatorDefaults(adapter.id), visibleConfig(adapter, body.config));
+		if (!checked.ok) return json({ error: checked.message }, { status: 400 });
+		const config = checked.config;
 		for (const field of adapter.configSchema || []) {
 			if (field.required && !field.hidden && !config[field.key]) {
 				return json({ error: `Missing required field: ${field.label}` }, { status: 400 });
