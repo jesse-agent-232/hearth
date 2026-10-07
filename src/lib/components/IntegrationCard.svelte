@@ -48,7 +48,6 @@
 
 	const connected = $derived(!!integration.userState?.connected);
 	const hasSearch = $derived((integration.availableSurfaces || []).includes('search'));
-	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets'));
 	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
 	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
 	// Seerr signs in through Jellyfin or Plex: say so on all three cards.
@@ -505,6 +504,10 @@
 	.field-help :global(strong) {
 		color: var(--content-muted, #aaa);
 		font-weight: 600;
+	}
+	.field-help :global(a) {
+		color: var(--color-content);
+		font-weight: 700;
 	}
 	.field-help :global(code) {
 		font-size: 0.65rem;
