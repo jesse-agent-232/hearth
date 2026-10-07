@@ -2,6 +2,8 @@
 
 > The "why" and "what" — implementation choices push against this doc.
 
+> **Status: a target, not a description of today's build.** Built so far: per-user app tiles on a grid, bookmarks, the launcher with integration search, onboarding slides, setup guides, and Navidrome's player as the first widget. Not built: the pinned / recently used / most used / all-apps widgets, RSS and other widget configs, the global custom CSS hook, and integration widgets for weather, Immich, Paperless and the rest. Integration credentials are each user's own, not wired once by the admin. First-week tips are switched off. Read this for direction; read [configuration.md](configuration.md) and [integrations.md](integrations.md) for what ships.
+
 ## Premise
 
 Holm is a self-hosted dashboard an **admin sets up once** for everyone they share a homelab with — family, housemates, team. It is not a status console. It is a **glance**: a personal start page each user makes their own, hosted by someone who already runs the infrastructure.

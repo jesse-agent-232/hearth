@@ -2,6 +2,8 @@
 
 A small visual vocabulary for Holm, built on Tailwind v4 tokens. Every UI surface in the app should compose from this vocabulary instead of hand-rolling pixel values.
 
+> **Status: a target spec.** The tokens are defined in `src/app.css`, but most components don't use them yet: the `surface-0..3` and `bloom-focus` tokens, the type scale, `shadow-*` and `rounded-md` appear in no component, and components set sizes with raw values such as `text-[0.75rem]` instead. Some timing, blur and `-webkit-` rules below don't match the code either. Use this doc for new work and when cleaning up old components; don't read it as a description of the current UI.
+
 The source of truth lives in [`src/app.css`](../src/app.css) inside the `@theme { ... }` block. Tailwind generates utility classes from those tokens automatically; this doc explains what each token means and when to reach for it.
 
 ---
