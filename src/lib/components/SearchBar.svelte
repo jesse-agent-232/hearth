@@ -421,8 +421,41 @@
 	function resultActions(key, p, r) {
 		const links = r.href ? linkActions(key, r.href, true, r.openLabel || 'Open') : [];
 		const extra = resultAction(key, p, r);
-		return extra?.run ? [...links, extra] : links;
+		const all = extra?.run ? [...links, extra] : links;
+		return r.detail ? [{ label: 'Show details', run: () => openDetail(key, p, r) }, ...all] : all;
 	}
+
+	// Detail view (Spotlight-style) for a result with `detail` params: it
+	// replaces the list until Esc, a new query, or an arrow key.
+	let detailView = $state(null);
+	let detailSeq = 0;
+
+	async function openDetail(key, p, r) {
+		const seq = ++detailSeq;
+		detailView = { key, p, r, loading: true, data: null, error: '' };
+		try {
+			const data = await integrationsStore.details(p.integrationId, r.detail);
+			if (seq === detailSeq) detailView = { ...detailView, loading: false, data };
+		} catch (err) {
+			if (seq === detailSeq) detailView = { ...detailView, loading: false, error: err.message || 'Couldn’t load details' };
+		}
+	}
+
+	function closeDetail() {
+		detailSeq++;
+		detailView = null;
+	}
+
+	const detail = $derived(detailView && {
+		...detailView,
+		title: detailView.data?.title || detailView.r.title,
+		thumbnail: detailView.data?.thumbnail || detailView.r.thumbnail,
+		badge: (actionState[detailView.key]?.ok === false && actionState[detailView.key].message) || '',
+		request: resultAction(detailView.key, detailView.p, detailView.r),
+		open: detailView.r.href
+			? { label: detailView.r.openLabel || 'Open', run: () => { openUrl(detailView.r.href, true); finish(); } }
+			: null
+	});
 
 	function appItem(app) {
 		const key = `app:${app.id}`;
@@ -547,7 +580,7 @@
 		}
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false } }
+				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, detail: undefined, meta: { ...r.meta, status: '', requested: false } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
@@ -651,6 +684,7 @@
 		query;
 		panelOpen = false;
 		userMoved = false;
+		untrack(closeDetail);
 	});
 
 	function moveSelection(delta) {
@@ -786,6 +820,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			if (panelOpen) panelOpen = false;
+			else if (detailView) closeDetail();
 			else if (query) query = '';
 			else if (activeScope) activeScope = null;
 			else { inlineOpen = false; inputEl?.blur(); }
@@ -794,6 +829,7 @@
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 			e.preventDefault();
 			inlineOpen = true;
+			if (detailView) { closeDetail(); return; }
 			moveSelection(e.key === 'ArrowDown' ? 1 : -1);
 			return;
 		}
@@ -820,6 +856,13 @@
 				e.preventDefault();
 				activeScope = shortcutMap.get(m[1].toLowerCase());
 				query = '';
+				return;
+			}
+			// In the detail view Enter requests, or opens what can't be requested.
+			if (detail) {
+				e.preventDefault();
+				if (detail.request?.run) { if (!detail.request.busy) detail.request.run(); }
+				else detail.open?.run();
 				return;
 			}
 			const item = flatItems.find((i) => i.key === selectedKey);
@@ -939,6 +982,8 @@
 			bind:panelIndex
 			{listId}
 			{emptyText}
+			{detail}
+			ondetailclose={() => { closeDetail(); inputEl?.focus(); }}
 			onselect={(k) => { selectedKey = k; userMoved = true; }}
 			onrun={runItem}
 			onaction={(item, action) => { panelOpen = false; action.run(); }}

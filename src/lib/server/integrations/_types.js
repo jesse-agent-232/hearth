@@ -34,6 +34,7 @@
  * @property {string} [thumbnail]               URL of an image; rendered as a tile
  * @property {string} href                      Where to send the user when they click
  * @property {string} [openLabel]               Label for opening `href`, e.g. 'Play'; defaults to 'Open'
+ * @property {object} [detail]                  Params for the adapter's `details`; a click opens the detail view instead of `href`
  * @property {{ key: string, label: string, params: object }} [action]  Runs `actions[key]` with `params` from a button on the result (e.g. 'Request'); a click still opens `href`
  * @property {Object} [meta]
  * @property {string} [meta.kind]               'photo' triggers the photo-grid variant in SearchResults
@@ -108,6 +109,7 @@
  * @property {string[]} [linkedTo]                       Ids of integrations this one can sign in through (Seerr: jellyfin, plex)
  * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, or null
  * @property {Record<string, Action>} [actions]             Writes triggered from search results
+ * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, thumbnail?: string, backdrop?: string } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
  * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')

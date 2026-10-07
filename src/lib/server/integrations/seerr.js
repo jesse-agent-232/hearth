@@ -5,6 +5,8 @@
 //     the media server opens there ("Play"); one that isn't can be requested
 //     straight from the search bar.
 //   - actions.request — files a request as the signed-in user
+//   - details — overview, genres, runtime and backdrop for one title, for the
+//     search bar's detail view
 //
 // Auth is a Seerr session, never an admin API key, so requests, quotas and
 // approvals belong to the real user. Users who connected Jellyfin or Plex in
@@ -154,6 +156,8 @@ const adapter = {
 								? `/api/integrations/seerr/proxy/poster${r.posterPath}`
 								: undefined,
 							href: playUrl || `${base}/${r.mediaType}/${r.id}`,
+							// What the user has plays on click; anything else opens its details.
+							detail: playUrl ? undefined : { mediaType: r.mediaType, mediaId: r.id },
 							openLabel: playUrl ? 'Play' : 'Open in Seerr',
 							action: requestable
 								? { key: 'request', label: 'Request', params: { mediaType: r.mediaType, mediaId: r.id } }
@@ -179,7 +183,7 @@ const adapter = {
 				const { params } = ctx;
 				const mediaType = params?.mediaType;
 				const mediaId = params?.mediaId;
-				if ((mediaType !== 'movie' && mediaType !== 'tv') || !Number.isInteger(mediaId) || mediaId <= 0) {
+				if (!validTitle(mediaType, mediaId)) {
 					return { ok: false, message: 'Invalid title' };
 				}
 				const body = { mediaType, mediaId, ...(mediaType === 'tv' ? { seasons: 'all' } : {}) };
@@ -199,24 +203,61 @@ const adapter = {
 		}
 	},
 
+	async details(ctx) {
+		const { mediaType, mediaId } = ctx.params || {};
+		if (!validTitle(mediaType, mediaId)) return null;
+		const res = await seerrFetch(ctx, `/api/v1/${mediaType}/${mediaId}`);
+		if (!res.ok) throw new Error(`Seerr returned ${res.status}`);
+		const d = await res.json();
+		const movie = mediaType === 'movie';
+		const year = (movie ? d.releaseDate : d.firstAirDate)?.slice(0, 4);
+		const minutes = movie ? d.runtime : d.episodeRunTime?.[0];
+		const seasons = !movie && d.numberOfSeasons ? `${d.numberOfSeasons} season${d.numberOfSeasons === 1 ? '' : 's'}` : '';
+		return {
+			title: (movie ? d.title : d.name) || 'Untitled',
+			facts: [MEDIA_LABEL[mediaType], year, seasons, formatRuntime(minutes)].filter(Boolean),
+			rating: d.voteAverage ? Math.round(d.voteAverage * 10) / 10 : null,
+			genres: (d.genres || []).map((g) => g?.name).filter(Boolean).slice(0, 4),
+			tagline: d.tagline || '',
+			overview: d.overview || '',
+			thumbnail: POSTER_PATH.test(d.posterPath || '') ? `/api/integrations/seerr/proxy/poster${d.posterPath}` : undefined,
+			backdrop: POSTER_PATH.test(d.backdropPath || '') ? `/api/integrations/seerr/proxy/backdrop${d.backdropPath}` : undefined
+		};
+	},
+
 	proxy: {
-		// TMDB poster, fetched server-side from a fixed host.
-		poster: {
-			defaultCacheControl: 'private, max-age=604800',
-			async fetch({ params, fetch }) {
-				const path = '/' + (params.path?.[0] || '');
-				if (params.path?.length !== 1 || !POSTER_PATH.test(path)) {
-					return new Response('Invalid poster path', { status: 400 });
-				}
-				return fetch(`https://image.tmdb.org/t/p/w185${path}`, { method: 'GET' });
-			}
-		}
+		// TMDB images, fetched server-side from a fixed host.
+		poster: tmdbImage('w185'),
+		backdrop: tmdbImage('w780')
 	},
 
 	widgets: {}
 };
 
 const JSON_HEADERS = { accept: 'application/json' };
+
+function validTitle(mediaType, mediaId) {
+	return (mediaType === 'movie' || mediaType === 'tv') && Number.isInteger(mediaId) && mediaId > 0;
+}
+
+function formatRuntime(minutes) {
+	if (!Number.isFinite(minutes) || minutes <= 0) return '';
+	const h = Math.floor(minutes / 60);
+	return h ? `${h}h ${minutes % 60}m` : `${minutes}m`;
+}
+
+function tmdbImage(size) {
+	return {
+		defaultCacheControl: 'private, max-age=604800',
+		async fetch({ params, fetch }) {
+			const path = '/' + (params.path?.[0] || '');
+			if (params.path?.length !== 1 || !POSTER_PATH.test(path)) {
+				return new Response('Invalid image path', { status: 400 });
+			}
+			return fetch(`https://image.tmdb.org/t/p/${size}${path}`, { method: 'GET' });
+		}
+	};
+}
 
 function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;

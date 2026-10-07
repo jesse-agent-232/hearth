@@ -16,6 +16,8 @@
 		panelIndex = $bindable(0),
 		listId = 'launcher-list',
 		emptyText = '',
+		detail = null,
+		ondetailclose = () => {},
 		onselect = () => {},
 		onrun = () => {},
 		onaction = () => {},
@@ -70,6 +72,76 @@
 </script>
 
 <div class="launcher-panel hero-search-results">
+	{#if detail}
+		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
+		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
+			<div class="launcher-detail-hero">
+				{#if detail.data?.backdrop}
+					<img class="launcher-detail-backdrop is-loading" use:thumbLoading src={detail.data.backdrop} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
+				{/if}
+				<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={ondetailclose}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+					Results
+				</button>
+			</div>
+			<div class="launcher-detail-body">
+				<div class="launcher-detail-poster launcher-thumb-wrap">
+					{#if detail.thumbnail}
+						<img class="is-loading" use:thumbLoading src={detail.thumbnail} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
+					{/if}
+					<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS.media}</svg>
+				</div>
+				<div class="launcher-detail-info">
+					<h3 class="launcher-detail-title">{detail.title}</h3>
+					{#if detail.data}
+						<div class="launcher-detail-facts">
+							{#each detail.data.facts || [] as fact}<span>{fact}</span>{/each}
+							{#if detail.data.rating}
+								<span class="launcher-detail-rating">
+									<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>
+									{detail.data.rating}
+								</span>
+							{/if}
+						</div>
+						{#if detail.data.genres?.length}
+							<div class="launcher-tags">{#each detail.data.genres as g}<span class="launcher-tag">{g}</span>{/each}</div>
+						{/if}
+					{:else if detail.r?.subtitle}
+						<div class="launcher-detail-facts"><span>{detail.r.subtitle}</span></div>
+					{/if}
+					<div class="launcher-detail-buttons">
+						{#if detail.request}
+							<button
+								type="button"
+								class="launcher-detail-btn is-primary"
+								class:is-done={detail.request.done}
+								disabled={detail.request.busy || detail.request.done}
+								onmousedown={(e) => e.preventDefault()}
+								onclick={() => detail.request.run?.()}
+							>
+								{#if detail.request.done}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{/if}
+								{detail.request.busy ? `${detail.request.label}…` : detail.request.label}
+							</button>
+						{/if}
+						{#if detail.open}
+							<button type="button" class="launcher-detail-btn" onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>{detail.open.label}</button>
+						{/if}
+					</div>
+					{#if detail.badge}<div class="launcher-error launcher-detail-error">{detail.badge}</div>{/if}
+				</div>
+			</div>
+			{#if detail.loading}
+				<div class="launcher-detail-text"><span class="launcher-spinner" role="status" aria-label="Loading details"></span></div>
+			{:else if detail.error}
+				<div class="launcher-error">{detail.error}</div>
+			{:else if detail.data}
+				<div class="launcher-detail-text">
+					{#if detail.data.tagline}<p class="launcher-detail-tagline">{detail.data.tagline}</p>{/if}
+					{#if detail.data.overview}<p>{detail.data.overview}</p>{/if}
+				</div>
+			{/if}
+		</div>
+	{:else}
 	<div class="launcher-scroll" id={listId} role="listbox" aria-label="Results">
 		{#each sections as section (section.id)}
 			{#if section.items.length || section.loading || section.error}
@@ -169,9 +241,21 @@
 			<div class="launcher-empty">{emptyText}</div>
 		{/if}
 	</div>
+	{/if}
 
 	<!-- Footer bar: what Enter does, and where the rest of the actions live. -->
 	<div class="launcher-footer">
+		{#if detail}
+			<span class="launcher-footer-hint">
+				<Keys keys="esc" /> back
+			</span>
+			{@const enter = detail.request?.run ? detail.request : detail.open}
+			{#if enter}
+				<button type="button" class="launcher-footer-btn" onmousedown={(e) => e.preventDefault()} onclick={() => enter.run()}>
+					{enter.label} <Keys keys="↵" />
+				</button>
+			{/if}
+		{:else}
 		<span class="launcher-footer-hint">
 			<Keys keys="↑ ↓" /> to move
 		</span>
@@ -186,9 +270,10 @@
 				</button>
 			{/if}
 		{/if}
+		{/if}
 	</div>
 
-	{#if panelOpen && selected}
+	{#if panelOpen && selected && !detail}
 		<div class="launcher-actions" role="menu" aria-label="Actions for {selected.title}">
 			<div class="launcher-actions-title">{selected.title}</div>
 			{#each selected.actions as action, i}
