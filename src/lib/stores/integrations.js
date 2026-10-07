@@ -123,6 +123,18 @@ function createIntegrationsStore() {
 		return { ok: !!data.ok, message: data.message || data.error || `HTTP ${res.status}` };
 	}
 
+	// Detail view for a search result that carries `detail` params.
+	async function details(integrationId, params) {
+		const res = await fetch(`/api/integrations/${encodeURIComponent(integrationId)}/details`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ params })
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok || !data.details) throw new Error(data.error || `HTTP ${res.status}`);
+		return data.details;
+	}
+
 	return {
 		subscribe: state.subscribe,
 		load,
@@ -130,7 +142,8 @@ function createIntegrationsStore() {
 		disconnect,
 		test,
 		signIn,
-		runAction
+		runAction,
+		details
 	};
 }
 
