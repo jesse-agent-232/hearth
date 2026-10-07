@@ -28,9 +28,11 @@
 	function recomputeResultsMaxHeight() {
 		if (!containerEl || typeof window === 'undefined') return;
 		const rect = containerEl.getBoundingClientRect();
-		// Measure from where the bar rests, not from mid-transition.
-		const restTop = rect.top + lift;
-		const restBottom = rect.bottom + lift;
+		// Measure from where the bar rests: undo the translate actually
+		// applied right now, which mid-slide is not yet `lift`.
+		const shift = new DOMMatrixReadOnly(getComputedStyle(containerEl).transform).m42;
+		const restTop = rect.top - shift;
+		const restBottom = rect.bottom - shift;
 		const desktop = window.matchMedia('(min-width: 768px)').matches;
 		const targetTop = Math.max(48, window.innerHeight * 0.1);
 		lift = desktop && inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
@@ -865,9 +867,12 @@
 	});
 
 	// Recompute when the palette opens or closes (the lift and the bar's
-	// bottom edge change) and when the scope chip appears/disappears.
+	// bottom edge change) and when the scope chip appears/disappears. The
+	// first pass runs before paint: deferred to a frame, the panel showed
+	// once at the old, shorter height and flashed a scrollbar.
 	$effect(() => {
 		inlineOpen;
+		recomputeResultsMaxHeight();
 		requestAnimationFrame(recomputeResultsMaxHeight);
 	});
 
