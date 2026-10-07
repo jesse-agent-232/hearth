@@ -72,10 +72,8 @@
 			const via = VIA[integration.userState?.config?.via];
 			return via ? `Connected through ${nameOf(integration.userState.config.via) || via}` : '';
 		}
-		if (integration.linkedTo) {
-			const names = integration.linkedTo.map(nameOf).filter(Boolean);
-			return names.length ? `Connects on its own when you connect ${names.join(' or ')}` : '';
-		}
+		// Seerr just connects once Jellyfin or Plex does; no hint needed.
+		if (integration.linkedTo) return '';
 		const signsIn = $integrationsStore.integrations.filter((i) => i.linkedTo?.includes(integration.id)).map((i) => i.name);
 		return signsIn.length ? `Also signs you in to ${signsIn.join(' and ')}` : '';
 	});
