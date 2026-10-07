@@ -10,7 +10,7 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 
 - **Multi-user from the start.** Every person has their own layout, theme and bookmarks, stored server-side and synced across devices. You curate the catalog; they pick from it.
 - **Uses the login you already have.** OIDC with Authelia, Authentik, Keycloak, Zitadel or any provider. Admins are decided by group or username.
-- **A launcher, not just a grid.** Type anywhere (or `⌘K` / `Ctrl+K`) to find apps, run commands, and search inside Immich, Paperless, Nextcloud, Jellyfin, Plex, Navidrome, Audiobookshelf, Mealie, Planka and Karakeep, each with the user's own login.
+- **A launcher, not just a grid.** Type anywhere (or `⌘K` / `Ctrl+K`) to find apps, run commands, and search inside Immich, Paperless, Nextcloud, Jellyfin, Plex, Navidrome, Audiobookshelf, Mealie, Seerr, Planka and Karakeep, each with the user's own login.
 - **Onboarding for non-technical people.** Welcome slides, per-app setup guides with App Store / Play links, and gentle tips for the first week.
 - **One YAML file, hot-reloaded.** No admin UI to keep in sync, no restart on change.
 - **Small and private.** A single container (amd64 / arm64) with built-in SQLite, so there's no separate database to run. No telemetry. Weather comes from Open-Meteo with no API key needed.
@@ -106,6 +106,7 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 | Navidrome | Artists, albums and songs |
 | Audiobookshelf | Audiobooks and podcasts |
 | Mealie | Recipes |
+| Seerr | Movies and shows: play or request (signs in through Jellyfin or Plex) |
 | Planka | Boards and cards |
 | Karakeep | Bookmarks |
 

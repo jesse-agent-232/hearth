@@ -5,6 +5,7 @@ import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection, upsertConnection } from '$lib/server/integrations/store.js';
 import { redactConfig } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
+import { autoConnect } from '$lib/server/integrations/linked.js';
 
 // POST /api/integrations/:id/signin
 //   { action: 'start', config: { url } }  → { flowId, code }
@@ -98,6 +99,8 @@ export async function POST({ cookies, url, request, params, fetch }) {
 		const existing = await getConnection(user.username, adapter.id);
 		const surfaces = existing?.connected ? existing.surfaces : { search: true };
 		await upsertConnection(user.username, adapter.id, { config, surfaces });
+		// One sign-in can connect others too (Jellyfin → Seerr).
+		await autoConnect(user.username, stepFetch).catch(() => {});
 		return json({
 			status: 'done',
 			userState: { connected: true, config: redactConfig(adapter, config), surfaces }

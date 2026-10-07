@@ -382,8 +382,8 @@
 	// one-off result opens would otherwise evict app history.
 	const noteOpen = (key) => { if (key.startsWith('app:')) recordOpen(key); };
 
-	function linkActions(key, url, newTabFirst) {
-		const open = { label: 'Open', run: () => { noteOpen(key); openUrl(url, newTabFirst); finish(); } };
+	function linkActions(key, url, newTabFirst, openLabel = 'Open') {
+		const open = { label: openLabel, run: () => { noteOpen(key); openUrl(url, newTabFirst); finish(); } };
 		const other = {
 			label: newTabFirst ? 'Open in this tab' : 'Open in new tab',
 			hint: '⌘ ↵',
@@ -391,6 +391,24 @@
 		};
 		const copy = { label: 'Copy link', hint: '⌘ ⇧ C', run: () => { copyText(url); finish(); } };
 		return [open, other, copy];
+	}
+
+	// Result actions run in place (e.g. Seerr's Request): the list stays open
+	// and the row's badge reports how it went. Keyed by result key.
+	let actionState = $state({});
+
+	async function runResultAction(key, integrationId, action) {
+		if (actionState[key]?.busy || actionState[key]?.ok) return;
+		actionState = { ...actionState, [key]: { busy: true, message: `${action.label}…` } };
+		const res = await integrationsStore.runAction(integrationId, action.key, action.params);
+		actionState = { ...actionState, [key]: { ok: res.ok, message: res.message } };
+	}
+
+	function resultActions(key, p, r) {
+		const links = r.href ? linkActions(key, r.href, true, r.openLabel || 'Open') : [];
+		const done = actionState[key]?.ok;
+		if (!r.action || done) return links;
+		return [{ label: r.action.label, run: () => runResultAction(key, p.integrationId, r.action) }, ...links];
 	}
 
 	function appItem(app) {
@@ -500,10 +518,18 @@
 			if (scoredCmds.length) out.push({ id: 'commands', label: 'Commands', items: scoredCmds.map((x) => commandItem(x.a)) });
 		}
 
-		// Results from connected apps, one section each.
+		// Results from connected apps, one section each. A result marked
+		// `merge` (Seerr) stands for its title, so other providers' results for
+		// the same TMDB id are dropped rather than shown twice.
+		const merged = new Set();
+		for (const p of scopedProviders) {
+			for (const r of providerResults[p.providerId]?.results || []) {
+				if (r.meta?.merge && r.meta?.tmdb) merged.add(r.meta.tmdb);
+			}
+		}
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
-			const results = data.results || [];
+			const results = (data.results || []).filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb));
 			const kind = results[0]?.meta?.kind || 'other';
 			const layout = kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list';
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
@@ -523,10 +549,10 @@
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
-						badge: r.meta?.status || '',
+						badge: actionState[key]?.message || r.meta?.status || '',
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',
-						actions: linkActions(key, r.href, true)
+						actions: resultActions(key, p, r)
 					};
 				}), ...(results.length > max && p.searchUrl ? [{
 					key: `more:${p.providerId}`,

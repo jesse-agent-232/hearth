@@ -33,16 +33,37 @@
  * @property {string} [subtitle]                Secondary text (e.g. URL, tags, category)
  * @property {string} [thumbnail]               URL of an image; rendered as a tile
  * @property {string} href                      Where to send the user when they click
+ * @property {string} [openLabel]               Label for opening `href`, e.g. 'Play'; defaults to 'Open'
+ * @property {{ key: string, label: string, params: object }} [action]  Runs `actions[key]` with `params` instead of opening `href` (e.g. 'Request')
  * @property {Object} [meta]
  * @property {string} [meta.kind]               'photo' triggers the photo-grid variant in SearchResults
  * @property {string} [meta.takenAt]
+ * @property {string} [meta.status]             Short badge, e.g. 'Available'
+ * @property {string} [meta.tmdb]               '<movie|tv>:<tmdb id>' — identifies the title across providers
+ * @property {boolean} [meta.merge]             This result stands for its title: other providers' results with the same `meta.tmdb` are hidden
  */
 
 /**
  * @typedef {Object} SearchProvider
  * @property {string} label                     Shown in the provider switcher dropdown
  * @property {'inline'|'redirect'} mode         inline = dropdown of results; redirect = form-submit to an external URL
- * @property {(ctx: { config: object, query: string, limit: number, fetch: typeof fetch }) => Promise<{ results: SearchResultItem[] }>} query
+ * @property {(ctx: AdapterContext & { query: string, limit: number }) => Promise<{ results: SearchResultItem[] }>} query
+ */
+
+/**
+ * @typedef {Object} AdapterContext
+ * @property {object} config                     The user's stored config
+ * @property {typeof fetch} fetch
+ * @property {Record<string, object>} [linked]   Only for `linkedTo` adapters: the user's configs for those integrations, when connected
+ * @property {(config: object) => Promise<void>} [saveConfig]  Only for `linkedTo` adapters: replaces the stored config (e.g. a renewed session)
+ */
+
+/**
+ * @typedef {Object} Action
+ * A write the user triggers from a search result (`SearchResultItem.action`),
+ * run by POST /api/integrations/:id/action/:key. `params` come from the
+ * browser, so validate them.
+ * @property {(ctx: AdapterContext & { params: object }) => Promise<TestResult>} run
  */
 
 /**
@@ -84,6 +105,9 @@
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<TestResult>} test
  * @property {SignIn} [signIn]                                 Replaces the Test/Connect buttons with a code-approval flow
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<void>} [signOut]  Best-effort token revoke on disconnect
+ * @property {string[]} [linkedTo]                       Ids of integrations this one can sign in through (Seerr: jellyfin, plex)
+ * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, or null
+ * @property {Record<string, Action>} [actions]             Writes triggered from search results
  * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')

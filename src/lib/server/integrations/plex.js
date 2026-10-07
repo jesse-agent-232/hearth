@@ -134,7 +134,7 @@ const adapter = {
 				const base = stripTrailingSlash(config.url);
 				const max = Math.min(limit || 10, 25);
 				// Results come back grouped into hubs, one per type; limit is per hub.
-				const params = new URLSearchParams({ query: trimmed, limit: String(max) });
+				const params = new URLSearchParams({ query: trimmed, limit: String(max), includeGuids: '1' });
 				const res = await fetch(`${base}/hubs/search?${params}`, {
 					headers: plexHeaders({ ...config, token: config.accessToken })
 				});
@@ -159,7 +159,7 @@ const adapter = {
 								? `/api/integrations/plex/proxy/image/${thumb[1]}/${thumb[2]}`
 								: undefined,
 							href: `${base}/web/index.html#!/server/${encodeURIComponent(config.machineId || '')}/details?key=${key}`,
-							meta: { kind: 'media' }
+							meta: { kind: 'media', tmdb: tmdbKey(item) }
 						};
 					})
 				};
@@ -207,6 +207,13 @@ function plexHeaders({ clientId, token }) {
 	};
 	if (token) headers['X-Plex-Token'] = token;
 	return headers;
+}
+
+// Lets a Seerr result for the same title stand in for this one.
+function tmdbKey(item) {
+	const type = item.type === 'movie' ? 'movie' : item.type === 'show' ? 'tv' : null;
+	const guid = (item.Guid || []).map((g) => /^tmdb:\/\/(\d+)$/.exec(g?.id || '')).find(Boolean);
+	return type && guid ? `${type}:${guid[1]}` : undefined;
 }
 
 // "Movie · 2019", "Album · Artist · 2020"
