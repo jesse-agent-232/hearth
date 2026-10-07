@@ -8,7 +8,7 @@
 	//
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, badge?, play?,
-	//             request?: { label, busy, run }, actions: [{ label, hint?, run }] }
+	//             iconStyle?, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
 	let {
 		sections = [],
 		selectedKey = null,
@@ -130,7 +130,7 @@
 								{:else}
 									<span class="launcher-icon">
 										{#if item.appIcon !== undefined}
-											<AppIcon icon={item.appIcon} name={item.title} size="w-[18px] h-[18px]" wrapSize="w-7 h-7" iconStyle="colored" wrap />
+											<AppIcon icon={item.appIcon} name={item.title} size="w-[18px] h-[18px]" wrapSize="w-7 h-7" iconStyle={item.iconStyle || 'colored'} wrap />
 										{:else if item.thumbnail}
 											<span class="launcher-icon-box">
 												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
