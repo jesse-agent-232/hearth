@@ -9,27 +9,21 @@
 	let expandedId = $state(null);
 	let filter = $state('');
 
-	// What the user has connected comes first; the rest are grouped by
-	// category. Past a handful of integrations a filter box appears.
-	const CATEGORY_ORDER = ['Media', 'Photos', 'Documents', 'Productivity', 'Home', 'Other'];
+	// What the user has connected comes first, then everything else. Past a
+	// handful of integrations a filter box appears. The open card always
+	// stays: hiding it would unmount its form without confirmDiscardUnsaved.
 	const all = $derived($integrationsStore.integrations);
 	const showFilter = $derived(all.length > 8);
 	const groups = $derived.by(() => {
 		const q = filter.trim().toLowerCase();
-		const match = (it) => !q || [it.name, it.description, it.category].some((t) => (t || '').toLowerCase().includes(q));
+		const match = (it) => it.id === expandedId || !q || [it.name, it.description].some((t) => (t || '').toLowerCase().includes(q));
 		const shown = all.filter(match);
-		const out = [];
 		const connected = shown.filter((it) => it.userState?.connected);
-		if (connected.length) out.push({ label: 'Connected', items: connected });
-		const rest = shown.filter((it) => !it.userState?.connected);
-		const cats = [...new Set(rest.map((it) => it.category || 'Other'))]
-			.sort((a, b) => (CATEGORY_ORDER.indexOf(a) + 1 || 99) - (CATEGORY_ORDER.indexOf(b) + 1 || 99));
-		for (const c of cats) out.push({ label: c, items: rest.filter((it) => (it.category || 'Other') === c) });
-		return out;
-	});
-
-	onMount(() => {
-		integrationsStore.load();
+		const available = shown.filter((it) => !it.userState?.connected);
+		return [
+			...(connected.length ? [{ label: 'Connected', items: connected }] : []),
+			...(available.length ? [{ label: connected.length ? 'Available' : '', items: available }] : [])
+		];
 	});
 </script>
 
@@ -69,7 +63,9 @@
 		{/if}
 		{#each groups as group (group.label)}
 			<div class="mb-3">
-				<div class="text-[0.65rem] font-mono font-semibold uppercase tracking-[0.16em] text-content-dim px-1 pb-1">{group.label}</div>
+				{#if group.label}
+					<div class="text-[0.65rem] font-mono font-semibold uppercase tracking-[0.16em] text-content-dim px-1 pb-1">{group.label}</div>
+				{/if}
 				<div class="flex flex-col gap-1">
 					{#each group.items as integration (integration.id)}
 						<IntegrationCard

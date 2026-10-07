@@ -4,6 +4,10 @@ import { loadEnabledAdapters } from '$lib/server/integrations/index.js';
 // sure the enabled ones are in before each request keeps every caller of
 // getRegistry()/getAdapter() synchronous, and catches config reloads.
 export async function handle({ event, resolve }) {
-	await loadEnabledAdapters();
+	try {
+		await loadEnabledAdapters();
+	} catch (err) {
+		console.error('[holm] Loading integrations failed:', err);
+	}
 	return resolve(event);
 }

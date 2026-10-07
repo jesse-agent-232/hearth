@@ -31,7 +31,6 @@ const ITEM_ID = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 const adapter = {
 	id: 'jellyfin',
 	name: 'Jellyfin',
-	category: 'Media',
 	icon: 'di:jellyfin',
 	shortcut: 'jf',
 	description: 'Media server — search movies, shows and music',

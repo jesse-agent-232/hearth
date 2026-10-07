@@ -44,7 +44,7 @@ The key (`immich`) must match the adapter id. If an app in `apps:` has the same 
 ## Connecting (users)
 
 1. Open **Settings → Integrations**.
-2. Your connected apps are listed first, the rest by category; with more than eight, a filter box narrows the list. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to the right settings page.
+2. Your connected apps are listed first; with more than eight, a filter box narrows the list. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to the right settings page.
 3. Press **Connect**. Holm tests the connection first and only saves credentials that work.
 
 Jellyfin skips the form: Holm shows a code, the user approves it under Quick Connect in Jellyfin, and Holm receives that user's own token.
@@ -79,7 +79,6 @@ An integration is one file plus one import line. The settings form, API routes a
    	name: 'My App',
    	shortcut: 'm',               // default !scope
    	description: 'One-line summary',
-   	category: 'Documents',        // Configure group: Media, Photos, Documents, Productivity, Home
 
    	// Fields rendered in the connect form: url, text or secret
    	configSchema: [

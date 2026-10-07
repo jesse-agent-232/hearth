@@ -9,8 +9,7 @@
 // invisible to users entirely. This is the operator gate.
 //
 // To add a new integration: drop a new file in this directory and add a
-// loader for it to LOADERS. Done. LOADERS order is the order users see
-// within a category.
+// loader for it to LOADERS. Done.
 
 import { getIntegrationsConfig, getAppsConfig } from '../config.js';
 
@@ -28,14 +27,23 @@ const LOADERS = {
 	seerr: () => import('./seerr.js')
 };
 const BY_ID = new Map();
+// Node caches a failed import, so a retry can't succeed until a restart.
+const FAILED = new Set();
 
 /** Import any enabled adapter that isn't loaded yet. Cheap once loaded. */
 export async function loadEnabledAdapters() {
 	const cfg = getIntegrationsConfig() || {};
-	const missing = Object.keys(LOADERS).filter((id) => isEnabled(cfg[id]) && !BY_ID.has(id));
+	const missing = Object.keys(LOADERS).filter((id) => isEnabled(cfg[id]) && !BY_ID.has(id) && !FAILED.has(id));
 	if (!missing.length) return;
-	const mods = await Promise.all(missing.map((id) => LOADERS[id]()));
-	missing.forEach((id, i) => BY_ID.set(id, mods[i].default));
+	// One broken adapter must not take the others (or the page) down with it.
+	const mods = await Promise.allSettled(missing.map((id) => LOADERS[id]()));
+	missing.forEach((id, i) => {
+		if (mods[i].status === 'fulfilled') BY_ID.set(id, mods[i].value.default);
+		else {
+			FAILED.add(id);
+			console.error(`[holm] Integration "${id}" failed to load:`, mods[i].reason);
+		}
+	});
 }
 
 function resolveApp(id) {

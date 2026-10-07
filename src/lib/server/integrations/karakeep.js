@@ -7,7 +7,6 @@
 const adapter = {
 	id: 'karakeep',
 	name: 'Karakeep',
-	category: 'Productivity',
 	icon: 'di:karakeep',
 	shortcut: 'b',
 	description: 'Bookmark manager with full-text search',

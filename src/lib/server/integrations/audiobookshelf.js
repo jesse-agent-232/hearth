@@ -20,7 +20,6 @@ const ITEM_ID = /^[A-Za-z0-9-]+$/;
 const adapter = {
 	id: 'audiobookshelf',
 	name: 'Audiobookshelf',
-	category: 'Media',
 	icon: 'di:audiobookshelf',
 	shortcut: 'abs',
 	description: 'Audiobooks and podcasts — search your libraries',
