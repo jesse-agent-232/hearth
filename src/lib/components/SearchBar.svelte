@@ -394,7 +394,9 @@
 	}
 
 	// Result actions run in place (e.g. Seerr's Request): the list stays open
-	// and the row's badge reports how it went. Keyed by result key.
+	// and the poster's badge reports how it went. Keyed by result key. They
+	// never run on a plain click or Enter, which open the title; the poster
+	// shows a button for it on hover, and the ⌘K panel lists it.
 	let actionState = $state({});
 
 	async function runResultAction(key, integrationId, action) {
@@ -404,11 +406,19 @@
 		actionState = { ...actionState, [key]: { ok: res.ok, message: res.message } };
 	}
 
+	function resultAction(key, p, r) {
+		if (!r.action || actionState[key]?.ok) return null;
+		return {
+			label: r.action.label,
+			busy: !!actionState[key]?.busy,
+			run: () => runResultAction(key, p.integrationId, r.action)
+		};
+	}
+
 	function resultActions(key, p, r) {
 		const links = r.href ? linkActions(key, r.href, true, r.openLabel || 'Open') : [];
-		const done = actionState[key]?.ok;
-		if (!r.action || done) return links;
-		return [{ label: r.action.label, run: () => runResultAction(key, p.integrationId, r.action) }, ...links];
+		const extra = resultAction(key, p, r);
+		return extra ? [...links, extra] : links;
 	}
 
 	function appItem(app) {
@@ -561,6 +571,9 @@
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
 						badge: actionState[key]?.message || r.meta?.status || '',
+						// Something the user has: a play mark, and a click plays it.
+						play: r.openLabel === 'Play' || (r.meta?.kind === 'media' && !r.meta?.merge),
+						request: resultAction(key, p, r),
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',
 						actions: resultActions(key, p, r)

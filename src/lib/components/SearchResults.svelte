@@ -7,7 +7,8 @@
 	// selected row is announced through aria-activedescendant.
 	//
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster', loading, error, items }]
-	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, actions: [{ label, hint?, run }] }
+	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, badge?, play?,
+	//             request?: { label, busy, run }, actions: [{ label, hint?, run }] }
 	let {
 		sections = [],
 		selectedKey = null,
@@ -105,7 +106,22 @@
 											<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 										{/if}
 										<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
-										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
+										{#if item.play}
+											<span class="launcher-play" aria-hidden="true">
+												<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
+											</span>
+										{/if}
+										{#if item.request}
+											<button
+												type="button"
+												class="launcher-request"
+												class:is-busy={item.request.busy}
+												disabled={item.request.busy}
+												onmousedown={(e) => e.preventDefault()}
+												onclick={(e) => { e.stopPropagation(); item.request.run(); }}
+											>{item.request.busy ? `${item.request.label}…` : item.request.label}</button>
+										{/if}
+										{#if item.badge && !item.request?.busy}<span class="launcher-badge">{item.badge}</span>{/if}
 									</div>
 									{#if section.layout === 'poster'}
 										<div class="launcher-poster-title">{item.title}</div>

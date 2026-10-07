@@ -34,7 +34,7 @@
  * @property {string} [thumbnail]               URL of an image; rendered as a tile
  * @property {string} href                      Where to send the user when they click
  * @property {string} [openLabel]               Label for opening `href`, e.g. 'Play'; defaults to 'Open'
- * @property {{ key: string, label: string, params: object }} [action]  Runs `actions[key]` with `params` instead of opening `href` (e.g. 'Request')
+ * @property {{ key: string, label: string, params: object }} [action]  Runs `actions[key]` with `params` from a button on the result (e.g. 'Request'); a click still opens `href`
  * @property {Object} [meta]
  * @property {string} [meta.kind]               'photo' triggers the photo-grid variant in SearchResults
  * @property {string} [meta.takenAt]
