@@ -791,6 +791,12 @@ body.search-active .hero-area {
 	position: relative;
 	z-index: 2;
 }
+/* The open palette lifts over the header on desktop; the header sits
+   above the search bar for its weather menu, so swap them while the
+   palette is open (the header is dimmed and inert then anyway). */
+@media (min-width: 768px) {
+	body.search-active .launcher-host { z-index: 40; }
+}
 /* Focus state on .hero-search-form (defined above) handles the open-palette
    lift; keeping a separate body.search-active shadow would compete with it. */
 
