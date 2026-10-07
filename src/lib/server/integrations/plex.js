@@ -127,6 +127,7 @@ const adapter = {
 	searchProviders: {
 		media: {
 			label: 'Media',
+			kind: 'media',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.accessToken) return { results: [] };
@@ -193,6 +194,7 @@ const adapter = {
 			genres: (item.Genre || []).map((g) => g?.tag).filter(Boolean).slice(0, 4),
 			tagline: item.tagline || '',
 			overview: item.summary || '',
+			cast: (item.Role || []).map((r) => r?.tag).filter(Boolean).slice(0, 8),
 			thumbnail: thumb ? `/api/integrations/plex/proxy/image/${thumb[1]}/${thumb[2]}` : undefined,
 			backdrop: art ? `/api/integrations/plex/proxy/art/${art[1]}/${art[2]}` : undefined
 		};

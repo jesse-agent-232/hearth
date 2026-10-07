@@ -120,6 +120,7 @@ const adapter = {
 	searchProviders: {
 		requests: {
 			label: 'Seerr',
+			kind: 'media',
 			mode: 'inline',
 			async query(ctx) {
 				const { config, query, limit } = ctx;
@@ -166,6 +167,8 @@ const adapter = {
 								kind: 'media',
 								status: STATUS_LABEL[status] || '',
 								requested,
+								// Which server Play opens, for the detail view's button.
+								playOn: playUrl ? (r.mediaInfo?.ratingKey ? 'Plex' : r.mediaInfo?.jellyfinMediaId ? 'Jellyfin' : '') : '',
 								// Jellyfin and Plex results for the same title fold into this one.
 								tmdb: `${r.mediaType}:${r.id}`,
 								merge: true
@@ -220,6 +223,7 @@ const adapter = {
 			genres: (d.genres || []).map((g) => g?.name).filter(Boolean).slice(0, 4),
 			tagline: d.tagline || '',
 			overview: d.overview || '',
+			cast: (d.credits?.cast || []).map((c) => c?.name).filter(Boolean).slice(0, 8),
 			thumbnail: POSTER_PATH.test(d.posterPath || '') ? `/api/integrations/seerr/proxy/poster${d.posterPath}` : undefined,
 			backdrop: POSTER_PATH.test(d.backdropPath || '') ? `/api/integrations/seerr/proxy/backdrop${d.backdropPath}` : undefined
 		};

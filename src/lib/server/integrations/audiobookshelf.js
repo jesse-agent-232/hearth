@@ -67,6 +67,7 @@ const adapter = {
 	searchProviders: {
 		books: {
 			label: 'Books',
+			kind: 'media',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.apiKey) return { results: [] };
