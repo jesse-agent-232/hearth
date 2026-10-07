@@ -1061,7 +1061,9 @@ body.search-active .hero-area {
 	box-shadow:
 		0 12px 28px -10px rgba(0, 0, 0, 0.45),
 		0 4px 12px -4px rgba(0, 0, 0, 0.18);
-	transition: box-shadow 220ms var(--ease-standard);
+	transition:
+		box-shadow 220ms var(--ease-standard),
+		transform 220ms var(--ease-standard);
 }
 .hero-search-results kbd {
 	background: var(--hero-search-chip-bg) !important;
@@ -2084,7 +2086,8 @@ body.search-active .hero-area {
 	}
 }
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
-	.hero-search { transition: none; }
+	.hero-search,
+	.hero-search.is-open { transition: none; }
 }
 
 /* ── Phones: search docked at the bottom, in thumb reach ───────
