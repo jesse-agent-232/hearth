@@ -1821,7 +1821,7 @@ body.search-active .hero-area {
 	z-index: 1;
 }
 /* Beats the poster art's own img rule. */
-.launcher-thumb-wrap .launcher-source img { position: static; width: 100%; height: 100%; object-fit: contain; opacity: 1; }
+.launcher-thumb-wrap .launcher-source img { position: static; width: 100%; height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(0) invert(1); }
 
 .launcher-thumb-wrap:has(.launcher-source) .launcher-badge { max-width: calc(100% - 40px); }
 
