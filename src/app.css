@@ -210,12 +210,20 @@
 	--tile-bg-default: rgba(255, 255, 255, 0.06);
 }
 
-/* Auto theme, resting bar: the same frosted glass as the open palette,
-   a touch brighter in tint and edge so it still reads as the primary
-   control over the wallpaper's dark scrim. */
+/* Auto theme, resting bar: milky frosted glass. Mostly-opaque white with
+   the blur keeps it the page's primary control (clear glass sank into the
+   photo) while the wallpaper still softly shows through. Once the palette
+   opens it takes the dark tokens above, so the joined bar + results match
+   the tile context menu. */
 body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-form {
-	--hero-search-bg: rgba(255, 255, 255, 0.12);
-	--hero-search-border: rgba(255, 255, 255, 0.22);
+	--hero-search-bg: rgba(255, 255, 255, 0.78);
+	--hero-search-border: rgba(255, 255, 255, 0.6);
+	--hero-search-text: #18181b;
+	--hero-search-text-dim: rgba(0, 0, 0, 0.5);
+	--hero-search-text-strong: rgba(0, 0, 0, 0.85);
+	--hero-search-chip-bg: rgba(0, 0, 0, 0.05);
+	--hero-search-chip-border: rgba(0, 0, 0, 0.10);
+	box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
 }
 
 
