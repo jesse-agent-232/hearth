@@ -3,7 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getRegistry } from '$lib/server/integrations/index.js';
 import { listConnections } from '$lib/server/integrations/store.js';
 import { redactConfig, adapterToClient } from '$lib/server/integrations/serialize.js';
-import { autoConnect } from '$lib/server/integrations/linked.js';
+import { autoConnect, linkedVia } from '$lib/server/integrations/linked.js';
 import { withDeadline } from '$lib/server/integrations/deadline.js';
 
 // GET /api/integrations
@@ -23,10 +23,11 @@ export async function GET({ cookies, url, fetch }) {
 	const connections = user ? await listConnections(user.username) : [];
 	const byId = new Map(connections.map((c) => [c.integrationId, c]));
 
-	const integrations = registry.map(({ adapter, icon, operator, availableSurfaces }) => {
+	const integrations = await Promise.all(registry.map(async ({ adapter, icon, operator, availableSurfaces }) => {
 		const conn = byId.get(adapter.id);
 		return {
 			...adapterToClient(adapter, { icon, name: operator?.name, tip: operator?.tip, shortcut: operator?.shortcut }),
+			linkedTo: adapter.linkedTo ? await linkedVia(adapter, operator, withDeadline(fetch, 3000)) : null,
 			operatorDefaults: pickOperatorDefaults(adapter, operator),
 			availableSurfaces,
 			userState: {
@@ -35,7 +36,7 @@ export async function GET({ cookies, url, fetch }) {
 				surfaces: conn?.surfaces || {}
 			}
 		};
-	});
+	}));
 
 	return json({ integrations });
 }

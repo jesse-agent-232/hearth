@@ -28,6 +28,7 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 			hidden: !!f.hidden
 		})),
 		signIn: adapter.signIn ? { label: adapter.signIn.label, help: adapter.signIn.help || '' } : null,
+		linkedTo: adapter.linkedTo || null,
 		searchProviders: Object.fromEntries(
 			Object.entries(adapter.searchProviders || {}).map(([key, p]) => [
 				key,

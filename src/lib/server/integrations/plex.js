@@ -95,6 +95,10 @@ const adapter = {
 			const me = user.ok ? await user.json() : null;
 			return {
 				status: 'done',
+				// Seerr checks the account token with plex.tv, and for a shared
+				// server the stored token is server-only, so lend it the account
+				// token for this one connect.
+				forLinked: { accessToken: accountToken },
 				config: {
 					accessToken: server.accessToken,
 					machineId: state.machineId,

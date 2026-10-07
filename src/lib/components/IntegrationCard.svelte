@@ -51,6 +51,27 @@
 	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets'));
 	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
 	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
+	// Seerr signs in through Jellyfin or Plex: say so on all three cards.
+	const VIA = { jellyfin: 'Jellyfin', plex: 'Plex' };
+	const nameOf = (id) => $integrationsStore.integrations.find((i) => i.id === id)?.name;
+	// "Sign in with Plex" once Holm knows which app this Seerr uses.
+	const signLabel = $derived(
+		integration.linkedTo?.length === 1 && nameOf(integration.linkedTo[0])
+			? `Sign in with ${nameOf(integration.linkedTo[0])}`
+			: integration.signIn?.label
+	);
+	const linkNote = $derived.by(() => {
+		if (connected) {
+			const via = VIA[integration.userState?.config?.via];
+			return via ? `Connected through ${nameOf(integration.userState.config.via) || via}` : '';
+		}
+		if (integration.linkedTo) {
+			const names = integration.linkedTo.map(nameOf).filter(Boolean);
+			return names.length ? `Connects on its own when you connect ${names.join(' or ')}` : '';
+		}
+		const signsIn = $integrationsStore.integrations.filter((i) => i.linkedTo?.includes(integration.id)).map((i) => i.name);
+		return signsIn.length ? `Also signs you in to ${signsIn.join(' and ')}` : '';
+	});
 
 	// Sign-in flow: { flowId, code } while waiting for approval elsewhere.
 	let signFlow = $state(null);
@@ -69,7 +90,7 @@
 			if (seq !== flowSeq) return;
 			// Signed in straight away through a linked account; no code.
 			if (res.status === 'done') return signedIn();
-			signFlow = { flowId: res.flowId, code: res.code, link: res.link };
+			signFlow = { flowId: res.flowId, code: res.code, link: res.link, help: res.help };
 			schedulePoll(seq);
 		} catch (err) {
 			if (seq === flowSeq) signError = err.message || 'Sign-in failed';
@@ -270,7 +291,9 @@
 		<div class="flex-1 min-w-0">
 			<span class="text-[0.8rem] text-content font-medium">{integration.name}</span>
 			{#if signedInAs && !expanded}
-				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}</span>
+				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}{linkNote ? ` · ${linkNote.toLowerCase()}` : ''}</span>
+			{:else if linkNote}
+				<span class="block text-[0.7rem] text-content-dim truncate">{linkNote}</span>
 			{/if}
 		</div>
 		<div class="flex items-center gap-2">
@@ -364,8 +387,8 @@
 						<div class="rounded-lg border border-border-card bg-surface-card/40 px-3 py-3 text-center" role="status" aria-live="polite">
 							<div class="text-[0.7rem] text-content-dim mb-1.5">Your code</div>
 							<div class="signin-digits font-mono text-content" aria-label="Code {signFlow.code.split('').join(' ')}">{signFlow.code}</div>
-							{#if integration.signIn.help}
-								<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(integration.signIn.help)}</div>
+							{#if signFlow.help || integration.signIn.help}
+								<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(signFlow.help || integration.signIn.help)}</div>
 							{/if}
 							{#if signFlow.link}
 								<a
@@ -397,7 +420,7 @@
 								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 								disabled={signStarting || !formConfig.url}
 								onclick={startSignIn}
-							>{signStarting ? 'Getting a code…' : connected ? 'Sign in again' : integration.signIn.label}</button>
+							>{signStarting ? 'Getting a code…' : connected ? 'Sign in again' : signLabel}</button>
 						{/if}
 					</div>
 				{:else}
