@@ -76,17 +76,6 @@ async function ensureInit() {
 			    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 			  );
 
-			  CREATE TABLE IF NOT EXISTS admin_apps (
-			    id           TEXT PRIMARY KEY,
-			    name         TEXT NOT NULL,
-			    url          TEXT NOT NULL,
-			    icon         TEXT,
-			    category     TEXT NOT NULL DEFAULT 'Custom',
-			    internal     INTEGER NOT NULL DEFAULT 0,
-			    sort_order   INTEGER NOT NULL DEFAULT 0,
-			    added_by     TEXT NOT NULL,
-			    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
-			  );
 
 			  CREATE TABLE IF NOT EXISTS user_integrations (
 			    username       TEXT NOT NULL,
@@ -173,54 +162,8 @@ export async function mergeUserPrefs(username, partial) {
 	});
 }
 
-export async function getAdminApps() {
-	await ensureInit();
-	if (!db) return [];
-	return queryAll('SELECT * FROM admin_apps ORDER BY sort_order, created_at').map(row => ({
-		id: row.id,
-		name: row.name,
-		url: row.url,
-		icon: row.icon,
-		category: row.category,
-		self_hosted: !!row.internal,
-		sort_order: row.sort_order,
-		added_by: row.added_by
-	}));
-}
 
-export async function addAdminApp(app, addedBy) {
-	await ensureInit();
-	if (!db) return;
-	const maxRow = queryOne('SELECT COALESCE(MAX(sort_order), 0) as max_order FROM admin_apps');
-	const maxOrder = maxRow?.max_order || 0;
-	db.run(
-		`INSERT INTO admin_apps (id, name, url, icon, category, internal, sort_order, added_by)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		[
-			app.id || crypto.randomUUID(),
-			app.name,
-			app.url,
-			app.icon || null,
-			app.category || 'Custom',
-			app.self_hosted ? 1 : 0,
-			maxOrder + 1,
-			addedBy
-		]
-	);
-	saveToDisk();
-}
 
-export async function removeAdminApp(id) {
-	await ensureInit();
-	if (!db) return false;
-	db.run('DELETE FROM admin_apps WHERE id = ?', [id]);
-	// getRowsModified() returns the row count from the MOST RECENT
-	// INSERT/UPDATE/DELETE — it's not a monotonic counter you can diff against
-	// an earlier sample, so check directly against 0.
-	const changed = db.getRowsModified() > 0;
-	if (changed) saveToDisk();
-	return changed;
-}
 
 // ─── Integrations (raw rows; encryption handled in store.js) ───────────────
 

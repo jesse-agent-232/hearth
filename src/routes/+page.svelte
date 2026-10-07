@@ -1,6 +1,5 @@
 <script>
 	import { prefs } from '$lib/stores/prefs.js';
-	import { adminApps } from '$lib/stores/adminApps.js';
 	import Header from '$lib/components/Header.svelte';
 	import WidgetGrid from '$lib/components/WidgetGrid.svelte';
 
@@ -70,7 +69,6 @@
 			return { ...p, name: data.authName, username: data.authUsername, firstLoginAt: p.firstLoginAt || new Date().toISOString() };
 		});
 		if (data.prefs) prefs.applyServerPrefs(data.prefs);
-		adminApps.set(data.adminApps || []);
 	}
 
 	// Also decided at top level (not only in the effect) so the server render
@@ -201,7 +199,7 @@
 		     before the footer split the free height. -->
 		<div class="hidden max-md:block flex-1"></div>
 		<div class="launcher-host opacity-0 animate-fade-in-up [animation-fill-mode:both] [animation-delay:75ms] relative z-20">
-			<WidgetGrid isAdmin={data.isAdmin} bind:guideApp bind:editMode {searchEnabled} {customizationEnabled} onSettingsOpen={() => manageAppsOpen = true} />
+			<WidgetGrid bind:guideApp bind:editMode {searchEnabled} {customizationEnabled} onSettingsOpen={() => manageAppsOpen = true} />
 		</div>
 		<!-- Inline help tips disabled for now — revisit once the palette
 		     layout is settled and we decide where tips fit in. -->
@@ -222,13 +220,13 @@
 	{/if}
 	<SettingsButton bind:open={menuOpen} onmanageapps={customizationEnabled ? () => manageAppsOpen = true : null} showAuth={authEnabled} />
 	{#if customizationEnabled}
-		<ManageApps bind:open={manageAppsOpen} isAdmin={data.isAdmin} />
+		<ManageApps bind:open={manageAppsOpen} />
 	{/if}
 	<InstallPrompt devMode={data.devMode} ready={onboarded && !passwordGate} />
 	<MiniPlayer />
 
 	<!-- Post-login onboarding (only when auth + onboarding enabled) -->
 	{#if authEnabled && onboardingEnabled && !onboarded && !passwordGate}
-		<OnboardingModal oncomplete={onOnboardingComplete} authName={data.authName} authUsername={data.authUsername} devMode={data.devMode} isAdmin={data.isAdmin} />
+		<OnboardingModal oncomplete={onOnboardingComplete} authName={data.authName} authUsername={data.authUsername} devMode={data.devMode} />
 	{/if}
 {/if}

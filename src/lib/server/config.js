@@ -3,6 +3,7 @@ import { resolve, dirname } from 'path';
 import yaml from 'js-yaml';
 import { marked } from 'marked';
 import { getBrandColor } from './brandColors.js';
+import { canSeeApp } from './appAccess.js';
 
 let _config = null;
 
@@ -49,7 +50,7 @@ function loadConfig() {
 function getDefaults() {
 	return {
 		branding: { name: 'Holm', short_name: 'holm', description: 'Self-hosted dashboard', logo: null, favicon: null, font: { family: 'JetBrains Mono', url: null }, theme_color: '#09090b', accent_color: '#f5b942', show_footer: true },
-		auth: { enabled: false, oidc: {}, admin_usernames: [], password_change_url: null, registration: { enabled: false, url: null } },
+		auth: { enabled: false, oidc: {}, password_change_url: null, registration: { enabled: false, url: null } },
 		apps: [],
 		customization: { enabled: false },
 		search: { enabled: true, url: 'https://www.google.com/search', param: 'q' },
@@ -160,7 +161,7 @@ async function loadPrivacyHtml(config) {
 // When authenticated is false, only returns what the login page needs —
 // branding, auth settings, privacy (for T&C), and wallpaper flag.
 // Everything else (apps, integrations, search, etc.) stays server-side.
-export async function getClientConfig({ authenticated = true } = {}) {
+export async function getClientConfig({ authenticated = true, user = null } = {}) {
 	const config = getConfig();
 	const auth = {
 		enabled: config.auth?.enabled ?? false,
@@ -179,7 +180,7 @@ export async function getClientConfig({ authenticated = true } = {}) {
 	return {
 		branding: getBranding(),
 		auth: { ...auth, password_change_url: config.auth?.password_change_url || null },
-		apps: getAppsConfig(),
+		apps: getAppsConfig().filter((app) => canSeeApp(app, user)),
 		customization: { enabled: config.customization?.enabled ?? false },
 		search: getSearchConfig(),
 		wallpapers: { enabled: config.wallpapers?.enabled ?? false },

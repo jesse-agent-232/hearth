@@ -17,8 +17,6 @@ auth:
     client_secret: "${OIDC_CLIENT_SECRET}"
     scopes: "openid profile groups"
     redirect_base: "https://home.example.com"
-  admin_groups:
-    - "admin"
   registration:
     enabled: false
 

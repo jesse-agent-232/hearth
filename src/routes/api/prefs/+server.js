@@ -1,14 +1,11 @@
 import { json } from '@sveltejs/kit';
-import { getSessionUser, isAdmin } from '$lib/server/session.js';
+import { getSessionUser } from '$lib/server/session.js';
 import { getAuth } from '$lib/server/config.js';
-import { getUserPrefs, upsertUserPrefs, mergeUserPrefs, getAdminApps } from '$lib/server/db.js';
+import { getUserPrefs, upsertUserPrefs, mergeUserPrefs } from '$lib/server/db.js';
 export async function GET({ cookies, url }) {
 	const user = getSessionUser(cookies, url);
 	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
-	return json({
-		prefs: await getUserPrefs(user.username),
-		adminApps: await getAdminApps()
-	});
+	return json({ prefs: await getUserPrefs(user.username) });
 }
 export async function PUT({ cookies, url, request }) {
 	const user = getSessionUser(cookies, url);

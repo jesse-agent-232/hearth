@@ -7,7 +7,7 @@ import { getIntegrationsConfig } from '../config.js';
 //
 // Planka API keys are admin-only — individual users can't create them.
 // The operator provides the shared key via config.yml (default_api_key).
-// This integration is gated with admin_only: true so only admins see it.
+// Give the Planka app `groups:` in config.yml to show it only to those users.
 //
 // Planka has no search API, so we fetch all cards from all boards and
 // filter by name locally. Card counts are typically small (<500).

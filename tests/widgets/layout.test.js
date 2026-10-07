@@ -37,15 +37,14 @@ const stubRegistry = {
 };
 
 const sampleCatalog = [
-	{ id: 'photos', name: 'Photos', default: true, adminOnly: false, selfHosted: true },
-	{ id: 'cloud', name: 'Cloud', default: true, adminOnly: false, selfHosted: true },
-	{ id: 'vault', name: 'Vault', default: false, adminOnly: false, selfHosted: true },
-	{ id: 'admin-panel', name: 'Admin', default: true, adminOnly: true, selfHosted: true }
+	{ id: 'photos', name: 'Photos', default: true, selfHosted: true },
+	{ id: 'cloud', name: 'Cloud', default: true, selfHosted: true },
+	{ id: 'vault', name: 'Vault', default: false, selfHosted: true }
 ];
 
 test('defaultWidgetLayout seeds one app tile per default-visible app', () => {
-	const layout = defaultWidgetLayout(sampleCatalog, stubRegistry, { isAdmin: false });
-	assert.equal(layout.length, 2); // photos + cloud (vault is default:false, admin-panel is admin-only)
+	const layout = defaultWidgetLayout(sampleCatalog, stubRegistry);
+	assert.equal(layout.length, 2); // photos + cloud (vault is default:false)
 	for (const inst of layout) {
 		assert.equal(inst.type, WIDGET_TYPES.APP);
 		assert.equal(inst.w, 1);
@@ -55,12 +54,6 @@ test('defaultWidgetLayout seeds one app tile per default-visible app', () => {
 	// Unique instanceIds
 	const ids = new Set(layout.map((i) => i.instanceId));
 	assert.equal(ids.size, layout.length);
-});
-
-test('defaultWidgetLayout includes admin_only apps for admins', () => {
-	const layout = defaultWidgetLayout(sampleCatalog, stubRegistry, { isAdmin: true });
-	const appIds = layout.map((i) => i.config.appId);
-	assert.ok(appIds.includes('admin-panel'));
 });
 
 test('synthesizeFromLegacyPrefs preserves categoryLayout ordering', () => {
@@ -76,7 +69,7 @@ test('synthesizeFromLegacyPrefs preserves categoryLayout ordering', () => {
 });
 
 test('synthesizeFromLegacyPrefs falls back to defaults when nothing legacy is present', () => {
-	const layout = synthesizeFromLegacyPrefs({}, sampleCatalog, stubRegistry, { isAdmin: false });
+	const layout = synthesizeFromLegacyPrefs({}, sampleCatalog, stubRegistry);
 	// No legacy → fall back to defaultWidgetLayout (photos + cloud)
 	assert.equal(layout.length, 2);
 });
@@ -88,14 +81,13 @@ test('synthesizeFromLegacyPrefs picks up visibleApps when categoryLayout is empt
 	assert.deepEqual(appIds, ['vault', 'photos']);
 });
 
-test('synthesizeFromLegacyPrefs filters admin_only for non-admin', () => {
+test('synthesizeFromLegacyPrefs drops apps missing from the catalog', () => {
 	const legacy = {
-		categoryLayout: [{ id: 'tools', label: 'Tools', appIds: ['admin-panel', 'photos'] }]
+		categoryLayout: [{ id: 'tools', label: 'Tools', appIds: ['arr-only', 'photos'] }]
 	};
-	const layout = synthesizeFromLegacyPrefs(legacy, sampleCatalog, stubRegistry, { isAdmin: false });
+	const layout = synthesizeFromLegacyPrefs(legacy, sampleCatalog, stubRegistry);
 	const appIds = layout.map((i) => i.config.appId);
-	assert.ok(!appIds.includes('admin-panel'));
-	assert.ok(appIds.includes('photos'));
+	assert.deepEqual(appIds, ['photos']);
 });
 
 test('synthesizeFromLegacyPrefs deduplicates appIds across sources', () => {

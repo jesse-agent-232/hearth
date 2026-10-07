@@ -23,17 +23,13 @@ auth:
     issuer: "https://auth.example.com"        # Your OIDC provider URL
     client_id: "${OIDC_CLIENT_ID}"            # Environment variable
     client_secret: "${OIDC_CLIENT_SECRET}"    # Environment variable
-    scopes: "openid profile groups"            # Add "groups" to enable group-based admin detection
+    scopes: "openid profile groups"            # "groups" is needed for apps with groups: (Authentik sends it in profile)
     redirect_base: "https://dash.example.com" # Your dashboard's public URL
     # Endpoints are auto-discovered from .well-known/openid-configuration.
     # Override only if your provider uses non-standard paths:
     # authorization_endpoint: "/api/oidc/authorization"
     # token_endpoint: "/api/oidc/token"
     # userinfo_endpoint: "/api/oidc/userinfo"
-  admin_groups:                               # OIDC groups claim — users in these groups see admin-only apps
-    - "admins"                                # e.g. "lldap_admin" for LLDAP, "authentik Admins" for authentik
-  admin_usernames:                            # Fallback: username-based admin check (when groups unavailable)
-    - "admin"
   password_change_url: null                   # If set, shows "Change password" in settings menu
   registration:
     enabled: false
@@ -51,7 +47,6 @@ database:
 # When enabled, authenticated users get a Configure panel to:
 #   - Toggle app visibility, reorder apps, add bookmarks
 #   - Switch icon style (Colored / White / Grayed)
-#   - Admins can add apps from a searchable directory
 # When disabled, the dashboard shows a static grid from config — no user settings.
 customization:
   enabled: true
@@ -72,7 +67,9 @@ customization:
 #   icon_mono       Mono icon for white/grayed styles (optional). Same prefixes. Falls back to grayscale.
 #   tile_color      Hex background for iOS-style brand tile (optional). e.g. "#FF0000".
 #   self_hosted     Marks as self-hosted (shows in onboarding). Default false.
-#   admin_only      Only visible to admin_usernames / admin_groups. Default false.
+#   groups          Optional list of OIDC groups, e.g. ["arr"]. Only users in at least
+#                   one of them see the app; omit it and everyone does. Group changes
+#                   apply at the user's next login.
 #   default_visible Whether the app is auto-placed on a fresh user's surface. Default true.
 #                   Users can still add/remove from the catalog at any time.
 #   tags            Optional list of strings. Reserved for the All-apps tag-filter UI;
@@ -145,7 +142,7 @@ apps:
     url: "https://admin.example.com"
     icon: "di:authelia"
     self_hosted: true
-    admin_only: true
+    groups: ["admins"]                        # e.g. "lldap_admin" for LLDAP, "authentik Admins" for Authentik
     default_visible: true
     tags: ["admin"]
 

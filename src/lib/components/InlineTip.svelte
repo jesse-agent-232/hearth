@@ -24,7 +24,7 @@
 		const priorityKeywords = ['vault', 'password', 'bitwarden', 'photo', 'immich', 'cloud', 'nextcloud', 'paperless'];
 		const appTips = (siteConfig?.apps || [])
 			.flatMap(cat => cat.items || [])
-			.filter(item => item.setup_guide && !item.admin_only)
+			.filter(item => item.setup_guide)
 			.map(item => ({
 				id: item.id,
 				text: item.setup_guide.tip || item.setup_guide.subtitle || `Set up ${item.name}`,

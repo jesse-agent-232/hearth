@@ -6,6 +6,6 @@ export async function load({ cookies, url }) {
 	const user = getSessionUser(cookies, url);
 	const authenticated = !authConfig.enabled || !!user;
 	return {
-		config: await getClientConfig({ authenticated })
+		config: await getClientConfig({ authenticated, user })
 	};
 }
