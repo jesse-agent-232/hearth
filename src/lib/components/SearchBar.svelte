@@ -606,9 +606,11 @@
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
-						// A failed action reports here; success shows on the button.
-						badge: (actionState[key]?.ok === false && actionState[key].message) || r.meta?.status || '',
-						// A movie or show the user has: the play mark is a button that
+						// A failed action reports here; success shows on the button. A
+						// Play button already says "Available", so that badge is dropped.
+						badge: (actionState[key]?.ok === false && actionState[key].message)
+							|| (r.openLabel === 'Play' && r.meta?.status === 'Available' ? '' : r.meta?.status) || '',
+						// A movie or show the user has: a Play button under the title
 						// plays it, while a click elsewhere opens its details.
 						play: r.openLabel === 'Play' && r.href
 							? { run: () => { openUrl(r.href, true); finish(); } }
