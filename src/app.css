@@ -2075,6 +2075,17 @@ body.search-active .hero-area {
 @media (min-width: 768px) {
 	.hero-search-input { font-size: 0.95rem; }
 }
+/* Desktop: the open palette rises toward the top of the viewport
+   (SearchBar sets --search-lift) so results get the screen height. */
+@media (min-width: 768px) {
+	.hero-search {
+		transform: translateY(calc(-1 * var(--search-lift, 0px)));
+		transition: transform 220ms var(--ease-standard);
+	}
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+	.hero-search { transition: none; }
+}
 
 /* ── Phones: search docked at the bottom, in thumb reach ───────
    The bar sits above the home indicator (and above the keyboard: Android
