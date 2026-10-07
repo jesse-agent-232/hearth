@@ -25,6 +25,10 @@
 			...(available.length ? [{ label: connected.length ? 'Available' : '', items: available }] : [])
 		];
 	});
+
+	onMount(() => {
+		integrationsStore.load();
+	});
 </script>
 
 <div>
