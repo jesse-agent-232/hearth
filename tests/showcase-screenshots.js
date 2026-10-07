@@ -50,7 +50,14 @@ function createConfig(configPath, { auth = false } = {}) {
 function startServer(configPath) {
 	return new Promise((resolve, reject) => {
 		const server = spawn('node', ['node_modules/.bin/vite', 'dev', '--host', '0.0.0.0', '--port', String(PORT)], {
-			env: { ...process.env, CONFIG_PATH: configPath, NODE_OPTIONS: '--max-old-space-size=256' },
+			// The showcase config names OIDC variables; Holm refuses unset ones.
+			env: {
+				OIDC_CLIENT_ID: 'showcase',
+				OIDC_CLIENT_SECRET: 'showcase',
+				...process.env,
+				CONFIG_PATH: configPath,
+				NODE_OPTIONS: '--max-old-space-size=256'
+			},
 			cwd: process.cwd(),
 			stdio: 'pipe'
 		});
