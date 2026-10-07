@@ -123,13 +123,15 @@
 		{ id: 'settings', bang: 'settings', label: 'Open Configure', keywords: ['settings', 'preferences', 'integrations', 'widgets'], icon: ICONS.settings, exec: () => onSettingsOpen() },
 		// manual: never auto-runs on the last keystroke; needs Enter or a click
 		{ id: 'logout', bang: 'logout', label: 'Log out', keywords: ['sign out', 'logout'], icon: ICONS.logout, manual: true, exec: () => { window.location.href = '/auth/logout'; } },
-		{
+		// Wallpapers only show in the Dynamic theme, so switch to it; otherwise
+		// the pick is saved under Light/Dark and nothing visibly changes.
+		...(siteConfig?.wallpapers?.enabled ? [{
 			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', keywords: ['wallpaper', 'background', 'shuffle'], icon: ICONS.wall,
 			exec: () => {
 				const next = Math.floor(Math.random() * TOTAL_WALLPAPERS) + 1;
-				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true }));
+				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true, theme: 'auto' }));
 			}
-		},
+		}] : []),
 		// 'auto' is the stored value; Configure calls it Dynamic, so both work.
 		...[['dark', 'Dark'], ['light', 'Light'], ['auto', 'Dynamic']].map(([t, name]) => ({
 			id: `theme-${t}`, bang: 'theme', arg: t, argAlias: name.toLowerCase(), label: `Theme: ${name}`, keywords: [t, name.toLowerCase(), `${t} mode`], icon: ICONS.theme,
