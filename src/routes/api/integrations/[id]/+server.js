@@ -8,7 +8,7 @@ import {
 } from '$lib/server/integrations/store.js';
 import { redactConfig, isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline } from '$lib/server/integrations/deadline.js';
-import { autoConnect } from '$lib/server/integrations/linked.js';
+import { autoConnect, disconnectLinked } from '$lib/server/integrations/linked.js';
 
 // PUT /api/integrations/:id   body: { config, surfaces }
 // Save (or update) the user's connection. Secret fields that come back as
@@ -81,6 +81,7 @@ export async function DELETE({ cookies, url, params, fetch }) {
 	} else {
 		await deleteConnection(user.username, adapter.id);
 	}
+	await disconnectLinked(user.username, adapter.id);
 	return json({ ok: true });
 }
 

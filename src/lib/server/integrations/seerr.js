@@ -424,8 +424,11 @@ async function seerrFetch(ctx, path, init = {}) {
 	const me = await fetch(`${base}/api/v1/auth/me`, { headers: sessionHeaders(config) });
 	if (me.ok) return res;
 	// Also for a code sign-in: Jellyfin or Plex may have been connected since.
-	const renewed = await renewOnce(config, ctx.linked, fetch);
+	let renewed = await renewOnce(config, ctx.linked, fetch);
 	if (!renewed || renewed.error) throw new Error('Seerr session ended — sign in again in Settings → Integrations');
+	// A code sign-in stays its own connection, not linked to the app that
+	// renewed it, so disconnecting that app leaves it alone.
+	if (config.via === 'seerr') renewed = { ...renewed, via: 'seerr' };
 	await ctx.saveConfig?.(renewed);
 	// Later calls in this request use the new session, not the lapsed one.
 	ctx.config = renewed;

@@ -5,7 +5,7 @@
 // renew its own session.
 
 import { getRegistry } from './index.js';
-import { getConnection, upsertConnection } from './store.js';
+import { getConnection, upsertConnection, deleteConnection } from './store.js';
 
 // A failed automatic connect (e.g. no Seerr account for this user) is not
 // retried on every page load.
@@ -84,6 +84,20 @@ export async function autoConnect(username, fetch, { fresh = {}, signedIn = null
 			/* fall through */
 		}
 		failedAt.set(key, Date.now());
+	}
+}
+
+/**
+ * Disconnecting a linked integration (Jellyfin) disconnects what signed in
+ * through it (a Seerr with `via: 'jellyfin'`), like a link. The row goes
+ * entirely, so connecting Jellyfin again brings it back. A Seerr signed in
+ * on its own, with a code, stays.
+ */
+export async function disconnectLinked(username, linkedId) {
+	for (const { adapter } of getRegistry()) {
+		if (!adapter.connectFromLinked || !(adapter.linkedTo || []).includes(linkedId)) continue;
+		const conn = await getConnection(username, adapter.id);
+		if (conn?.connected && conn.config?.via === linkedId) await deleteConnection(username, adapter.id);
 	}
 }
 
