@@ -106,8 +106,21 @@ function createIntegrationsStore() {
 					it.id === integrationId ? { ...it, userState: data.userState } : it
 				)
 			}));
+			// One sign-in can connect others too (Jellyfin → Seerr).
+			load({ force: true });
 		}
 		return data;
+	}
+
+	// Runs an adapter action for a search result (e.g. Seerr's Request).
+	async function runAction(integrationId, key, params) {
+		const res = await fetch(`/api/integrations/${encodeURIComponent(integrationId)}/action/${encodeURIComponent(key)}`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ params })
+		});
+		const data = await res.json().catch(() => ({}));
+		return { ok: !!data.ok, message: data.message || data.error || `HTTP ${res.status}` };
 	}
 
 	return {
@@ -116,7 +129,8 @@ function createIntegrationsStore() {
 		save,
 		disconnect,
 		test,
-		signIn
+		signIn,
+		runAction
 	};
 }
 

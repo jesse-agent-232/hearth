@@ -163,7 +163,7 @@ search:
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
 # Nextcloud, Planka, Karakeep, Jellyfin, Plex, Navidrome, Audiobookshelf,
-# Mealie. Add more in
+# Mealie, Seerr. Add more in
 # src/lib/server/integrations/.
 #
 # Each key must match both the adapter's `id` AND an app `id` in the apps
@@ -258,6 +258,13 @@ integrations:
     enabled: true
     name: "Recipes"
     default_url: "https://recipes.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  seerr:
+    enabled: true
+    name: "Requests"
+    default_url: "https://seerr.example.com"  # Needed: users connect automatically through Jellyfin or Plex, at this URL
     surfaces:
       search: true
       widgets: false

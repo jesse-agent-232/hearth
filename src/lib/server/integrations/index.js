@@ -19,8 +19,9 @@ import plex from './plex.js';
 import navidrome from './navidrome.js';
 import audiobookshelf from './audiobookshelf.js';
 import mealie from './mealie.js';
+import seerr from './seerr.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie];
+const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {

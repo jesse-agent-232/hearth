@@ -143,8 +143,8 @@ const adapter = {
 
 				const base = stripTrailingSlash(config.url);
 				// /Items with userId applies that user's library access and
-				// parental rating. Everything we read (year, album artist, image
-				// tags, ServerId) is in the default DTO, so no Fields= is needed.
+				// parental rating. Everything else we read (year, album artist,
+				// image tags, ServerId) is in the default DTO.
 				const params = new URLSearchParams({
 					userId: config.userId || '',
 					searchTerm: trimmed,
@@ -152,6 +152,7 @@ const adapter = {
 					IncludeItemTypes: Object.keys(ITEM_TYPES).join(','),
 					Limit: String(Math.min(limit || 10, 25)),
 					EnableTotalRecordCount: 'false',
+					Fields: 'ProviderIds',
 					EnableImageTypes: 'Primary',
 					ImageTypeLimit: '1'
 				});
@@ -176,7 +177,7 @@ const adapter = {
 								? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}?maxHeight=${POSTER_HEIGHT}`
 								: undefined,
 							href: `${base}/web/#/details?id=${encodeURIComponent(item.Id)}${server}`,
-							meta: { kind: 'media' }
+							meta: { kind: 'media', tmdb: tmdbKey(item) }
 						};
 					})
 				};
@@ -230,6 +231,13 @@ function subtitleFor(item) {
 	if (item.Type === 'MusicAlbum' && item.AlbumArtist) parts.push(item.AlbumArtist);
 	if (item.ProductionYear) parts.push(String(item.ProductionYear));
 	return parts.filter(Boolean).join(' · ');
+}
+
+// Lets a Seerr result for the same title stand in for this one.
+function tmdbKey(item) {
+	const id = item.ProviderIds?.Tmdb;
+	const type = item.Type === 'Movie' ? 'movie' : item.Type === 'Series' ? 'tv' : null;
+	return id && type && /^\d+$/.test(id) ? `${type}:${id}` : undefined;
 }
 
 function primaryImageId(item) {

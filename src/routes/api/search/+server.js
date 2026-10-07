@@ -3,6 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
+import { adapterContext } from '$lib/server/integrations/linked.js';
 
 // The response is bounded by SEARCH_TIMEOUT_MS, but the adapter's own fetches
 // get the longer UPSTREAM_TIMEOUT_MS and aren't tied to request.signal: the
@@ -57,6 +58,7 @@ export async function POST({ cookies, url, request, fetch }) {
 	let timer;
 	try {
 		const pending = searchProvider.query({
+			...(await adapterContext(user.username, adapter, conn)),
 			config: conn.config,
 			query,
 			limit,

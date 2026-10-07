@@ -19,6 +19,7 @@ Holm has two kinds of app support.
 | Navidrome | Artists, albums and songs | URL + username + password (only a derived token is kept) | `!nd` |
 | Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
 | Mealie | Recipes | URL + API token | `!r` |
+| Seerr | Movies and shows: play what's there, request what isn't | Automatic through Jellyfin or Plex; otherwise a Quick Connect code | `!sr` |
 
 Integrations are marked Alpha in the UI. Widgets on the dashboard are reserved for a later release.
 
@@ -50,6 +51,10 @@ Jellyfin skips the form: Holm shows a code, the user approves it under Quick Con
 
 Plex works the same way: the user enters Holm's code at [plex.tv/link](https://plex.tv/link). Holm keeps only the access token for the server at the configured URL. For a server you only have shared access to, that token can't reach anything else. For a server you own, Plex returns your account token itself, so treat the stored connection as being as sensitive as your Plex account.
 
+Seerr needs no sign-in of its own for users who connected Jellyfin or Plex: Holm asks Seerr for a Quick Connect code and approves it with the user's Jellyfin token, or passes Seerr the user's Plex token, and keeps the Seerr session that comes back. When that session lapses (Seerr keeps them 30 days), Holm renews it the same way. The Plex route works only for the Plex server's owner, whose stored token is the account token; anyone else, or anyone without Jellyfin or Plex in Holm, signs in with a Quick Connect code. Set `default_url` for Seerr, or the automatic connection can't know where Seerr is. Seerr must be able to log the user in: the Jellyfin or Plex account has to exist in Seerr, or Seerr's new-user import has to be on.
+
+Seerr results show each title once: if it's on the media server, it opens there (**Play**), and Jellyfin or Plex results for the same title are folded into it. If it isn't, **Request** files the request in Seerr as that user, from the search bar.
+
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 
 After connecting, results from the app appear in the search bar. Typing `!<shortcut>` searches only that app.
@@ -59,7 +64,7 @@ After connecting, results from the app appear in the search bar. Typing `!<short
 - **Per-user credentials.** Each user connects with their own key, so search results respect that user's permissions in the app.
 - **Encrypted at rest** with AES-256-GCM. Set `HOLM_SECRET_KEY` to 32 bytes, hex or base64 (`openssl rand -hex 32`). Without it, Holm generates `.integrations-key` next to the database, so anyone with a copy of the data directory also has the key. See [configuration.md](configuration.md#integration-credentials).
 - **Never sent back to the browser.** API responses redact secret fields. Thumbnails and previews are fetched through Holm (`/api/integrations/<id>/proxy/…`), so the key never appears in an `<img src>`.
-- **Disconnect** deletes the stored credentials. Jellyfin also revokes its token. To revoke a Plex sign-in, remove the "Holm" device under **Authorized Devices** in Plex.
+- **Disconnect** deletes the stored credentials. A disconnected Seerr stays disconnected rather than reconnecting through Jellyfin or Plex; sign in again from its card to bring it back. Jellyfin also revokes its token. To revoke a Plex sign-in, remove the "Holm" device under **Authorized Devices** in Plex.
 
 ## Adding an integration
 
@@ -106,4 +111,4 @@ An integration is one file plus one import line. The settings form, API routes a
 2. Import it in `src/lib/server/integrations/index.js` and add it to `KNOWN_ADAPTERS`.
 3. Add an example entry under `integrations:` in `config.example.yml`.
 
-The full contract, including `signIn` for device-code flows like Quick Connect, `signOut`, and `prepareConfig` for swapping a typed secret for a derived one before it is saved, is documented in [`_types.js`](../src/lib/server/integrations/_types.js). [`karakeep.js`](../src/lib/server/integrations/karakeep.js) is a short, complete example.
+The full contract, including `signIn` for device-code flows like Quick Connect, `signOut`, `linkedTo` / `connectFromLinked` for signing in through another integration, `actions` for writes from a search result, and `prepareConfig` for swapping a typed secret for a derived one before it is saved, is documented in [`_types.js`](../src/lib/server/integrations/_types.js). [`karakeep.js`](../src/lib/server/integrations/karakeep.js) is a short, complete example.

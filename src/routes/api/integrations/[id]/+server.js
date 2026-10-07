@@ -68,7 +68,13 @@ export async function DELETE({ cookies, url, params, fetch }) {
 		}
 	}
 
-	await deleteConnection(user.username, adapter.id);
+	// An integration Holm connects on its own (Seerr) keeps an empty row, so
+	// it stays disconnected instead of reconnecting on the next page load.
+	if (adapter.connectFromLinked) {
+		await upsertConnection(user.username, adapter.id, { config: {}, surfaces: {} });
+	} else {
+		await deleteConnection(user.username, adapter.id);
+	}
 	return json({ ok: true });
 }
 
