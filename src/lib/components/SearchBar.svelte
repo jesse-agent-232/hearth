@@ -874,7 +874,7 @@
 	// once at the old, shorter height and flashed a scrollbar.
 	$effect(() => {
 		inlineOpen;
-		recomputeResultsMaxHeight();
+		untrack(recomputeResultsMaxHeight);
 		requestAnimationFrame(recomputeResultsMaxHeight);
 	});
 
