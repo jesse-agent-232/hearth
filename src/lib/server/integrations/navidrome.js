@@ -2,7 +2,7 @@
 //
 // Surfaces:
 //   - searchProviders.music — searches artists, albums and songs
-//   - proxy.stream — a song's audio, for Holm's own player
+//   - widgets.player — plays a song from search in Holm, through proxy.stream
 //
 // Auth is Subsonic token auth: every call sends t = md5(password + salt) and
 // the salt. Holm takes the password once, computes the token with a random
@@ -198,7 +198,11 @@ const adapter = {
 		}
 	},
 
-	widgets: {}
+	// Off unless the operator sets `surfaces.widgets: true` and the user turns
+	// it on; without it a song opens in Navidrome like any other result.
+	widgets: {
+		player: { label: 'Player', description: 'Play songs from search in a corner player' }
+	}
 };
 
 function stripTrailingSlash(url) {

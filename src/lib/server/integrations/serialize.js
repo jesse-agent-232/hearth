@@ -34,7 +34,12 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 				key,
 				{ label: p.label, mode: p.mode, kind: p.kind || null }
 			])
-		)
+		),
+		widgets: Object.entries(adapter.widgets || {}).map(([key, w]) => ({
+			key,
+			label: w.label,
+			description: w.description || ''
+		}))
 	};
 }
 

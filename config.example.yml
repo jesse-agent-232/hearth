@@ -246,7 +246,7 @@ integrations:
     default_url: "https://music.example.com"
     surfaces:
       search: true
-      widgets: false
+      widgets: true                           # Player: users can turn on playing songs from search in Holm
   audiobookshelf:
     enabled: true
     name: "Audiobooks"

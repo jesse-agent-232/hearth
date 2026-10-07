@@ -16,7 +16,7 @@ Holm has two kinds of app support.
 | Planka | Boards and cards | URL + API key | `!p` |
 | Karakeep | Bookmarks (full text) | URL + API key | `!b` |
 | Plex | Movies, shows and music | Code at plex.tv/link, no key to copy | `!plex` |
-| Navidrome | Artists, albums and songs; songs play in Holm | URL + username + password (only a derived token is kept) | `!nd` |
+| Navidrome | Artists, albums and songs; optional player for songs | URL + username + password (only a derived token is kept) | `!nd` |
 | Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
 | Mealie | Recipes | URL + API token | `!r` |
 | Seerr | Movies and shows: play what's there, request what isn't | Automatic through Jellyfin or Plex; otherwise a Quick Connect code | `!sr` |
@@ -36,7 +36,7 @@ integrations:
     default_url: "https://photos.example.com" # optional: pre-fills and locks the URL field
     surfaces:
       search: true
-      widgets: false                          # reserved
+      widgets: false                          # Navidrome only for now: its player
 ```
 
 The key (`immich`) must match the adapter id. If an app in `apps:` has the same `id`, the integration uses that app's icon.
@@ -55,7 +55,7 @@ Seerr needs no sign-in of its own for users who connected Jellyfin or Plex: Holm
 
 Jellyfin, Plex and Seerr movies and shows share one **Movies & TV** row, each title once: titles the user has first, then those they can request, then those already requested. Albums and artists stay in their own Jellyfin or Plex row. Music, from Navidrome or that row, shows as compact cards, three to a row on a wide window and two on a narrower one: a small cover on the left, the name on top and the details under it. Seerr results show each title once: if it's on the media server, it opens there (**Play**), and Jellyfin or Plex results for the same title are folded into it. When Jellyfin or Plex returned the title itself, its link is used and Seerr's status is ignored. Each poster has the icon of the app it opens in on its top-right corner, in the icon style picked for the apps: Jellyfin or Plex for a title the user has, Seerr for one they don't. Movies and shows the user has carry a play mark on the poster that plays them in Jellyfin or Plex. For a title that isn't there, hovering the poster shows a **Request** chip along its bottom that files the request in Seerr as that user; it spins while the request is filed and then stays as a disabled **Requested** with a clock, as it does for any title Seerr already has a request for. A show that's only partly there can still be requested, and the request asks for just the missing seasons. Users whose Seerr account can't request (or can't request that kind of title) see no **Request** at all. Clicking anywhere else on a movie or show poster, from Seerr, Jellyfin or Plex, opens a detail view in the search panel (backdrop, year, runtime, rating, genres, overview, cast) with **Play on Jellyfin** or **Plex**, or **Request** and **Open in Seerr**; it never requests on its own. → opens it for the selected poster, and ← or Esc goes back to the results. While the row is still loading with nothing to show yet, it shows placeholder posters.
 
-A Navidrome song plays in Holm itself: clicking it, or Enter, starts it in a small player in the bottom-right corner (above the search bar on a phone) with the cover, title, artist, time played and length, and play/pause, stop and mute. There's no seeking or queue; picking another song replaces the one playing, and **Open in Navidrome** (⌘↵, or ⌘-click) still opens the album. The audio comes through Holm's proxy with the user's own token, as the original file, so the browser has to support its format (MP3, AAC, FLAC and Ogg play everywhere; ALAC only in Safari).
+Navidrome has the first widget, a **Player**. The operator allows it with `surfaces: { widgets: true }` under `navidrome`, and each user turns it on with the **Player** switch on their Navidrome card; it starts off. With it off, a song opens its album in Navidrome like any other result. With it on, a song plays in Holm itself: clicking it, or Enter, starts it in a small player in the bottom-right corner (above the search bar on a phone) with the cover, title, artist, time played and length, and play/pause, stop and mute. There's no seeking or queue; picking another song replaces the one playing, and **Open in Navidrome** (⌘↵, or ⌘-click) still opens the album. The audio comes through Holm's proxy with the user's own token, as the original file, so the browser has to support its format (MP3, AAC, FLAC and Ogg play everywhere; ALAC only in Safari).
 
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 

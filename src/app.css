@@ -1721,6 +1721,19 @@ body.search-active .hero-area {
 .launcher-track-art.launcher-icon-box { width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0; }
 .launcher-track-art svg { width: 18px; height: 18px; }
 .launcher-item.is-track .launcher-text { flex-direction: column; align-items: stretch; gap: 2px; }
+/* A playable song: the play mark covers the cover, on hover or selection only. */
+.launcher-track-art .launcher-art-action {
+	inset: 0;
+	width: auto;
+	height: auto;
+	margin: 0;
+	border-radius: inherit;
+	background: rgba(9, 9, 11, 0.55);
+	backdrop-filter: none;
+	opacity: 0;
+}
+.launcher-track-art .launcher-art-action svg { width: 14px; height: 14px; margin-left: 1px; }
+.launcher-track-art .launcher-art-action:hover { background: rgba(9, 9, 11, 0.7); color: var(--accent, #f5b942); transform: none; }
 .launcher-item.is-track .launcher-title { font-weight: 500; }
 .launcher-item.is-track .launcher-skeleton-line { margin-top: 0; }
 .launcher-item.is-skeleton .launcher-track-art {
