@@ -3,6 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
+import { isProxiedMedia } from '$lib/server/integrations/proxyMedia.js';
 
 // GET /api/integrations/:id/proxy/:key/*
 //
@@ -82,7 +83,18 @@ export async function GET({ cookies, url, params, request, fetch }) {
 		throw error(502, 'Proxy handler returned invalid response');
 	}
 
-	const headers = new Headers();
+	// Replies are served from Holm's own origin, so only media passes:
+	// anything else (an HTML error page, say) could run as Holm.
+	if (upstream.status !== 304 && !isProxiedMedia(upstream.headers.get('content-type'))) {
+		await upstream.body?.cancel().catch(() => {});
+		throw error(502, 'Upstream did not return an image or audio');
+	}
+
+	const headers = new Headers({
+		'x-content-type-options': 'nosniff',
+		// An SVG opened on its own can't run script or load anything.
+		'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+	});
 	for (const name of PASS_THROUGH_HEADERS) {
 		const v = upstream.headers.get(name);
 		if (v) headers.set(name, v);
