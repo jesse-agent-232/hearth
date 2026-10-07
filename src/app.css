@@ -1555,10 +1555,12 @@ body.search-active .hero-area {
 :root {
 	--launcher-sel: rgba(255, 255, 255, 0.08);
 	--launcher-sel-ring: rgba(255, 255, 255, 0.22);
+	--launcher-sel-art: rgba(255, 255, 255, 0.85);
 }
 .theme-light {
 	--launcher-sel: rgba(0, 0, 0, 0.06);
 	--launcher-sel-ring: rgba(0, 0, 0, 0.35);
+	--launcher-sel-art: rgba(0, 0, 0, 0.7);
 }
 .launcher-panel {
 	position: absolute;
@@ -1732,7 +1734,8 @@ body.search-active .hero-area {
 .launcher-grid, .launcher-posters {
 	display: flex;
 	gap: 8px;
-	padding: 2px 6px 8px;
+	/* Room for the selection ring, which the scroll box would clip. */
+	padding: 5px 6px 8px;
 	overflow-x: auto;
 	scrollbar-width: none;
 }
@@ -1781,8 +1784,11 @@ body.search-active .hero-area {
 	.launcher-thumb-wrap:has(img.is-loading)::before,
 	.launcher-icon-box:has(img.is-loading)::before { animation: none; }
 }
+/* A thin ring off the art's edge. An outline leaves the gap see-through;
+   a painted gap in the translucent panel colour read as a grey frame. */
 .launcher-item.is-selected .launcher-thumb-wrap {
-	box-shadow: 0 0 0 2px var(--hero-search-bg), 0 0 0 4px var(--launcher-sel-ring);
+	outline: 2px solid var(--launcher-sel-art);
+	outline-offset: 2px;
 }
 .launcher-badge {
 	position: absolute;
