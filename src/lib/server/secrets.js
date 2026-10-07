@@ -75,8 +75,10 @@ export function getMasterKey() {
 		return _masterKey;
 	}
 
+	// A set but unusable key is a mistake, not a request for the key file:
+	// falling back would quietly encrypt with a key the operator never chose.
 	if (process.env.HOLM_SECRET_KEY) {
-		console.warn('[holm] HOLM_SECRET_KEY is set but malformed (need 32 bytes hex or base64) — falling back to key file');
+		throw new Error('HOLM_SECRET_KEY is set but malformed: it must be 32 bytes as 64 hex characters or base64 (openssl rand -hex 32)');
 	}
 
 	_masterKey = loadOrGenerateKeyFile();
