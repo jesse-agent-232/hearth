@@ -5,6 +5,8 @@ import {
 	deleteIntegrationRow
 } from '../db.js';
 import { encryptConfig, decryptConfig } from '../secrets.js';
+import { getAdapter, getOperatorDefaults } from './index.js';
+import { applyOperatorUrls } from './urlPolicy.js';
 
 // Wraps user_integrations row access with transparent encryption / decryption.
 // Callers always deal in plain JS objects; the encrypted blob never leaves
@@ -28,7 +30,8 @@ function rowToConnection(row) {
 	return {
 		integrationId: row.integration_id,
 		connected: !!config,
-		config: config || {},
+		// The operator's URL wins over one saved before it was pinned.
+		config: config ? applyOperatorUrls(getAdapter(row.integration_id), getOperatorDefaults(row.integration_id), config) : {},
 		surfaces: parseSurfaces(row.surfaces_json),
 		updatedAt: row.updated_at
 	};
