@@ -20,11 +20,22 @@
 	// bottom edge to the viewport bottom minus a breathing gap. Recomputed on
 	// open + window resize so the panel never spills past the visible area.
 	let resultsMaxHeight = $state(420);
+	// On desktop the open palette slides up toward the top of the viewport,
+	// Spotlight-style, so short screens (a 14" laptop) give the results most
+	// of the height instead of the strip under a mid-page bar. Phones keep
+	// the bottom dock. `lift` is the px the bar is raised by.
+	let lift = $state(0);
 	function recomputeResultsMaxHeight() {
 		if (!containerEl || typeof window === 'undefined') return;
 		const rect = containerEl.getBoundingClientRect();
+		// Measure from where the bar rests, not from mid-transition.
+		const restTop = rect.top + lift;
+		const restBottom = rect.bottom + lift;
+		const desktop = window.matchMedia('(min-width: 768px)').matches;
+		const targetTop = Math.max(48, window.innerHeight * 0.1);
+		lift = desktop && inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
 		const gap = 24;
-		const available = window.innerHeight - rect.bottom - gap;
+		const available = window.innerHeight - (restBottom - lift) - gap;
 		resultsMaxHeight = Math.max(220, available);
 	}
 
@@ -812,10 +823,11 @@
 		};
 	});
 
-	// Recompute when the palette opens (the bar may have raised on focus, so
-	// its bottom edge changed) and when the scope chip appears/disappears.
+	// Recompute when the palette opens or closes (the lift and the bar's
+	// bottom edge change) and when the scope chip appears/disappears.
 	$effect(() => {
-		if (inlineOpen) requestAnimationFrame(recomputeResultsMaxHeight);
+		inlineOpen;
+		requestAnimationFrame(recomputeResultsMaxHeight);
 	});
 
 	function handleSubmit(e) {
@@ -952,7 +964,7 @@
 <!-- Close when keyboard focus leaves the palette (Tab-out); click-outside is
      handled by onClickOutside. A null relatedTarget is a click on a
      non-focusable spot, which may be inside the panel, so it's ignored. -->
-<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px"
+<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px"
 	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) { inlineOpen = false; panelOpen = false; } }}>
 	<form
 		class="hero-search-form flex items-center px-4 md:px-6"
