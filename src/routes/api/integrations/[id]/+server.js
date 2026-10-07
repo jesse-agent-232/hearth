@@ -8,13 +8,14 @@ import {
 } from '$lib/server/integrations/store.js';
 import { redactConfig, isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline } from '$lib/server/integrations/deadline.js';
+import { autoConnect } from '$lib/server/integrations/linked.js';
 
 // PUT /api/integrations/:id   body: { config, surfaces }
 // Save (or update) the user's connection. Secret fields that come back as
 // the redacted bullet string are merged from the existing record so users
 // can edit URL-only without re-pasting the API key.
 
-export async function PUT({ cookies, url, request, params }) {
+export async function PUT({ cookies, url, request, params, fetch }) {
 	const user = getSessionUser(cookies, url);
 	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -35,6 +36,11 @@ export async function PUT({ cookies, url, request, params }) {
 	const surfaces = sanitizeSurfaces(body.surfaces);
 
 	await upsertConnection(user.username, adapter.id, { config: merged, surfaces });
+	// A new connection can connect others too (Jellyfin → Seerr), as a
+	// sign-in does; saving an existing one (a surface toggle) doesn't.
+	if (!existing?.connected) {
+		await autoConnect(user.username, withDeadline(fetch, 5000), { signedIn: adapter.id }).catch(() => {});
+	}
 
 	return json({
 		ok: true,

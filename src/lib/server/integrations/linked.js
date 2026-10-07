@@ -48,16 +48,19 @@ export async function adapterContext(username, adapter, conn, config = conn?.con
 /**
  * Connects every enabled linked integration the user has no row for yet.
  * A row that exists but is empty means the user disconnected it, so it is
- * left alone. Best effort: failures are remembered and skipped for a while,
- * unless `fresh` brings a just-signed-in account to try with.
+ * left alone, until they sign in to one of its linked integrations again
+ * (`signedIn`: the id just connected), which asks for it afresh. Best
+ * effort: failures are remembered and skipped for a while, except right
+ * after such a sign-in. `fresh` overrides a linked config for this call.
  */
-export async function autoConnect(username, fetch, fresh = {}) {
+export async function autoConnect(username, fetch, { fresh = {}, signedIn = null } = {}) {
 	for (const { adapter, operator } of getRegistry()) {
 		if (!adapter.connectFromLinked) continue;
 		const key = `${username}\n${adapter.id}`;
-		const tryFresh = (adapter.linkedTo || []).some((id) => fresh[id]);
-		if (!tryFresh && Date.now() - (failedAt.get(key) || 0) < RETRY_AFTER_MS) continue;
-		if (await getConnection(username, adapter.id)) continue;
+		const justLinked = !!signedIn && (adapter.linkedTo || []).includes(signedIn);
+		if (!justLinked && Date.now() - (failedAt.get(key) || 0) < RETRY_AFTER_MS) continue;
+		const existing = await getConnection(username, adapter.id);
+		if (existing?.connected || (existing && !justLinked)) continue;
 
 		const config = {};
 		for (const field of adapter.configSchema || []) {
@@ -72,7 +75,8 @@ export async function autoConnect(username, fetch, fresh = {}) {
 		try {
 			const connected = await adapter.connectFromLinked({ config, linked, fetch });
 			if (connected && !connected.error) {
-				await upsertConnection(username, adapter.id, { config: connected, surfaces: { search: true } });
+				const surfaces = existing && Object.keys(existing.surfaces || {}).length ? existing.surfaces : { search: true };
+				await upsertConnection(username, adapter.id, { config: connected, surfaces });
 				failedAt.delete(key);
 				continue;
 			}
