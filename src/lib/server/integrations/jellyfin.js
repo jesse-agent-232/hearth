@@ -19,8 +19,10 @@ const ITEM_TYPES = {
 	MusicArtist: 'Artist'
 };
 
-// Posters render 138 CSS px tall; 3x covers phone screens.
-const POSTER_HEIGHT = 420;
+const VIDEO_TYPES = new Set(['Movie', 'Series']);
+
+// Posters render 174 CSS px tall; 3x covers phone screens.
+const POSTER_HEIGHT = 520;
 
 // Jellyfin item ids are GUIDs, serialised as 32 hex chars (or dashed).
 const ITEM_ID = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
@@ -177,6 +179,8 @@ const adapter = {
 								? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}?maxHeight=${POSTER_HEIGHT}`
 								: undefined,
 							href: `${base}/web/#/details?id=${encodeURIComponent(item.Id)}${server}`,
+							// Movies and shows open a detail view; Play is its button.
+							...(VIDEO_TYPES.has(item.Type) ? { openLabel: 'Play', detail: { id: item.Id } } : {}),
 							meta: { kind: 'media', tmdb: tmdbKey(item) }
 						};
 					})
@@ -185,7 +189,47 @@ const adapter = {
 		}
 	},
 
+	async details({ config, params, fetch }) {
+		const id = params?.id;
+		if (typeof id !== 'string' || !ITEM_ID.test(id)) return null;
+		const base = stripTrailingSlash(config.url);
+		// userId applies the user's library access, as in search.
+		const res = await fetch(`${base}/Items/${id}?userId=${encodeURIComponent(config.userId || '')}`, {
+			headers: authHeaders(config)
+		});
+		if (!res.ok) throw new Error(`Jellyfin returned ${res.status}`);
+		const item = await res.json();
+		if (!VIDEO_TYPES.has(item?.Type)) return null;
+		const minutes = item.RunTimeTicks ? Math.round(item.RunTimeTicks / 600000000) : 0;
+		const seasons = item.Type === 'Series' && item.ChildCount ? `${item.ChildCount} season${item.ChildCount === 1 ? '' : 's'}` : '';
+		const imageId = primaryImageId(item);
+		return {
+			title: item.Name || 'Untitled',
+			facts: [ITEM_TYPES[item.Type], item.ProductionYear && String(item.ProductionYear), seasons, formatRuntime(minutes)].filter(Boolean),
+			rating: item.CommunityRating ? Math.round(item.CommunityRating * 10) / 10 : null,
+			genres: (item.Genres || []).slice(0, 4),
+			tagline: item.Taglines?.[0] || '',
+			overview: item.Overview || '',
+			thumbnail: imageId ? `/api/integrations/jellyfin/proxy/image/${encodeURIComponent(imageId)}?maxHeight=${POSTER_HEIGHT}` : undefined,
+			backdrop: item.BackdropImageTags?.length ? `/api/integrations/jellyfin/proxy/backdrop/${encodeURIComponent(item.Id)}` : undefined
+		};
+	},
+
 	proxy: {
+		// Backdrop for the detail view, scaled down server-side.
+		backdrop: {
+			defaultCacheControl: 'private, max-age=86400',
+			async fetch({ config, params, fetch }) {
+				const id = params.path?.[0];
+				if (params.path?.length !== 1 || !id || !ITEM_ID.test(id)) {
+					return new Response('Invalid item id', { status: 400 });
+				}
+				return fetch(`${stripTrailingSlash(config.url)}/Items/${id}/Images/Backdrop?maxWidth=780&quality=85`, {
+					method: 'GET',
+					headers: { Authorization: authHeaders(config).Authorization }
+				});
+			}
+		},
 		// Primary image (poster / cover) for an item, scaled down server-side.
 		image: {
 			defaultCacheControl: 'private, max-age=86400',
@@ -207,6 +251,12 @@ const adapter = {
 
 	widgets: {}
 };
+
+function formatRuntime(minutes) {
+	if (!minutes) return '';
+	const h = Math.floor(minutes / 60);
+	return h ? `${h}h ${minutes % 60}m` : `${minutes}m`;
+}
 
 function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;

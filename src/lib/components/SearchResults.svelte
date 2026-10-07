@@ -8,7 +8,7 @@
 	//
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, badge?, play?,
-	//             iconStyle?, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
+	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
 	let {
 		sections = [],
 		selectedKey = null,
@@ -75,7 +75,7 @@
 	{#if detail}
 		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
 		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
-			<div class="launcher-detail-hero">
+			<div class="launcher-detail-hero" class:is-empty={!detail.loading && !detail.data?.backdrop}>
 				{#if detail.data?.backdrop}
 					<img class="launcher-detail-backdrop is-loading" use:thumbLoading src={detail.data.backdrop} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
 				{/if}
@@ -124,7 +124,10 @@
 							</button>
 						{/if}
 						{#if detail.open}
-							<button type="button" class="launcher-detail-btn" onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>{detail.open.label}</button>
+							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
+								{#if detail.open.label === 'Play'}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
+								{detail.open.label}
+							</button>
 						{/if}
 					</div>
 					{#if detail.badge}<div class="launcher-error launcher-detail-error">{detail.badge}</div>{/if}
@@ -179,9 +182,16 @@
 										{/if}
 										<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
 										{#if item.play}
-											<span class="launcher-play" aria-hidden="true">
-												<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
-											</span>
+											<button
+												type="button"
+												class="launcher-play"
+												aria-label="Play {item.title}"
+												tabindex="-1"
+												onmousedown={(e) => e.preventDefault()}
+												onclick={(e) => { e.stopPropagation(); item.play.run(); }}
+											>
+												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
+											</button>
 										{/if}
 										{#if item.request}
 											<button

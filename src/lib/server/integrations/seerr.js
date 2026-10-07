@@ -156,8 +156,8 @@ const adapter = {
 								? `/api/integrations/seerr/proxy/poster${r.posterPath}`
 								: undefined,
 							href: playUrl || `${base}/${r.mediaType}/${r.id}`,
-							// What the user has plays on click; anything else opens its details.
-							detail: playUrl ? undefined : { mediaType: r.mediaType, mediaId: r.id },
+							// A click opens the detail view; Play (or Request) are its buttons.
+							detail: { mediaType: r.mediaType, mediaId: r.id },
 							openLabel: playUrl ? 'Play' : 'Open in Seerr',
 							action: requestable
 								? { key: 'request', label: 'Request', params: { mediaType: r.mediaType, mediaId: r.id } }

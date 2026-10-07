@@ -22,10 +22,12 @@ const ITEM_TYPES = {
 	album: 'Album'
 };
 
-// Posters render 138 CSS px tall; 3x covers phone screens.
-const POSTER_HEIGHT = 420;
+// Posters render 174 CSS px tall; 3x covers phone screens.
+const POSTER_HEIGHT = 520;
 
 const THUMB = /^\/library\/metadata\/(\d+)\/thumb\/(\d+)$/;
+const ART = /^\/library\/metadata\/(\d+)\/art\/(\d+)$/;
+const VIDEO_TYPES = new Set(['movie', 'show']);
 const DIGITS = /^\d+$/;
 
 /** @type {import('./_types.js').IntegrationAdapter} */
@@ -159,6 +161,8 @@ const adapter = {
 								? `/api/integrations/plex/proxy/image/${thumb[1]}/${thumb[2]}`
 								: undefined,
 							href: `${base}/web/index.html#!/server/${encodeURIComponent(config.machineId || '')}/details?key=${key}`,
+							// Movies and shows open a detail view; Play is its button.
+							...(VIDEO_TYPES.has(item.type) ? { openLabel: 'Play', detail: { ratingKey: String(item.ratingKey) } } : {}),
 							meta: { kind: 'media', tmdb: tmdbKey(item) }
 						};
 					})
@@ -167,7 +171,53 @@ const adapter = {
 		}
 	},
 
+	async details({ config, params, fetch }) {
+		const ratingKey = params?.ratingKey;
+		if (typeof ratingKey !== 'string' || !DIGITS.test(ratingKey)) return null;
+		const base = stripTrailingSlash(config.url);
+		const res = await fetch(`${base}/library/metadata/${ratingKey}`, {
+			headers: plexHeaders({ ...config, token: config.accessToken })
+		});
+		if (!res.ok) throw new Error(`Plex returned ${res.status}`);
+		const item = (await res.json())?.MediaContainer?.Metadata?.[0];
+		if (!VIDEO_TYPES.has(item?.type)) return null;
+		const minutes = item.duration ? Math.round(item.duration / 60000) : 0;
+		const seasons = item.type === 'show' && item.childCount ? `${item.childCount} season${item.childCount === 1 ? '' : 's'}` : '';
+		const thumb = THUMB.exec(item.thumb || '');
+		const art = ART.exec(item.art || '');
+		const rating = item.audienceRating || item.rating;
+		return {
+			title: item.title || 'Untitled',
+			facts: [ITEM_TYPES[item.type], item.year && String(item.year), seasons, formatRuntime(minutes)].filter(Boolean),
+			rating: rating ? Math.round(rating * 10) / 10 : null,
+			genres: (item.Genre || []).map((g) => g?.tag).filter(Boolean).slice(0, 4),
+			tagline: item.tagline || '',
+			overview: item.summary || '',
+			thumbnail: thumb ? `/api/integrations/plex/proxy/image/${thumb[1]}/${thumb[2]}` : undefined,
+			backdrop: art ? `/api/integrations/plex/proxy/art/${art[1]}/${art[2]}` : undefined
+		};
+	},
+
 	proxy: {
+		// Background art for the detail view.
+		art: {
+			defaultCacheControl: 'private, max-age=86400',
+			async fetch({ config, params, fetch }) {
+				const [ratingKey, version] = params.path || [];
+				if (params.path?.length !== 2 || !DIGITS.test(ratingKey || '') || !DIGITS.test(version || '')) {
+					return new Response('Invalid image id', { status: 400 });
+				}
+				const qs = new URLSearchParams({
+					url: `/library/metadata/${ratingKey}/art/${version}`,
+					width: '780',
+					height: '439',
+					minSize: '1'
+				});
+				return fetch(`${stripTrailingSlash(config.url)}/photo/:/transcode?${qs}`, {
+					headers: { 'X-Plex-Token': config.accessToken }
+				});
+			}
+		},
 		// Poster / cover for an item, scaled down by Plex's transcoder.
 		image: {
 			defaultCacheControl: 'private, max-age=86400',
@@ -192,6 +242,12 @@ const adapter = {
 
 	widgets: {}
 };
+
+function formatRuntime(minutes) {
+	if (!minutes) return '';
+	const h = Math.floor(minutes / 60);
+	return h ? `${h}h ${minutes % 60}m` : `${minutes}m`;
+}
 
 function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;
