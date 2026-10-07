@@ -109,7 +109,7 @@ Give an app `groups:` to show it only to users in at least one of those OIDC gro
     groups: ["arr"]
 ```
 
-The server drops apps a user can't see before the page reaches the browser, so their URLs never leave the server. Groups come from the provider's `groups` claim (add the `groups` scope; Authentik includes it in `profile`) and are read at login, so a group change applies the next time the user signs in.
+The server drops apps a user can't see before the page reaches the browser, so their tiles and URLs never reach it. This covers the app grid only. Integrations aren't covered by `groups:`: every enabled integration is still listed to every signed-in user, with its URL, and anyone can connect it. With auth disabled everyone is a guest with no groups, so every app with `groups:` disappears. Groups come from the provider's `groups` claim (add the `groups` scope; Authentik includes it in `profile`) and are read at login, so a group change applies the next time the user signs in.
 
 `admin_only: true` and the `admin_groups` / `admin_usernames` settings are gone. An app that still has `admin_only: true` and no `groups` is hidden from everyone, with a warning in the log; replace it with something like `groups: ["admins"]`.
 

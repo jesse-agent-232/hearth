@@ -5,9 +5,9 @@ import { getIntegrationsConfig } from '../config.js';
 // Surfaces:
 //   - searchProviders.cards — searches cards by name across all accessible boards
 //
-// Planka API keys are admin-only — individual users can't create them.
-// The operator provides the shared key via config.yml (default_api_key).
-// Give the Planka app `groups:` in config.yml to show it only to those users.
+// Each user connects with their own Planka API key. Planka only lets admins
+// create keys, so a Planka admin makes one for each user.
+// `groups:` on the Planka app hides its tile, not this integration.
 //
 // Planka has no search API, so we fetch all cards from all boards and
 // filter by name locally. Card counts are typically small (<500).
