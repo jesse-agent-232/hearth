@@ -17,9 +17,8 @@
 // MediaStatus from server/constants/media.ts. A result with no mediaInfo has
 // never been requested.
 const STATUS = { UNKNOWN: 1, PENDING: 2, PROCESSING: 3, PARTIAL: 4, AVAILABLE: 5, BLOCKLISTED: 6, DELETED: 7 };
+// Pending and processing titles show as requested on the poster instead.
 const STATUS_LABEL = {
-	[STATUS.PENDING]: 'Pending',
-	[STATUS.PROCESSING]: 'Requested',
 	[STATUS.PARTIAL]: 'Partly available',
 	[STATUS.AVAILABLE]: 'Available',
 	[STATUS.BLOCKLISTED]: 'Blocklisted'
@@ -145,6 +144,7 @@ const adapter = {
 						const status = r.mediaInfo?.status;
 						const playUrl = (status === STATUS.AVAILABLE || status === STATUS.PARTIAL) && r.mediaInfo?.mediaUrl;
 						const requestable = !r.mediaInfo || status === STATUS.UNKNOWN || status === STATUS.DELETED;
+						const requested = status === STATUS.PENDING || status === STATUS.PROCESSING;
 						return {
 							id: `${r.mediaType}-${r.id}`,
 							title: title || 'Untitled',
@@ -161,6 +161,7 @@ const adapter = {
 							meta: {
 								kind: 'media',
 								status: STATUS_LABEL[status] || '',
+								requested,
 								// Jellyfin and Plex results for the same title fold into this one.
 								tmdb: `${r.mediaType}:${r.id}`,
 								merge: true
@@ -191,9 +192,9 @@ const adapter = {
 				if (!res.ok) {
 					return { ok: false, message: data?.message || `Seerr returned ${res.status}` };
 				}
-				// MediaRequestStatus: 1 pending approval, 2 approved.
-				const approved = data?.status === 2;
-				return { ok: true, message: approved ? 'Requested' : 'Pending' };
+				// Pending approval or already approved, the poster shows it as
+				// requested either way.
+				return { ok: true, message: 'Requested' };
 			}
 		}
 	},

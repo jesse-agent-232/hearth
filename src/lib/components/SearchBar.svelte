@@ -406,8 +406,11 @@
 		actionState = { ...actionState, [key]: { ok: res.ok, message: res.message } };
 	}
 
+	// The poster's button: Request, then a disabled Requested once it's in
+	// (or when Seerr already has a request for the title).
 	function resultAction(key, p, r) {
-		if (!r.action || actionState[key]?.ok) return null;
+		if (actionState[key]?.ok || r.meta?.requested) return { label: 'Requested', done: true };
+		if (!r.action) return null;
 		return {
 			label: r.action.label,
 			busy: !!actionState[key]?.busy,
@@ -418,7 +421,7 @@
 	function resultActions(key, p, r) {
 		const links = r.href ? linkActions(key, r.href, true, r.openLabel || 'Open') : [];
 		const extra = resultAction(key, p, r);
-		return extra ? [...links, extra] : links;
+		return extra?.run ? [...links, extra] : links;
 	}
 
 	function appItem(app) {
@@ -544,7 +547,7 @@
 		}
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '' } }
+				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
@@ -570,7 +573,8 @@
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
-						badge: actionState[key]?.message || r.meta?.status || '',
+						// A failed action reports here; success shows on the button.
+						badge: (actionState[key]?.ok === false && actionState[key].message) || r.meta?.status || '',
 						// A movie or show the user has: a play mark, and a click plays it.
 						play: !!r.meta?.tmdb && (r.openLabel === 'Play' || !r.meta?.merge),
 						request: resultAction(key, p, r),
