@@ -694,7 +694,7 @@
 			for (const s of mediaSections) {
 				const rest = s.items.filter((it) => !it.more && !it.showDetail);
 				// What's left is music (albums, artists, songs): same cards as Navidrome.
-				if (rest.length) Object.assign(s, { layout: 'tracks', items: rest, loading: false, skeleton: 0, error: '' });
+				if (rest.length) Object.assign(s, { layout: 'tracks', items: rest.slice(0, 6), loading: false, skeleton: 0, error: '' });
 				else provSections.splice(provSections.indexOf(s), 1);
 			}
 		}
