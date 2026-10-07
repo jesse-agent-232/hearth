@@ -2028,13 +2028,14 @@ body.search-active .hero-area {
 }
 .launcher-detail-btn:disabled { cursor: default; }
 .launcher-detail-error { font-size: 0.72rem; }
-/* Paragraph-length text reads better in the system sans than the UI mono. */
+/* The app's own font, like the rest of the panel: a system-font stack
+   fell through to the browser default where those fonts aren't installed. */
 .launcher-detail-text {
-	max-width: 68ch;
+	max-width: 72ch;
 	margin: 18px 20px 0;
-	font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-	font-size: 0.86rem;
-	line-height: 1.6;
+	font-family: var(--font-mono);
+	font-size: 0.78rem;
+	line-height: 1.7;
 	color: var(--hero-search-text-strong);
 }
 .launcher-detail-text p { margin: 0 0 10px; }
