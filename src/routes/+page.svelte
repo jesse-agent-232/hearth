@@ -9,6 +9,7 @@
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 	import InstallPrompt from '$lib/components/InstallPrompt.svelte';
+	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
 	import WallpaperBackground from '$lib/components/WallpaperBackground.svelte';
 
 	import DynamicFavicon from '$lib/components/DynamicFavicon.svelte';
@@ -224,6 +225,7 @@
 		<ManageApps bind:open={manageAppsOpen} isAdmin={data.isAdmin} />
 	{/if}
 	<InstallPrompt devMode={data.devMode} ready={onboarded && !passwordGate} />
+	<MiniPlayer />
 
 	<!-- Post-login onboarding (only when auth + onboarding enabled) -->
 	{#if authEnabled && onboardingEnabled && !onboarded && !passwordGate}

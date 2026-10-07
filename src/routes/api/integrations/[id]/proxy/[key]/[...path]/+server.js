@@ -12,20 +12,37 @@ import { withDeadline, describeFetchError } from '$lib/server/integrations/deadl
 // content-type. The browser never sees the integration's credentials —
 // they're loaded from the user's encrypted store and stay server-side.
 //
-// Headers preserved from upstream: content-type, content-length, etag,
+// Headers preserved from upstream: content-type, content-length,
+// content-range, accept-ranges (so audio can be fetched in ranges), etag,
 // last-modified, cache-control. If upstream omits cache-control we fall
 // back to the handler's defaultCacheControl.
 
-// Covers streaming the body too: these are thumbnails, not downloads.
+// Covers streaming the body too: these are thumbnails, not downloads. A
+// `stream` handler (audio) gets it for the response headers only.
 const PROXY_TIMEOUT_MS = 20000;
 
 const PASS_THROUGH_HEADERS = [
 	'content-type',
 	'content-length',
+	'content-range',
+	'accept-ranges',
 	'etag',
 	'last-modified',
 	'cache-control'
 ];
+
+// Aborts if no response arrives in time; `clear` lifts the deadline once the
+// headers are in, and the body then runs until the browser drops it.
+function headersDeadline(fetch, ms, parentSignal) {
+	const ctl = new AbortController();
+	const timer = setTimeout(() => ctl.abort(new DOMException('Timed out', 'TimeoutError')), ms);
+	const signals = parentSignal ? [ctl.signal, parentSignal] : [ctl.signal];
+	return {
+		fetch: (input, init = {}) =>
+			fetch(input, { ...init, signal: AbortSignal.any(init.signal ? [...signals, init.signal] : signals) }),
+		clear: () => clearTimeout(timer)
+	};
+}
 
 export async function GET({ cookies, url, params, request, fetch }) {
 	const user = getSessionUser(cookies, url);
@@ -44,16 +61,21 @@ export async function GET({ cookies, url, params, request, fetch }) {
 
 	const segments = (params.path || '').split('/').filter(Boolean);
 
+	const deadline = handler.stream
+		? headersDeadline(fetch, PROXY_TIMEOUT_MS, request.signal)
+		: { fetch: withDeadline(fetch, PROXY_TIMEOUT_MS, request.signal), clear: () => {} };
 	let upstream;
 	try {
 		upstream = await handler.fetch({
 			config: conn.config,
 			params: { path: segments },
 			request,
-			fetch: withDeadline(fetch, PROXY_TIMEOUT_MS, request.signal)
+			fetch: deadline.fetch
 		});
 	} catch (err) {
 		throw error(502, `Proxy handler failed: ${describeFetchError(err, PROXY_TIMEOUT_MS)}`);
+	} finally {
+		deadline.clear();
 	}
 
 	if (!upstream || typeof upstream.status !== 'number') {

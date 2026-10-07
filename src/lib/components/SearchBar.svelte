@@ -2,6 +2,7 @@
 	import { onMount, getContext, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
+	import { nowPlaying } from '$lib/stores/player.js';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { TOTAL_WALLPAPERS } from '$lib/wallpaper.js';
 	import { resolveIcon } from '$lib/apps.js';
@@ -435,9 +436,11 @@
 	}
 
 	function resultActions(key, p, r) {
-		const links = r.href ? linkActions(key, r.href, true, r.openLabel || 'Open') : [];
+		// A song plays in the corner player; opening it in its app moves to second.
+		const play = r.meta?.track ? [{ label: 'Play', run: () => { nowPlaying.set({ ...r.meta.track }); finish(); } }] : [];
+		const links = r.href ? linkActions(key, r.href, true, play.length ? `Open in ${p.integrationName}` : r.openLabel || 'Open') : [];
 		const extra = resultAction(key, p, r);
-		const all = extra?.run ? [...links, extra] : links;
+		const all = [...play, ...(extra?.run ? [...links, extra] : links)];
 		return r.detail ? [{ label: 'Show details', run: () => openDetail(key, p, r) }, ...all] : all;
 	}
 
