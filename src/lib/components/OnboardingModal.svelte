@@ -318,6 +318,8 @@
 						<!-- 6px dot, ~18x30px tap area via ::before -->
 						<button
 							class="relative w-1.5 h-1.5 rounded-full border-none cursor-pointer transition-all duration-200 p-0 before:absolute before:content-[''] before:-inset-x-1.5 before:-inset-y-3 {i === slide ? 'dot-active w-4' : 'dot-inactive'}"
+							aria-label="Slide {i + 1} of {totalSlides}"
+							aria-current={i === slide ? 'step' : undefined}
 							onclick={() => slide = i}
 						></button>
 					{/each}

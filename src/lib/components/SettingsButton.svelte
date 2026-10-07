@@ -98,9 +98,9 @@
 	</button>
 
 	{#if open}
-		<div class="fixed inset-0 z-[70]" onclick={() => open = false}>
-			<div class="absolute inset-0 bg-surface-overlay"></div>
-			<div class="absolute bottom-0 left-0 right-0 glass-card menu-surface rounded-t-2xl animate-slide-up pb-[env(safe-area-inset-bottom,0px)]" onclick={(e) => e.stopPropagation()}>
+		<div class="fixed inset-0 z-[70]">
+			<button class="absolute inset-0 w-full bg-surface-overlay border-none cursor-default" tabindex="-1" aria-label="Close menu" onclick={() => open = false}></button>
+			<div class="absolute bottom-0 left-0 right-0 glass-card menu-surface rounded-t-2xl animate-slide-up pb-[env(safe-area-inset-bottom,0px)]">
 				<div class="w-10 h-1 bg-content-dim/30 rounded-full mx-auto mt-3 mb-2"></div>
 				{#if showAuth && name}
 					<div class="px-5 py-2 text-[0.75rem] text-content-muted font-mono uppercase tracking-[0.12em]">{name}</div>

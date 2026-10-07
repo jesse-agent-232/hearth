@@ -884,8 +884,8 @@
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
 	{@const guide = setupGuides[guideApp.name]}
-	<div use:portal use:dialog={{ label: `${guideApp.name} setup` }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4" onclick={() => (guideApp = null)}>
-		<div class="glass-card rounded-2xl w-full max-w-[400px] overflow-hidden animate-modal-enter shadow-theme relative" onclick={(e) => e.stopPropagation()}>
+	<div use:portal use:dialog={{ label: `${guideApp.name} setup`, onclose: () => (guideApp = null) }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4">
+		<div class="glass-card rounded-2xl w-full max-w-[400px] overflow-hidden animate-modal-enter shadow-theme relative">
 			<!-- Header: app icon on its dashboard tile + close -->
 			<div class="px-6 pt-5 pb-4 border-b border-border-card relative">
 				<button
