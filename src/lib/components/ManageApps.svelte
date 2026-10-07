@@ -1,5 +1,6 @@
 <script>
 	import { dialog } from '$lib/actions/dialog.js';
+	import { portal } from '$lib/actions/portal.js';
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { buildAppsFromConfig } from '$lib/apps.js';
@@ -137,11 +138,6 @@
 		if (!snapshot) return;
 		prefs.update(p => ({ ...p, ...snapshot }));
 		loadFromPrefs();
-	}
-
-	function portal(node) {
-		document.body.appendChild(node);
-		return { destroy() { if (node.parentNode) node.parentNode.removeChild(node); } };
 	}
 
 	const iconStyles = [
