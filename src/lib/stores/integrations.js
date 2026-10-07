@@ -76,6 +76,8 @@ function createIntegrationsStore() {
 					: it
 			)
 		}));
+		// Disconnecting Jellyfin also disconnects a Seerr linked through it.
+		load({ force: true });
 	}
 
 	async function test(integrationId, config) {
