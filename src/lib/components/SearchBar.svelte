@@ -607,8 +607,8 @@
 		const sourceOf = (p, r) => {
 			const name = (r.meta?.merge && r.meta.playOn) || p.integrationName;
 			const it = $integrationsStore.integrations.find((i) => i.name.toLowerCase() === name.toLowerCase());
-			const icon = resolveIcon(it?.icon || p.integrationIcon).colored;
-			return icon ? { name: it?.name || name, icon } : null;
+			const icon = resolveIcon(it?.icon || p.integrationIcon);
+			return icon.colored ? { name: it?.name || name, icon: icon.mono || icon.colored, fallback: icon.colored } : null;
 		};
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
