@@ -1,6 +1,9 @@
 # Holm Dashboard Configuration
-# Copy this to config.yml and customize for your setup.
-# Secrets use ${ENV_VAR} syntax — substituted at load time from environment variables.
+# Copy this to config.yml and customize for your setup. Holm reads it from
+# CONFIG_PATH. Every key is listed in docs/configuration.md#reference.
+# Secrets use ${ENV_VAR} syntax, substituted at load time from environment
+# variables. An unset or empty variable stops Holm from starting.
+# Most settings reload on save; auth.oidc and database need a restart.
 
 # ── Branding ─────────────────────────────────────────────────
 branding:
@@ -25,11 +28,7 @@ auth:
     client_secret: "${OIDC_CLIENT_SECRET}"    # Environment variable
     scopes: "openid profile groups"            # "groups" is needed for apps with groups: (Authentik sends it in profile)
     redirect_base: "https://dash.example.com" # Your dashboard's public URL
-    # Endpoints are auto-discovered from .well-known/openid-configuration.
-    # Override only if your provider uses non-standard paths:
-    # authorization_endpoint: "/api/oidc/authorization"
-    # token_endpoint: "/api/oidc/token"
-    # userinfo_endpoint: "/api/oidc/userinfo"
+    # Endpoints are discovered from the issuer's .well-known/openid-configuration.
   password_change_url: null                   # If set, shows "Change password" in settings menu
   registration:
     enabled: false
@@ -47,7 +46,8 @@ database:
 # When enabled, authenticated users get a Configure panel to:
 #   - Toggle app visibility, reorder apps, add bookmarks
 #   - Switch icon style (Colored / White / Grayed)
-# When disabled, the dashboard shows a static grid from config — no user settings.
+# When disabled (the default if this block is missing), there is no Configure
+# panel: the dashboard shows a fixed grid from config, with no user settings.
 customization:
   enabled: true
 
@@ -55,9 +55,8 @@ customization:
 # Flat list of apps the operator wants to expose. Holm surfaces each app as
 # its own widget tile — there are no operator-defined categories anymore. Users
 # arrange tiles on a per-user grid via the dashboard's edit mode. The legacy
-# "category + items" shape is silently flattened with a one-time warning, so
-# existing configs keep loading, but writing new configs in that shape is
-# discouraged.
+# "category + items" shape is silently flattened, so existing configs keep
+# loading, but writing new configs in that shape is discouraged.
 #
 # Per-app fields:
 #   id              Stable identifier — used in user prefs, do not change once shipped.
@@ -72,8 +71,7 @@ customization:
 #                   apply at the user's next login.
 #   default_visible Whether the app is auto-placed on a fresh user's surface. Default true.
 #                   Users can still add/remove from the catalog at any time.
-#   tags            Optional list of strings. Reserved for the All-apps tag-filter UI;
-#                   setting them now is forward-compatible — no filter ships in this release.
+#   tags            Optional list of strings, shown (up to three) on the app's search result.
 #   app_store       Optional: { ios, android } links for onboarding.
 #   browser_extension  Optional URL for onboarding.
 #   setup_guide     Optional first-run walkthrough.
@@ -172,10 +170,15 @@ search:
 # then connect to it (paste credentials, hit Test) on a per-account basis;
 # credentials are encrypted at rest with HOLM_SECRET_KEY.
 #
+# Set default_url on every integration: it pins the server URL for all users.
+# Without it, a user can point the integration at any http(s) host Holm can
+# reach, inside your network too, and Holm logs a warning at startup.
+#
 # ── Master encryption key ─────────────────────────────────
 # Per-user integration credentials are encrypted at rest with AES-256-GCM.
 # Resolution order:
 #   1. HOLM_SECRET_KEY env var  — 32 bytes hex or base64. RECOMMENDED for prod.
+#      Set but malformed stops Holm from starting. It also signs sessions.
 #   2. .integrations-key next to the SQLite DB — auto-generated on first boot, chmod 0600.
 #
 # Threat model: with the file fallback, the key sits next to the SQLite DB.
@@ -188,13 +191,14 @@ search:
 #
 integrations:
   immich:
-    enabled: true                             # Omit or set false to hide entirely
+    enabled: true                             # false hides it, as does leaving the block out; a block without enabled is on
     name: "Photos"                            # Optional — overrides adapter's default display name
     shortcut: "photos"                        # Optional — !<shortcut> in the search bar scopes results to this integration (adapter default shown)
-    default_url: "https://photos.example.com" # Optional — pre-fills & locks the URL field for users
+    default_url: "https://photos.example.com" # Pins the server URL for every user (checked on the server)
+    # tip: "Find your API key under Account settings"   # Optional hint on the connect card
     surfaces:                                 # Which surfaces this instance is allowed to power
       search: true                            # Photo search in the search bar
-      widgets: false                          # Reserved — widget rendering ships in a follow-up
+      widgets: false                          # Only Navidrome has a widget (its player) so far
   paperless:
     enabled: true
     name: "Paperless"
@@ -213,6 +217,7 @@ integrations:
     enabled: true
     name: "Planka"
     default_url: "https://planka.example.com"
+    # cache_ttl: 300                          # Seconds Planka cards are cached per user (default 300)
     surfaces:
       search: true
       widgets: false
@@ -268,9 +273,7 @@ integrations:
 
 # ── Wallpapers ──────────────────────────────────────────────
 wallpapers:
-  enabled: true
-  source: "gitlab"                            # "gitlab" = built-in DT wallpapers
-  count: 326
+  enabled: true                               # 326 wallpapers from DistroTube's set, fetched through Holm
 
 # ── Weather Widget ──────────────────────────────────────────
 weather:
@@ -343,15 +346,6 @@ privacy:
         - "View, export, or delete your data anytime"
         - "Contact the server operator for questions"
 
-# ── Tips (shown for first 7 days after login) ───────────────
-tips:
-  enabled: true
-  max_days: 7
-  # items:                                    # If empty, auto-derived from apps with setup_guide
-  #   - id: vault
-  #     text: "Set up Vault to store all your passwords securely"
-  #     icon: "si:bitwarden"
-  #     app: "Vault"
-  #   - id: 2fa
-  #     text: "Enable 2FA on your account for extra security"
-  #     icon: "di:authelia"
+# ── Tips ────────────────────────────────────────────────────
+# First-week tips are switched off in this release; a tips: block is accepted
+# and ignored.
