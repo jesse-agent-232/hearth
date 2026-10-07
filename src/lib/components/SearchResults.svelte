@@ -246,6 +246,7 @@
 											</button>
 										{/if}
 										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
+										{#if item.source}<span class="launcher-source" title={item.source.name}><img src={item.source.icon} alt={item.source.name} /></span>{/if}
 									</div>
 									{#if section.layout === 'poster'}
 										<div class="launcher-poster-title">{item.title}</div>

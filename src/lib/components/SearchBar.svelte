@@ -600,6 +600,14 @@
 				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName });
 			}
 		}
+		// The app a poster opens in, for the small icon on its corner: the
+		// media server for a title the user has, otherwise the provider.
+		const sourceOf = (p, r) => {
+			const name = (r.meta?.merge && r.meta.playOn) || p.integrationName;
+			const it = $integrationsStore.integrations.find((i) => i.name.toLowerCase() === name.toLowerCase());
+			const icon = resolveIcon(it?.icon || p.integrationIcon).colored;
+			return icon ? { name: it?.name || name, icon } : null;
+		};
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
 				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name } }
@@ -644,6 +652,7 @@
 						request: resultAction(key, p, r),
 						showDetail: r.detail ? () => openDetail(key, p, r) : null,
 						tmdb: r.meta?.tmdb,
+						source: layout === 'poster' ? sourceOf(p, r) : null,
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',
 						actions: resultActions(key, p, r)
