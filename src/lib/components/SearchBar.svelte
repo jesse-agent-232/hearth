@@ -608,7 +608,13 @@
 			const name = (r.meta?.merge && r.meta.playOn) || p.integrationName;
 			const it = $integrationsStore.integrations.find((i) => i.name.toLowerCase() === name.toLowerCase());
 			const icon = resolveIcon(it?.icon || p.integrationIcon);
-			return icon.colored ? { name: it?.name || name, icon: icon.mono || icon.colored, fallback: icon.colored } : null;
+			if (!icon.colored) return null;
+			// Follows the icon style picked for the apps: colour, or the flat
+			// mark in white or grey.
+			const style = $prefs.iconStyle || 'colored';
+			return style === 'colored'
+				? { name: it?.name || name, icon: icon.colored, style }
+				: { name: it?.name || name, icon: icon.mono || icon.colored, fallback: icon.colored, style };
 		};
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)

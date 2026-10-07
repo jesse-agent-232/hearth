@@ -55,8 +55,9 @@
 		e.currentTarget.style.display = 'none';
 	}
 
-	// The source icon is the app's flat mark; an app without one shows its
-	// colour icon as a silhouette (same white filter), and a failed one hides.
+	// In the white and grey styles the source icon is the app's flat mark; an
+	// app without one shows its colour icon as a silhouette (same filter). A
+	// failed icon hides.
 	function sourceIconFailed(e, fallback) {
 		const img = e.currentTarget;
 		if (fallback && img.getAttribute('src') !== fallback) img.src = fallback;
@@ -254,7 +255,7 @@
 											</button>
 										{/if}
 										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
-										{#if item.source}<span class="launcher-source" title={item.source.name}><img src={item.source.icon} alt={item.source.name} onerror={(e) => sourceIconFailed(e, item.source.fallback)} /></span>{/if}
+										{#if item.source}<span class="launcher-source is-{item.source.style}" title={item.source.name}><img src={item.source.icon} alt={item.source.name} onerror={(e) => sourceIconFailed(e, item.source.fallback)} /></span>{/if}
 									</div>
 									{#if section.layout === 'poster'}
 										<div class="launcher-poster-title">{item.title}</div>
