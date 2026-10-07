@@ -89,6 +89,8 @@ export async function autoConnect(username, fetch, fresh = {}) {
  * it can't tell, all of `linkedTo`.
  */
 const VIA_TTL_MS = 10 * 60 * 1000;
+// A Seerr that didn't answer is asked again sooner, and not on every load.
+const VIA_RETRY_MS = 60 * 1000;
 const viaCache = new Map();
 
 export async function linkedVia(adapter, operator, fetch) {
@@ -101,14 +103,16 @@ export async function linkedVia(adapter, operator, fetch) {
 	}
 	if (!config.url) return adapter.linkedTo;
 	const hit = viaCache.get(adapter.id);
-	if (hit && hit.url === config.url && hit.at > Date.now() - VIA_TTL_MS) return hit.ids;
-	let ids = adapter.linkedTo;
+	if (hit && hit.url === config.url && hit.at > Date.now() - hit.ttl) return hit.ids;
+	let ids = null;
 	try {
 		ids = await adapter.linkedVia({ config, fetch });
-		viaCache.set(adapter.id, { url: config.url, at: Date.now(), ids });
 	} catch {
-		/* unreachable: keep the general wording, ask again next time */
+		/* unreachable: keep the general wording */
 	}
+	const known = Array.isArray(ids);
+	if (!known) ids = adapter.linkedTo;
+	viaCache.set(adapter.id, { url: config.url, at: Date.now(), ids, ttl: known ? VIA_TTL_MS : VIA_RETRY_MS });
 	return ids;
 }
 

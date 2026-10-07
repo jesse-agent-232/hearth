@@ -291,7 +291,7 @@
 		<div class="flex-1 min-w-0">
 			<span class="text-[0.8rem] text-content font-medium">{integration.name}</span>
 			{#if signedInAs && !expanded}
-				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}{linkNote ? ` · ${linkNote.toLowerCase()}` : ''}</span>
+				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}{linkNote ? ` · ${linkNote[0].toLowerCase()}${linkNote.slice(1)}` : ''}</span>
 			{:else if linkNote}
 				<span class="block text-[0.7rem] text-content-dim truncate">{linkNote}</span>
 			{/if}
