@@ -65,7 +65,8 @@
 		const it = id && $integrationsStore.integrations.find((i) => i.id === id);
 		return it ? { name: it.name, icon: resolveIcon(it.icon) } : null;
 	});
-	// The full wording shows when the card is open; closed, the chip says it.
+	// Shown on an unconnected card, and when a card is open; a closed,
+	// connected one lets the link chip say it.
 	const linkNote = $derived.by(() => {
 		if (connected) {
 			const via = VIA[integration.userState?.config?.via];
@@ -298,7 +299,7 @@
 			<span class="text-[0.8rem] text-content font-medium">{integration.name}</span>
 			{#if signedInAs && !expanded}
 				<span class="block text-[0.7rem] text-content-dim truncate">Signed in as {signedInAs}</span>
-			{:else if linkNote && expanded}
+			{:else if linkNote && (expanded || !connected)}
 				<span class="block text-[0.7rem] text-content-dim truncate">{linkNote}</span>
 			{/if}
 		</div>
