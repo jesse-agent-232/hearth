@@ -5,10 +5,10 @@ import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection, upsertConnection } from '$lib/server/integrations/store.js';
 import { redactConfig } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
-import { autoConnect } from '$lib/server/integrations/linked.js';
+import { autoConnect, adapterContext } from '$lib/server/integrations/linked.js';
 
 // POST /api/integrations/:id/signin
-//   { action: 'start', config: { url } }  → { flowId, code }
+//   { action: 'start', config: { url } }  → { flowId, code } | { status: 'done', ... }
 //   { action: 'poll',  flowId }           → { status: 'pending' | 'done' | 'error', ... }
 //
 // Drives an adapter's `signIn` (e.g. Jellyfin Quick Connect). The adapter's
@@ -17,6 +17,7 @@ import { autoConnect } from '$lib/server/integrations/linked.js';
 // lands, the connection is saved here, so the token never does either.
 
 const STEP_TIMEOUT_MS = 8000;
+const AUTO_CONNECT_TIMEOUT_MS = 5000;
 const FLOW_TTL_MS = 10 * 60 * 1000; // Jellyfin drops an unapproved code after 10 min
 const MAX_FLOWS_PER_USER = 3;
 
@@ -60,6 +61,18 @@ export async function POST({ cookies, url, request, params, fetch }) {
 		const mine = [...flows].filter(([, f]) => f.username === user.username);
 		for (const [id] of mine.slice(0, Math.max(0, mine.length - MAX_FLOWS_PER_USER + 1))) flows.delete(id);
 
+		// An adapter that signs in through a linked account (Seerr through
+		// Jellyfin or Plex) does that first, so reconnecting needs no code.
+		if (adapter.connectFromLinked) {
+			const { linked } = await adapterContext(user.username, adapter, null, config);
+			if (Object.keys(linked).length) {
+				const connected = await adapter
+					.connectFromLinked({ config, linked, fetch: stepFetch })
+					.catch(() => null);
+				if (connected) return json(await saveSignIn(user.username, adapter, connected));
+			}
+		}
+
 		try {
 			const res = await adapter.signIn.start({ config, fetch: stepFetch });
 			if (!res || 'error' in res) return json({ error: res?.error || 'Sign-in failed to start' }, { status: 502 });
@@ -95,19 +108,21 @@ export async function POST({ cookies, url, request, params, fetch }) {
 		flows.delete(body.flowId);
 		if (res?.status !== 'done') return json({ status: 'error', error: res?.error || 'Sign-in failed' });
 
-		const config = { ...flow.config, ...res.config };
-		const existing = await getConnection(user.username, adapter.id);
-		const surfaces = existing?.connected ? existing.surfaces : { search: true };
-		await upsertConnection(user.username, adapter.id, { config, surfaces });
-		// One sign-in can connect others too (Jellyfin → Seerr).
-		await autoConnect(user.username, stepFetch).catch(() => {});
-		return json({
-			status: 'done',
-			userState: { connected: true, config: redactConfig(adapter, config), surfaces }
-		});
+		const saved = await saveSignIn(user.username, adapter, { ...flow.config, ...res.config });
+		// One sign-in can connect others too (Jellyfin → Seerr). Its own
+		// deadline: whatever the poll left over may be too little.
+		await autoConnect(user.username, withDeadline(fetch, AUTO_CONNECT_TIMEOUT_MS)).catch(() => {});
+		return json(saved);
 	}
 
 	return json({ error: 'Unknown action' }, { status: 400 });
+}
+
+async function saveSignIn(username, adapter, config) {
+	const existing = await getConnection(username, adapter.id);
+	const surfaces = existing?.connected ? existing.surfaces : { search: true };
+	await upsertConnection(username, adapter.id, { config, surfaces });
+	return { status: 'done', userState: { connected: true, config: redactConfig(adapter, config), surfaces } };
 }
 
 // Only the user-editable fields come from the browser; hidden ones (tokens,

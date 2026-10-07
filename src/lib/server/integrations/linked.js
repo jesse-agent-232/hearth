@@ -12,9 +12,14 @@ import { getConnection, upsertConnection } from './store.js';
 const RETRY_AFTER_MS = 10 * 60 * 1000;
 const failedAt = new Map();
 
-/** Configs of the connected integrations an adapter is linked to, by id. */
-export async function linkedConfigs(username, adapter) {
+/**
+ * Configs of the connected integrations an adapter is linked to, by id.
+ * Empty unless the adapter points at the operator's own server: a user-typed
+ * URL never gets to sign in with the user's Jellyfin or Plex account.
+ */
+export async function linkedConfigs(username, adapter, config) {
 	const out = {};
+	if (!matchesOperator(adapter, config)) return out;
 	for (const id of adapter.linkedTo || []) {
 		const conn = await getConnection(username, id);
 		if (conn?.connected) out[id] = conn.config;
@@ -26,10 +31,10 @@ export async function linkedConfigs(username, adapter) {
  * The extra context adapter calls get: linked configs, and a way to save a
  * renewed config (e.g. a fresh session) without touching the user's surfaces.
  */
-export async function adapterContext(username, adapter, conn) {
+export async function adapterContext(username, adapter, conn, config = conn?.config) {
 	if (!adapter.linkedTo) return {};
 	return {
-		linked: await linkedConfigs(username, adapter),
+		linked: await linkedConfigs(username, adapter, config),
 		saveConfig: (config) => upsertConnection(username, adapter.id, { config, surfaces: conn?.surfaces || { search: true } })
 	};
 }
@@ -53,7 +58,7 @@ export async function autoConnect(username, fetch) {
 			}
 		}
 		if (!config.url) continue;
-		const linked = await linkedConfigs(username, adapter);
+		const linked = await linkedConfigs(username, adapter, config);
 		if (!Object.keys(linked).length) continue;
 
 		try {
@@ -68,4 +73,20 @@ export async function autoConnect(username, fetch) {
 		}
 		failedAt.set(key, Date.now());
 	}
+}
+
+// True when every field the operator sets a default for still has that value.
+function matchesOperator(adapter, config) {
+	const operator = getRegistry().find((e) => e.adapter.id === adapter.id)?.operator;
+	const fields = (adapter.configSchema || []).filter((f) => f.fromOperatorDefault);
+	if (!fields.length) return false;
+	return fields.every((f) => {
+		const want = operator?.[f.fromOperatorDefault];
+		return want && sameValue(config?.[f.key], String(want));
+	});
+}
+
+function sameValue(a, b) {
+	const norm = (v) => String(v || '').trim().replace(/\/+$/, '');
+	return !!a && norm(a) === norm(b);
 }

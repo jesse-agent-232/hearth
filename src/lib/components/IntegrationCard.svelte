@@ -67,6 +67,8 @@
 		try {
 			const res = await integrationsStore.signIn(integration.id, { action: 'start', config: formConfig });
 			if (seq !== flowSeq) return;
+			// Signed in straight away through a linked account; no code.
+			if (res.status === 'done') return signedIn();
 			signFlow = { flowId: res.flowId, code: res.code, link: res.link };
 			schedulePoll(seq);
 		} catch (err) {
@@ -74,6 +76,13 @@
 		} finally {
 			signStarting = false;
 		}
+	}
+
+	function signedIn() {
+		formConfig = seedConfig();
+		formSurfaces = seedSurfaces();
+		dirty = false;
+		onCollapseRequest();
 	}
 
 	function schedulePoll(seq) {
@@ -85,10 +94,7 @@
 				if (res.status === 'pending') return schedulePoll(seq);
 				signFlow = null;
 				if (res.status === 'done') {
-					formConfig = seedConfig();
-					formSurfaces = seedSurfaces();
-					dirty = false;
-					onCollapseRequest();
+					signedIn();
 				} else {
 					signError = res.status === 'expired' ? 'The code expired — start again' : res.error || 'Sign-in failed';
 				}

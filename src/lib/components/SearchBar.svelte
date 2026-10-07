@@ -520,16 +520,27 @@
 
 		// Results from connected apps, one section each. A result marked
 		// `merge` (Seerr) stands for its title, so other providers' results for
-		// the same TMDB id are dropped rather than shown twice.
+		// the same TMDB id are dropped rather than shown twice. The media
+		// server is the authority on what the user has: when it returned the
+		// title, the merged row plays from there and offers no Request.
 		const merged = new Set();
+		const owned = new Map();
 		for (const p of scopedProviders) {
 			for (const r of providerResults[p.providerId]?.results || []) {
-				if (r.meta?.merge && r.meta?.tmdb) merged.add(r.meta.tmdb);
+				if (!r.meta?.tmdb) continue;
+				if (r.meta.merge) merged.add(r.meta.tmdb);
+				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, r.href);
 			}
 		}
+		const fromMediaServer = (r) =>
+			r.meta?.merge && owned.has(r.meta.tmdb)
+				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '' } }
+				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
-			const results = (data.results || []).filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb));
+			const results = (data.results || [])
+				.filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb))
+				.map(fromMediaServer);
 			const kind = results[0]?.meta?.kind || 'other';
 			const layout = kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list';
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
