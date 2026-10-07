@@ -181,24 +181,30 @@
 											<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 										{/if}
 										<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
+										{#if item.badge}<span class="launcher-badge">{item.badge}</span>{/if}
+									</div>
+									{#if section.layout === 'poster'}
+										<div class="launcher-poster-title">{item.title}</div>
+										{#if item.subtitle}<div class="launcher-poster-sub">{item.subtitle}</div>{/if}
 										{#if item.play}
 											<button
 												type="button"
-												class="launcher-play"
-												aria-label="Play {item.title}"
+												class="launcher-get"
 												tabindex="-1"
+												aria-label="Play {item.title}"
 												onmousedown={(e) => e.preventDefault()}
 												onclick={(e) => { e.stopPropagation(); item.play.run(); }}
 											>
 												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
+												Play
 											</button>
-										{/if}
-										{#if item.request}
+										{:else if item.request}
 											<button
 												type="button"
-												class="launcher-request"
+												class="launcher-get is-request"
 												class:is-busy={item.request.busy}
 												class:is-done={item.request.done}
+												tabindex="-1"
 												disabled={item.request.busy || item.request.done}
 												onmousedown={(e) => e.preventDefault()}
 												onclick={(e) => { e.stopPropagation(); item.request.run?.(); }}
@@ -209,11 +215,6 @@
 												{item.request.busy ? `${item.request.label}…` : item.request.label}
 											</button>
 										{/if}
-										{#if item.badge}<span class="launcher-badge" class:is-top={item.request}>{item.badge}</span>{/if}
-									</div>
-									{#if section.layout === 'poster'}
-										<div class="launcher-poster-title">{item.title}</div>
-										{#if item.subtitle}<div class="launcher-poster-sub">{item.subtitle}</div>{/if}
 									{/if}
 								{:else}
 									<span class="launcher-icon">
