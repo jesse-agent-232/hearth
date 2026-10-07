@@ -18,7 +18,7 @@
 // never been requested.
 const STATUS = { UNKNOWN: 1, PENDING: 2, PROCESSING: 3, PARTIAL: 4, AVAILABLE: 5, BLOCKLISTED: 6, DELETED: 7 };
 const STATUS_LABEL = {
-	[STATUS.PENDING]: 'Pending approval',
+	[STATUS.PENDING]: 'Pending',
 	[STATUS.PROCESSING]: 'Requested',
 	[STATUS.PARTIAL]: 'Partly available',
 	[STATUS.AVAILABLE]: 'Available',
@@ -193,7 +193,7 @@ const adapter = {
 				}
 				// MediaRequestStatus: 1 pending approval, 2 approved.
 				const approved = data?.status === 2;
-				return { ok: true, message: approved ? 'Requested' : 'Pending approval' };
+				return { ok: true, message: approved ? 'Requested' : 'Pending' };
 			}
 		}
 	},
