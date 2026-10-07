@@ -4,7 +4,7 @@ Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.
 
 **Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`) makes every request fail with the reason in the log until it's fixed.
 
-**Failing closed.** Holm refuses to start, and logs why, when the config is missing or unreadable, isn't valid YAML, names an unset or empty `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when the database directory isn't writable. It never falls back to defaults with sign-in off.
+**Failing closed.** Holm refuses to start, and logs why, when the config is missing or unreadable, isn't valid YAML, names an unset or empty `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when the data directory isn't writable. That directory holds the database and, without `HOLM_SECRET_KEY`, the key file, so it must be writable even with `database.enabled: false` unless you set `HOLM_SECRET_KEY`. It never falls back to defaults with sign-in off.
 
 ## Environment variables
 
