@@ -68,6 +68,8 @@
 					providerKey: key,
 					label: prov.label,
 					kind: prov.kind,
+					// Navidrome's player widget: songs play in Holm instead of opening.
+					player: it.userState?.surfaces?.widgets === true && (it.availableSurfaces || []).includes('widgets'),
 					searchUrl: it.operatorDefaults?.url || it.userState?.config?.url || null
 				});
 			}
@@ -435,9 +437,16 @@
 		};
 	}
 
+	// A fresh object each time, so picking the playing song again restarts it.
+	function playTrack(track) {
+		nowPlaying.set({ ...track });
+		finish();
+	}
+
 	function resultActions(key, p, r) {
-		// A song plays in the corner player; opening it in its app moves to second.
-		const play = r.meta?.track ? [{ label: 'Play', run: () => { nowPlaying.set({ ...r.meta.track }); finish(); } }] : [];
+		// With the player widget on, a song plays in the corner player and
+		// opening it in its app moves to second.
+		const play = p.player && r.meta?.track ? [{ label: 'Play', run: () => playTrack(r.meta.track) }] : [];
 		const links = r.href ? linkActions(key, r.href, true, play.length ? `Open in ${p.integrationName}` : r.openLabel || 'Open') : [];
 		const extra = resultAction(key, p, r);
 		const all = [...play, ...(extra?.run ? [...links, extra] : links)];
@@ -659,7 +668,9 @@
 						// plays it, while a click elsewhere opens its details.
 						play: r.openLabel === 'Play' && r.href
 							? { run: () => { openUrl(r.href, true); finish(); } }
-							: null,
+							: p.player && r.meta?.track
+								? { run: () => playTrack(r.meta.track) }
+								: null,
 						request: resultAction(key, p, r),
 						showDetail: r.detail ? () => openDetail(key, p, r) : null,
 						tmdb: r.meta?.tmdb,

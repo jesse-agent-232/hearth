@@ -48,6 +48,7 @@
 
 	const connected = $derived(!!integration.userState?.connected);
 	const hasSearch = $derived((integration.availableSurfaces || []).includes('search'));
+	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets') && integration.widgets?.length > 0);
 	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
 	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
 	// Seerr signs in through Jellyfin or Plex: say so on all three cards.
@@ -480,12 +481,29 @@
 							</div>
 						</button>
 					{/if}
-					<div class="flex items-center justify-between py-1 opacity-50" title="Coming in a future release">
-						<span class="text-[0.75rem] text-content-muted">Widgets <span class="text-[0.7rem] text-content-dim">(soon)</span></span>
-						<div class="w-9 h-5 rounded-full bg-surface-toggle-off relative shrink-0">
-							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow translate-x-0.5"></div>
+					{#if hasWidgets}
+						<button
+							class="flex items-center justify-between w-full bg-transparent border-none cursor-pointer text-left py-1 gap-3"
+							role="switch"
+							aria-checked={!!formSurfaces.widgets}
+							onclick={() => toggleSurface('widgets')}
+						>
+							<span class="min-w-0">
+								<span class="block text-[0.75rem] text-content-muted">{integration.widgets.map((w) => w.label).join(', ')}</span>
+								<span class="block text-[0.7rem] text-content-dim">{integration.widgets.map((w) => w.description).filter(Boolean).join(' · ')}</span>
+							</span>
+							<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {formSurfaces.widgets ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
+								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {formSurfaces.widgets ? 'translate-x-4' : 'translate-x-0.5'}"></div>
+							</div>
+						</button>
+					{:else}
+						<div class="flex items-center justify-between py-1 opacity-50" title="Coming in a future release">
+							<span class="text-[0.75rem] text-content-muted">Widgets <span class="text-[0.7rem] text-content-dim">(soon)</span></span>
+							<div class="w-9 h-5 rounded-full bg-surface-toggle-off relative shrink-0">
+								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow translate-x-0.5"></div>
+							</div>
 						</div>
-					</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
