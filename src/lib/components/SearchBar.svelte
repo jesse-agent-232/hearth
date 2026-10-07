@@ -860,11 +860,11 @@
 				query = '';
 				return;
 			}
-			// In the detail view Enter requests, or opens what can't be requested.
+			// In the detail view Enter opens the title. Requesting only ever
+			// happens on a click of the Request button.
 			if (detail) {
 				e.preventDefault();
-				if (detail.request?.run) { if (!detail.request.busy) detail.request.run(); }
-				else detail.open?.run();
+				if (!e.repeat) detail.open?.run();
 				return;
 			}
 			const item = flatItems.find((i) => i.key === selectedKey);

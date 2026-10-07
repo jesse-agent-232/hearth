@@ -249,7 +249,7 @@
 			<span class="launcher-footer-hint">
 				<Keys keys="esc" /> back
 			</span>
-			{@const enter = detail.request?.run ? detail.request : detail.open}
+			{@const enter = detail.open}
 			{#if enter}
 				<button type="button" class="launcher-footer-btn" onmousedown={(e) => e.preventDefault()} onclick={() => enter.run()}>
 					{enter.label} <Keys keys="↵" />
