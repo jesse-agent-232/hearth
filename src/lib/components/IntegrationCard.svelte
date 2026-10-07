@@ -51,8 +51,9 @@
 	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets') && integration.widgets?.length > 0);
 	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
 	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
-	// Seerr signs in through Jellyfin or Plex: say so on all three cards.
-	const VIA = { jellyfin: 'Jellyfin', plex: 'Plex' };
+	// Seerr can sign in through Jellyfin or Plex: config.via names the app,
+	// or the integration itself for a direct sign-in.
+	const viaId = $derived(connected && integration.userState?.config?.via !== integration.id ? integration.userState?.config?.via || null : null);
 	const nameOf = (id) => $integrationsStore.integrations.find((i) => i.id === id)?.name;
 	// "Sign in with Plex" once Holm knows which app this Seerr uses.
 	const signLabel = $derived(
@@ -62,16 +63,14 @@
 	);
 	// The app a connected Seerr signed in through, for the link chip.
 	const linkedThrough = $derived.by(() => {
-		const id = connected && VIA[integration.userState?.config?.via] ? integration.userState.config.via : null;
-		const it = id && $integrationsStore.integrations.find((i) => i.id === id);
+		const it = viaId && $integrationsStore.integrations.find((i) => i.id === viaId);
 		return it ? { name: it.name, icon: resolveIcon(it.icon) } : null;
 	});
 	// Shown on an unconnected card, and when a card is open; a closed,
 	// connected one lets the link chip say it.
 	const linkNote = $derived.by(() => {
 		if (connected) {
-			const via = VIA[integration.userState?.config?.via];
-			return via ? `Connected through ${nameOf(integration.userState.config.via) || via}` : '';
+			return viaId ? `Connected through ${nameOf(viaId) || viaId[0].toUpperCase() + viaId.slice(1)}` : '';
 		}
 		// Seerr just connects once Jellyfin or Plex does; no hint needed.
 		if (integration.linkedTo) return '';

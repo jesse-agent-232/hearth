@@ -132,6 +132,7 @@ const adapter = {
 		media: {
 			label: 'Media',
 			kind: 'media',
+			shelf: 'video',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.accessToken) return { results: [] };

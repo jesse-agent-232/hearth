@@ -68,6 +68,8 @@
 					providerKey: key,
 					label: prov.label,
 					kind: prov.kind,
+					layout: prov.layout,
+					shelf: prov.shelf,
 					// Navidrome's player widget: songs play in Holm instead of opening.
 					player: it.userState?.surfaces?.widgets === true && (it.availableSurfaces || []).includes('widgets'),
 					searchUrl: it.operatorDefaults?.url || it.userState?.config?.url || null
@@ -638,12 +640,12 @@
 				.filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb))
 				.map(fromMediaServer);
 			const kind = results[0]?.meta?.kind || p.kind || 'other';
-			// Navidrome is all music: compact cover-and-title cards, not posters.
-			const layout = kind === 'photo' ? 'grid' : p.integrationId === 'navidrome' ? 'tracks' : kind === 'media' ? 'poster' : 'list';
+			const layout = p.layout || (kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list');
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
 			return {
 				id: `p-${p.providerId}`,
 				integrationId: p.integrationId,
+				shelf: p.shelf,
 				label: p.label,
 				layout,
 				kind,
@@ -689,13 +691,12 @@
 				}] : [])]
 			};
 		});
-		// Jellyfin, Plex and Seerr share one "Movies & TV" shelf: what you
-		// can play, then what you can request, then what's already requested.
-		// Only movies and shows move (they're the ones with a detail view);
-		// albums and artists stay in their provider's row. Navidrome and
-		// Audiobookshelf are media too, but never movies or TV.
-		const VIDEO = new Set(['jellyfin', 'plex', 'seerr']);
-		const mediaSections = provSections.filter((s) => VIDEO.has(s.integrationId));
+		// Providers with shelf: 'video' (Jellyfin, Plex, Seerr) share one
+		// "Movies & TV" shelf: what you can play, then what you can request,
+		// then what's already requested. Only movies and shows move (they're
+		// the ones with a detail view); albums and artists stay in their
+		// provider's row.
+		const mediaSections = provSections.filter((s) => s.shelf === 'video');
 		if (mediaSections.length > 1) {
 			const isTitle = (it) => !it.more && it.showDetail;
 			const seen = new Set();

@@ -156,6 +156,7 @@ const adapter = {
 		requests: {
 			label: 'Seerr',
 			kind: 'media',
+			shelf: 'video',
 			mode: 'inline',
 			async query(ctx) {
 				const { config, query, limit } = ctx;

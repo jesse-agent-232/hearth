@@ -50,6 +50,8 @@
  * @property {string} label                     Shown in the provider switcher dropdown
  * @property {'inline'|'redirect'} mode         inline = dropdown of results; redirect = form-submit to an external URL
  * @property {'media'|'photo'} [kind]          Results are posters or photos, so the bar shows placeholders of that shape while the first ones load
+ * @property {'poster'|'tracks'|'grid'|'list'} [layout]  Overrides the layout picked from kind: media = poster, photo = grid, else list
+ * @property {'video'} [shelf]                Movies and shows from every provider with shelf 'video' share one "Movies & TV" row
  * @property {(ctx: AdapterContext & { query: string, limit: number }) => Promise<{ results: SearchResultItem[] }>} query
  */
 

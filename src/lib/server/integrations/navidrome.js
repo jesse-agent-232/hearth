@@ -94,6 +94,8 @@ const adapter = {
 		music: {
 			label: 'Music',
 			kind: 'media',
+			// All music: compact cover-and-title cards, not posters.
+			layout: 'tracks',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
 				if (!config?.url || !config?.token) return { results: [] };

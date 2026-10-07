@@ -74,7 +74,7 @@ After connecting, results from the app appear in the search bar. Typing `!<short
 
 ## Adding an integration
 
-An integration is one file plus one import line. The settings form, API routes and search bar discover it on their own. (Movies and shows from Jellyfin, Plex and Seerr get the shared poster row; that grouping lives in the search bar.)
+An integration is one file plus one import line. The settings form, API routes and search bar discover it on their own.
 
 1. Create `src/lib/server/integrations/<id>.js` that default-exports an adapter object:
 
@@ -101,6 +101,9 @@ An integration is one file plus one import line. The settings form, API routes a
    		items: {
    			label: 'Items',
    			mode: 'inline',
+   			kind: 'media',           // optional: 'media' = posters, 'photo' = a grid
+   			// layout: 'tracks',     // optional: override the layout picked from kind
+   			// shelf: 'video',       // optional: join the shared "Movies & TV" row
    			async query({ config, query, limit, fetch }) {
    				return { results: [{ id, title, subtitle, thumbnail, href }] };
    			}
