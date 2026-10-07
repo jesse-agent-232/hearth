@@ -41,6 +41,7 @@
  * @property {string} [meta.takenAt]
  * @property {string} [meta.status]             Short badge, e.g. 'Available'
  * @property {string} [meta.tmdb]               '<movie|tv>:<tmdb id>' — identifies the title across providers
+ * @property {{ title: string, artist?: string, duration?: number, stream: string, cover?: string }} [meta.track]  A song Holm can play itself: `stream` is a proxy URL for the audio, `duration` in seconds
  * @property {boolean} [meta.merge]             This result stands for its title: other providers' results with the same `meta.tmdb` are hidden
  */
 
@@ -81,6 +82,7 @@
  *
  * @property {(ctx: { config: object, params: Record<string,string>, request: Request, fetch: typeof fetch }) => Promise<Response>} fetch
  * @property {string} [defaultCacheControl]                    Cache-Control header to set if upstream doesn't provide one
+ * @property {boolean} [stream]                                 Audio or video: the deadline covers the response headers only, so the body can play for as long as it lasts
  */
 
 /**
