@@ -91,7 +91,7 @@
  *
  * @property {string} label                                    Button text, e.g. 'Sign in with Quick Connect'
  * @property {string} [help]                                   Markdown shown next to the code
- * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<{ code: string, link?: string, state: object } | { error: string }>} start  `link` is where the user enters the code
+ * @property {(ctx: { config: object, linked?: Record<string, object>, fetch: typeof fetch }) => Promise<{ code: string, link?: string, state: object } | { error: string }>} start  `link` is where the user enters the code
  * @property {(ctx: { config: object, state: object, fetch: typeof fetch }) => Promise<{ status: 'pending' } | { status: 'done', config: object } | { status: 'error', error: string }>} poll
  */
 

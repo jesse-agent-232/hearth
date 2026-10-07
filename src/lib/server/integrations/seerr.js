@@ -69,11 +69,19 @@ const adapter = {
 		label: 'Sign in',
 		help: 'In Jellyfin, open your **profile → Quick Connect** and enter this code. Connecting Jellyfin or Plex in Holm signs you in to Seerr automatically.',
 
-		async start({ config, fetch }) {
+		async start({ config, linked, fetch }) {
 			const base = stripTrailingSlash(config.url);
 			const type = await serverType(base, fetch);
 			if (type == null) return { error: 'That URL didn’t answer like a Seerr server' };
-			if (type !== SERVER.JELLYFIN) return { error: 'This Seerr uses Plex — connect Plex in Holm and Seerr connects with it' };
+			if (type !== SERVER.JELLYFIN) {
+				// The route already tried the linked Plex token; Seerr only takes
+				// the Plex server owner's.
+				return {
+					error: linked?.plex
+						? 'Your Plex account can’t sign in to this Seerr — ask the admin to add you in Seerr'
+						: 'This Seerr uses Plex — connect Plex in Holm and Seerr connects with it'
+				};
+			}
 			const res = await fetch(`${base}/api/v1/auth/jellyfin/quickconnect/initiate`, { method: 'POST', headers: JSON_HEADERS });
 			if (!res.ok) return { error: `Couldn’t start Quick Connect (${res.status})` };
 			const data = await res.json();

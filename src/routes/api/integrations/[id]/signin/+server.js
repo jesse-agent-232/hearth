@@ -63,18 +63,20 @@ export async function POST({ cookies, url, request, params, fetch }) {
 
 		// An adapter that signs in through a linked account (Seerr through
 		// Jellyfin or Plex) does that first, so reconnecting needs no code.
+		// Its own deadline, so a slow attempt leaves the code fallback its full 8 s.
+		let linked = {};
 		if (adapter.connectFromLinked) {
-			const { linked } = await adapterContext(user.username, adapter, null, config);
+			({ linked } = await adapterContext(user.username, adapter, null, config));
 			if (Object.keys(linked).length) {
 				const connected = await adapter
-					.connectFromLinked({ config, linked, fetch: stepFetch })
+					.connectFromLinked({ config, linked, fetch: withDeadline(fetch, STEP_TIMEOUT_MS) })
 					.catch(() => null);
 				if (connected) return json(await saveSignIn(user.username, adapter, connected));
 			}
 		}
 
 		try {
-			const res = await adapter.signIn.start({ config, fetch: stepFetch });
+			const res = await adapter.signIn.start({ config, linked, fetch: stepFetch });
 			if (!res || 'error' in res) return json({ error: res?.error || 'Sign-in failed to start' }, { status: 502 });
 			const flowId = randomUUID();
 			flows.set(flowId, {
