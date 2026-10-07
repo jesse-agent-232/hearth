@@ -3,7 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
-import { isProxiedMedia } from '$lib/server/integrations/proxyMedia.js';
+import { isProxiedMedia, isOpaque } from '$lib/server/integrations/proxyMedia.js';
 
 // GET /api/integrations/:id/proxy/:key/*
 //
@@ -99,6 +99,7 @@ export async function GET({ cookies, url, params, request, fetch }) {
 		const v = upstream.headers.get(name);
 		if (v) headers.set(name, v);
 	}
+	if (isOpaque(upstream.headers.get('content-type'))) headers.set('content-disposition', 'attachment');
 	if (!headers.has('cache-control') && handler.defaultCacheControl) {
 		headers.set('cache-control', handler.defaultCacheControl);
 	}

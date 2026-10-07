@@ -5,16 +5,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isProxiedMedia } from '../../src/lib/server/integrations/proxyMedia.js';
+import { isProxiedMedia, isOpaque } from '../../src/lib/server/integrations/proxyMedia.js';
 import nextcloud from '../../src/lib/server/integrations/nextcloud.js';
 
 test('only images and audio are proxied', () => {
-	for (const t of ['image/jpeg', 'image/webp', 'IMAGE/PNG', 'audio/mpeg', 'audio/flac; charset=binary']) {
+	for (const t of ['image/jpeg', 'image/webp', 'IMAGE/PNG', 'audio/mpeg', 'audio/flac; charset=binary', 'application/octet-stream']) {
 		assert.equal(isProxiedMedia(t), true, t);
 	}
 	for (const t of ['text/html', 'text/html; charset=utf-8', 'application/json', 'application/javascript', '', null]) {
 		assert.equal(isProxiedMedia(t), false, String(t));
 	}
+});
+
+test('octet-stream is the only type served as a download', () => {
+	assert.equal(isOpaque('application/octet-stream'), true);
+	assert.equal(isOpaque('audio/flac'), false);
+	assert.equal(isOpaque('image/png'), false);
 });
 
 function thumbnail(config, upstreamUrl) {
