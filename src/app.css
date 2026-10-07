@@ -1759,7 +1759,8 @@ body.search-active .hero-area {
 	text-overflow: ellipsis;
 }
 /* Media posters: a play mark on what the user has, and a Request button
-   that appears on hover (always, on touch) for what they don't. */
+   along the bottom that appears on hover (always, on touch) for what they
+   don't. */
 .launcher-play {
 	position: absolute;
 	top: 50%;
@@ -1786,12 +1787,12 @@ body.search-active .hero-area {
 }
 .launcher-request {
 	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	padding: 5px 11px;
+	left: 6px;
+	right: 6px;
+	bottom: 6px;
+	padding: 5px 6px;
 	border: none;
-	border-radius: 999px;
+	border-radius: var(--radius-sm, 6px);
 	background: var(--accent, #f5b942);
 	color: #09090b;
 	font-size: 0.68rem;

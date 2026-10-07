@@ -76,7 +76,8 @@ export async function POST({ cookies, url, request, params, fetch }) {
 		}
 
 		try {
-			const res = await adapter.signIn.start({ config, linked, fetch: stepFetch });
+			// A fresh deadline: stepFetch's clock started before the linked attempt.
+			const res = await adapter.signIn.start({ config, linked, fetch: withDeadline(fetch, STEP_TIMEOUT_MS) });
 			if (!res || 'error' in res) return json({ error: res?.error || 'Sign-in failed to start' }, { status: 502 });
 			const flowId = randomUUID();
 			flows.set(flowId, {

@@ -121,7 +121,7 @@
 												onclick={(e) => { e.stopPropagation(); item.request.run(); }}
 											>{item.request.busy ? `${item.request.label}…` : item.request.label}</button>
 										{/if}
-										{#if item.badge && !item.request?.busy}<span class="launcher-badge">{item.badge}</span>{/if}
+										{#if item.badge && !item.request}<span class="launcher-badge">{item.badge}</span>{/if}
 									</div>
 									{#if section.layout === 'poster'}
 										<div class="launcher-poster-title">{item.title}</div>

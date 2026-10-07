@@ -571,8 +571,8 @@
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
 						badge: actionState[key]?.message || r.meta?.status || '',
-						// Something the user has: a play mark, and a click plays it.
-						play: r.openLabel === 'Play' || (r.meta?.kind === 'media' && !r.meta?.merge),
+						// A movie or show the user has: a play mark, and a click plays it.
+						play: !!r.meta?.tmdb && (r.openLabel === 'Play' || !r.meta?.merge),
 						request: resultAction(key, p, r),
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',
