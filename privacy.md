@@ -14,7 +14,7 @@ This dashboard is run by the person who operates this server, on their own hardw
 
 - **Weather.** Your browser sends the place you search for, or your coordinates if you use your location, to Open-Meteo, and to OpenStreetMap's Nominatim to name the place.
 - **Web search.** A query you send to the fallback search engine goes to that engine.
-- **Pictures.** Wallpapers, icons and posters are fetched by the server from public sources (wsrv.nl and GitLab, jsDelivr and Simple Icons, TMDB), not by your browser.
+- **Pictures.** Wallpapers, icons and posters are fetched by the server from public sources (wsrv.nl and GitLab, jsDelivr and Simple Icons, TMDB), not by your browser. The exception is a logo, font or icon the operator links by URL in the server's configuration: your browser loads that from wherever it's hosted.
 
 ## What this dashboard doesn't do
 

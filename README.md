@@ -12,7 +12,7 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 - **Uses the login you already have.** OIDC with Authelia, Authentik, Keycloak, Zitadel or any provider. Give an app `groups:` and only those groups see it.
 - **A launcher, not just a grid.** Type anywhere (or `⌘K` / `Ctrl+K`) to find apps, run commands, and search inside Immich, Paperless, Nextcloud, Jellyfin, Plex, Navidrome, Audiobookshelf, Mealie, Seerr, Planka and Karakeep, each with the user's own login.
 - **Onboarding for non-technical people.** Welcome slides and per-app setup guides with App Store / Play links.
-- **One YAML file.** No admin UI to keep in sync. Apps, branding and most settings reload on save; sign-in and database settings need a restart.
+- **One YAML file.** No admin UI to keep in sync. Apps, branding and most settings reload on save; OIDC, database and key settings need a restart.
 - **Small and private.** A single container (amd64 / arm64) with built-in SQLite, so there's no separate database to run. No telemetry. A few features reach public services; [what leaves the box](#what-leaves-the-box) lists them.
 
 <p>
