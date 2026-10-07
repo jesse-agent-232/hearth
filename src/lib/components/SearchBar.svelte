@@ -614,6 +614,7 @@
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
 			return {
 				id: `p-${p.providerId}`,
+				integrationId: p.integrationId,
 				label: p.label,
 				layout,
 				kind,
@@ -655,6 +656,30 @@
 				}] : [])]
 			};
 		});
+		// Jellyfin, Plex and Seerr share one "Movies & TV" shelf: what you
+		// can play first, then what you can request, each title once.
+		// Navidrome and Audiobookshelf are media too, but not movies or TV.
+		const VIDEO = new Set(['jellyfin', 'plex', 'seerr']);
+		const mediaSections = provSections.filter((s) => VIDEO.has(s.integrationId));
+		if (mediaSections.length > 1) {
+			const items = mediaSections.flatMap((s) => s.items.filter((it) => !it.more));
+			const shelf = {
+				id: 'p-media',
+				label: 'Movies & TV',
+				layout: 'poster',
+				kind: 'media',
+				loading: mediaSections.some((s) => s.loading),
+				skeleton: items.length ? 0 : Math.max(...mediaSections.map((s) => s.skeleton)),
+				error: mediaSections.filter((s) => s.error).map((s) => `${s.label}: ${s.error}`).join(' · '),
+				items: [
+					...items.filter((it) => it.play),
+					...items.filter((it) => !it.play),
+					...mediaSections.flatMap((s) => s.items.filter((it) => it.more))
+				]
+			};
+			provSections.splice(provSections.indexOf(mediaSections[0]), 0, shelf);
+			for (const s of mediaSections) provSections.splice(provSections.indexOf(s), 1);
+		}
 		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
 		out.push(...provSections);
 
