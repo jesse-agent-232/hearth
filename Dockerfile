@@ -17,12 +17,16 @@ COPY --from=build /app/package.json .
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/static ./static
 COPY config.example.yml config.demo.yml ./
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && chown node:node /app/data
 
 ENV CONFIG_PATH=/app/config.yml
 ENV DATABASE_PATH=/app/data/holm.db
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
+
+# The app needs to write only to the data volume. A bind-mounted data
+# directory from an older, root-run release needs chown -R 1000:1000 once.
+USER node
 
 CMD ["node", "build"]
