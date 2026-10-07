@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from 'crypto';
 import { dev } from '$app/environment';
 import { getAuth } from '$lib/server/config.js';
+import { userFromSession } from '$lib/server/sessionUser.js';
 
 // Session signing key — derived from OIDC client secret or random per-process
 let _signingKey = null;
@@ -58,22 +59,8 @@ export function getSessionUser(cookies, url) {
 		};
 	}
 
-	// Always use the signed session cookie for username/groups (auth decisions)
-	const session = cookies.get('session');
-	const s = verifySession(session);
-	let name = s?.name;
-	let username = s?.username;
-	let groups = Array.isArray(s?.groups) ? s.groups : [];
-
-	// One-time auth cookies override display name only (not username/groups)
-	const authName = cookies.get('auth_name');
-	if (authName) name = authName;
-
-	// Auth disabled — treat as guest
-	if (!authConfig.enabled && !name) {
-		return { name: 'Guest', username: 'guest', groups: [] };
-	}
-
-	if (!name) return null;
-	return { name, username, groups };
+	return userFromSession(verifySession(cookies.get('session')), {
+		authName: cookies.get('auth_name'),
+		authEnabled: !!authConfig.enabled
+	});
 }
