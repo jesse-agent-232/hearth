@@ -64,7 +64,9 @@ const adapter = {
 	},
 
 	signIn: {
-		label: 'Sign in with Quick Connect',
+		// The route tries connectFromLinked first, so with Jellyfin or Plex
+		// connected this signs in without showing a code.
+		label: 'Sign in',
 		help: 'In Jellyfin, open your **profile → Quick Connect** and enter this code. Connecting Jellyfin or Plex in Holm signs you in to Seerr automatically.',
 
 		async start({ config, fetch }) {
@@ -287,10 +289,24 @@ async function seerrFetch(ctx, path, init = {}) {
 	// A 403 is also "not allowed"; only renew when the session itself is gone.
 	const me = await fetch(`${base}/api/v1/auth/me`, { headers: sessionHeaders(config) });
 	if (me.ok) return res;
-	const renewed = config.via !== 'seerr' && (await sessionFromLinked(config, ctx.linked, fetch));
+	const renewed = config.via !== 'seerr' && (await renewOnce(config, ctx.linked, fetch));
 	if (!renewed) throw new Error('Seerr session ended — sign in again in Settings → Integrations');
 	await ctx.saveConfig?.(renewed);
 	return call(renewed);
+}
+
+// While a session is expired every keystroke's search would renew it, each
+// approving another Quick Connect code. Calls holding the same lapsed session
+// share one renewal instead.
+const renewing = new Map();
+
+function renewOnce(config, linked, fetch) {
+	let p = renewing.get(config.session);
+	if (!p) {
+		p = sessionFromLinked(config, linked, fetch).finally(() => renewing.delete(config.session));
+		renewing.set(config.session, p);
+	}
+	return p;
 }
 
 // Same header shape as the Jellyfin adapter's, for the Quick Connect approval.
