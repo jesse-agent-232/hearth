@@ -210,18 +210,12 @@
 	--tile-bg-default: rgba(255, 255, 255, 0.06);
 }
 
-/* Auto theme, resting bar: over a wallpaper the dark bar sinks into the
-   photo, so at rest it is white like the tiles and reads as the primary
-   control. Once the palette opens it takes the dark tokens above, so the
-   joined bar + results match the tile context menu. */
+/* Auto theme, resting bar: the same frosted glass as the open palette,
+   a touch brighter in tint and edge so it still reads as the primary
+   control over the wallpaper's dark scrim. */
 body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-form {
-	--hero-search-bg: #ffffff;
-	--hero-search-border: rgba(0, 0, 0, 0.10);
-	--hero-search-text: #18181b;
-	--hero-search-text-dim: rgba(0, 0, 0, 0.45);
-	--hero-search-text-strong: rgba(0, 0, 0, 0.85);
-	--hero-search-chip-bg: rgba(0, 0, 0, 0.05);
-	--hero-search-chip-border: rgba(0, 0, 0, 0.10);
+	--hero-search-bg: rgba(255, 255, 255, 0.12);
+	--hero-search-border: rgba(255, 255, 255, 0.22);
 }
 
 
