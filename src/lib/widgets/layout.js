@@ -36,13 +36,11 @@ export function clamp(instance, registryEntry, cols = COLS) {
 
 // Build a fresh default layout: one app tile per self-hosted, default-visible
 // catalog app. Bookmarks and external services stay opt-in via the picker.
-// admin_only filtered for non-admins.
-export function defaultWidgetLayout(catalog, registry, { isAdmin = false } = {}) {
+export function defaultWidgetLayout(catalog, registry) {
 	const entry = registry[WIDGET_TYPES.APP];
 	if (!entry || !Array.isArray(catalog)) return [];
 	const out = [];
 	for (const app of catalog) {
-		if (app.adminOnly && !isAdmin) continue;
 		if (app.default === false) continue;
 		if (!app.selfHosted) continue;
 		const inst = newInstance(WIDGET_TYPES.APP, entry, { appId: app.id });
@@ -55,7 +53,7 @@ export function defaultWidgetLayout(catalog, registry, { isAdmin = false } = {})
 // Convert legacy prefs (categoryLayout / visibleApps / customApps) into a
 // widgetLayout of one app tile per appId. Categories are dropped on the floor;
 // positions reflow. Deterministic for a given input shape.
-export function synthesizeFromLegacyPrefs(legacyPrefs, catalog, registry, { isAdmin = false } = {}) {
+export function synthesizeFromLegacyPrefs(legacyPrefs, catalog, registry) {
 	const entry = registry[WIDGET_TYPES.APP];
 	if (!entry) return [];
 
@@ -84,7 +82,7 @@ export function synthesizeFromLegacyPrefs(legacyPrefs, catalog, registry, { isAd
 	}
 
 	// 3. customApps (per-user bookmarks) — IDs are like 'custom-<ts>'. They're
-	// part of the catalog already (the page builds catalog from config + admin
+	// part of the catalog already (the page builds catalog from config
 	// + customApps), so referencing by id works the same as any other app.
 	const customApps = Array.isArray(legacyPrefs?.customApps) ? legacyPrefs.customApps : [];
 	for (const ca of customApps) {
@@ -95,13 +93,12 @@ export function synthesizeFromLegacyPrefs(legacyPrefs, catalog, registry, { isAd
 	}
 
 	// Filter against catalog (skip ids the user no longer has access to,
-	// e.g. an admin_only app for a non-admin viewer).
+	// e.g. an app in a group the viewer isn't in).
 	const byId = new Map((catalog || []).map((a) => [a.id, a]));
 	const out = [];
 	for (const id of orderedIds) {
 		const app = byId.get(id);
 		if (!app) continue;
-		if (app.adminOnly && !isAdmin) continue;
 		const inst = newInstance(WIDGET_TYPES.APP, entry, { appId: id });
 		const slot = findFreeSlot(out, inst.w, inst.h);
 		out.push({ ...inst, x: slot.x, y: slot.y });
@@ -110,7 +107,7 @@ export function synthesizeFromLegacyPrefs(legacyPrefs, catalog, registry, { isAd
 	// If migration produced nothing (legacy prefs were empty / all stale),
 	// fall back to defaults so the user lands on a populated surface.
 	if (out.length === 0) {
-		return defaultWidgetLayout(catalog, registry, { isAdmin });
+		return defaultWidgetLayout(catalog, registry);
 	}
 	return out;
 }

@@ -48,13 +48,13 @@ function verifySession(cookie) {
 export function getSessionUser(cookies, url) {
 	const authConfig = getAuth();
 
-	// Dev mode: ?user=xxx simulates auth
+	// Dev mode: ?user=xxx simulates auth, and ?groups=a,b its groups
 	if (dev && url?.searchParams?.has('user')) {
 		const devUser = url.searchParams.get('user');
 		return {
 			name: devUser,
 			username: devUser,
-			groups: authConfig.admin_groups || []
+			groups: (url.searchParams.get('groups') || '').split(',').filter(Boolean)
 		};
 	}
 
@@ -76,14 +76,4 @@ export function getSessionUser(cookies, url) {
 
 	if (!name) return null;
 	return { name, username, groups };
-}
-
-export function isAdmin(user, authConfig) {
-	if (!user) return false;
-	const adminUsers = authConfig?.admin_usernames || [];
-	const adminGroups = authConfig?.admin_groups || [];
-	return (
-		adminUsers.includes(user.username) ||
-		(user.groups || []).some(g => adminGroups.includes(g))
-	);
 }

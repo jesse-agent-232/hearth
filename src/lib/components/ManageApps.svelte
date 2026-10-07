@@ -14,7 +14,7 @@
 	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
 	const defaultAppIds = catalogApps.filter((a) => a.default !== false).map((a) => a.id);
 
-	let { open = $bindable(false), isAdmin = false } = $props();
+	let { open = $bindable(false) } = $props();
 
 	let activeTab = $state('appearance');
 	let visibleSet = $state(new Set($prefs.visibleApps || defaultAppIds));

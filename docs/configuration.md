@@ -30,8 +30,6 @@ auth:
     client_secret: "${OIDC_CLIENT_SECRET}"
     scopes: "openid profile groups"
     redirect_base: "https://dash.example.com"
-  admin_usernames: ["admin"]
-  admin_groups: ["admins"]
   password_change_url: null
   registration:
     enabled: false
@@ -52,7 +50,7 @@ Any OIDC provider works. Two details trip people up:
 3. Redirect URI (strict): `https://dash.example.com/auth/callback`, the same host as `redirect_base`.
    On Authentik 2026.5 or later, also add `https://dash.example.com/` as a redirect URI of type **Logout**, so Log out returns to Holm. Without it, users end up on Authentik's login page. Earlier versions always do that.
 4. **Invalidation flow: `default-invalidation-flow`.** The default `default-provider-invalidation-flow` logs the user out of Holm only and offers an Authentik logout as an extra button. On a shared device you want the full logout.
-5. Leave the default scopes (`openid`, `email`, `profile`). Authentik sends `groups` as part of `profile`, so `admin_groups` works without a `groups` scope.
+5. Leave the default scopes (`openid`, `email`, `profile`). Authentik sends `groups` as part of `profile`, so app `groups:` work without a `groups` scope.
 
 ```yaml
 auth:
@@ -63,7 +61,6 @@ auth:
     client_secret: "${OIDC_CLIENT_SECRET}"
     scopes: "openid profile email"
     redirect_base: "https://dash.example.com"
-  admin_groups: ["authentik Admins"]   # or a group you create for Holm admins
 ```
 
 ## Database
@@ -76,7 +73,7 @@ database:
 
 SQLite is built in (one file in the data volume), so there's no separate database to run. When enabled, user preferences persist there and sync across devices.
 
-When disabled, Holm runs browser-only: preferences live in each browser's localStorage, apps admins add with **+** aren't saved, and integrations are switched off, since they have nowhere to keep credentials.
+When disabled, Holm runs browser-only: preferences live in each browser's localStorage and integrations are switched off, since they have nowhere to keep credentials.
 
 ## Apps
 
@@ -99,6 +96,22 @@ apps:
         - label: "Download"
           desc: "Get the app from your store."
 ```
+
+### Who sees an app
+
+Give an app `groups:` to show it only to users in at least one of those OIDC groups. An app without `groups` is shown to everyone.
+
+```yaml
+  - id: sonarr
+    name: "Sonarr"
+    url: "https://sonarr.example.com"
+    icon: "di:sonarr"
+    groups: ["arr"]
+```
+
+The server drops apps a user can't see before the page reaches the browser, so their URLs never leave the server. Groups come from the provider's `groups` claim (add the `groups` scope; Authentik includes it in `profile`) and are read at login, so a group change applies the next time the user signs in.
+
+`admin_only: true` and the `admin_groups` / `admin_usernames` settings are gone. An app that still has `admin_only: true` and no `groups` is hidden from everyone, with a warning in the log; replace it with something like `groups: ["admins"]`.
 
 Apps are a flat list. The older `category:` / `items:` shape still loads (flattened, with a warning).
 

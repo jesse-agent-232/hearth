@@ -9,7 +9,7 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 ## Why Holm
 
 - **Multi-user from the start.** Every person has their own layout, theme and bookmarks, stored server-side and synced across devices. You curate the catalog; they pick from it.
-- **Uses the login you already have.** OIDC with Authelia, Authentik, Keycloak, Zitadel or any provider. Admins are decided by group or username.
+- **Uses the login you already have.** OIDC with Authelia, Authentik, Keycloak, Zitadel or any provider. Give an app `groups:` and only those groups see it.
 - **A launcher, not just a grid.** Type anywhere (or `⌘K` / `Ctrl+K`) to find apps, run commands, and search inside Immich, Paperless, Nextcloud, Jellyfin, Plex, Navidrome, Audiobookshelf, Mealie, Seerr, Planka and Karakeep, each with the user's own login.
 - **Onboarding for non-technical people.** Welcome slides, per-app setup guides with App Store / Play links, and gentle tips for the first week.
 - **One YAML file, hot-reloaded.** No admin UI to keep in sync, no restart on change.
@@ -86,7 +86,6 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 
 - Per-user app grid, bookmarks, theme (auto / dark / light) and icon style (colored / white / grayed)
 - 326 wallpapers or a daily rotation
-- Admins add apps from a searchable directory of ~90 self-hosted apps
 - Brand tiles, Dashboard Icons and Simple Icons, custom mono icons
 - Launcher: frecency ranking, `!photos`-style scopes, `!settings` / `!theme` / `!wall` commands, `/?q=` and OpenSearch so it can be your browser's search engine
 - Search inside your apps with per-user encrypted credentials ([supported apps](#supported-apps))

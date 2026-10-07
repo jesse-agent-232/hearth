@@ -81,7 +81,7 @@ apps:
         icon: "di:pi-hole"
         tile_color: "#96060C"
         self_hosted: true
-        admin_only: true
+        groups: ["admins"]
         default_visible: true
       - id: tailscale
         name: "Tailscale"
@@ -100,14 +100,14 @@ apps:
         url: "https://adguard.smiths.home"
         icon: "di:adguard-home"
         self_hosted: true
-        admin_only: true
+        groups: ["admins"]
         default_visible: true
       - id: uptime
         name: "Uptime"
         url: "https://status.smiths.home"
         icon: "di:uptime-kuma"
         self_hosted: true
-        admin_only: true
+        groups: ["admins"]
         default_visible: true
 
   - category: "Tools"

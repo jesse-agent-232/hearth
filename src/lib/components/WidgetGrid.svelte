@@ -4,7 +4,6 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { browser } from '$app/environment';
 	import { prefs } from '$lib/stores/prefs.js';
-	import { adminApps as adminAppsStore } from '$lib/stores/adminApps.js';
 	import { buildAppsFromConfig, resolveIcon } from '$lib/apps.js';
 	import AppIcon from '$lib/components/AppIcon.svelte';
 	import { getBrandBgStyle } from '$lib/iconHelpers.js';
@@ -39,7 +38,6 @@
 	}
 
 	let {
-		isAdmin = false,
 		guideApp = $bindable(null),
 		editMode = $bindable(false),
 		searchEnabled = false,
@@ -53,8 +51,8 @@
 	// entry and the modal it opens. Same helper +page.svelte uses for tipApps.
 	const setupGuides = $derived.by(() => buildAppsFromConfig(siteConfig?.apps).setupGuides);
 
-	// Flat catalog: config apps + admin-added apps + per-user custom bookmarks,
-	// admin_only filtered for non-admins. One source of truth used by every
+	// Flat catalog: config apps (already filtered by group on the server) +
+	// per-user custom bookmarks. One source of truth used by every
 	// callsite below — no widget reaches back into config or stores.
 	const configApps = $derived.by(() => {
 		const list = [];
@@ -76,7 +74,6 @@
 					item.brandExplicit
 				),
 				selfHosted: item.self_hosted || false,
-				adminOnly: item.admin_only || false,
 				default: item.default_visible !== false,
 				ios: item.app_store?.ios || null,
 				android: item.app_store?.android || null,
@@ -88,23 +85,6 @@
 		return list;
 	});
 
-	const adminCatalog = $derived.by(() => {
-		const list = $adminAppsStore || [];
-		return list.map((a) => ({
-			id: a.id,
-			name: a.name,
-			url: a.url,
-			icon: resolveIcon(a.icon),
-			selfHosted: a.self_hosted || false,
-			adminOnly: false,
-			default: true,
-			ios: null,
-			android: null,
-			extension: null,
-			subtitle: null,
-			tags: []
-		}));
-	});
 
 	const customCatalog = $derived.by(() => {
 		const list = $prefs.customApps || [];
@@ -114,7 +94,6 @@
 			url: a.url,
 			icon: resolveIcon(a.icon),
 			selfHosted: false,
-			adminOnly: false,
 			default: true,
 			ios: null,
 			android: null,
@@ -128,13 +107,6 @@
 		const out = [];
 		const seen = new Set();
 		for (const a of configApps) {
-			if (a.adminOnly && !isAdmin) continue;
-			if (!seen.has(a.id)) {
-				seen.add(a.id);
-				out.push(a);
-			}
-		}
-		for (const a of adminCatalog) {
 			if (!seen.has(a.id)) {
 				seen.add(a.id);
 				out.push(a);
@@ -170,8 +142,8 @@
 				Array.isArray($prefs.visibleApps) ||
 				($prefs.dashboardView && typeof $prefs.dashboardView === 'string');
 			const synthesized = hasLegacy
-				? synthesizeFromLegacyPrefs($prefs, catalog, registry, { isAdmin })
-				: defaultWidgetLayout(catalog, registry, { isAdmin });
+				? synthesizeFromLegacyPrefs($prefs, catalog, registry)
+				: defaultWidgetLayout(catalog, registry);
 			prefs.update((p) => {
 				const next = { ...p, widgetLayout: synthesized };
 				delete next.categoryLayout;
@@ -296,7 +268,7 @@
 		surfaceUndoTimer = setTimeout(() => (surfaceUndo = null), 8000);
 		prefs.update((p) => ({
 			...p,
-			widgetLayout: defaultWidgetLayout(catalog, registry, { isAdmin })
+			widgetLayout: defaultWidgetLayout(catalog, registry)
 		}));
 	}
 
