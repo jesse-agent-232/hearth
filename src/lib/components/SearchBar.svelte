@@ -580,7 +580,7 @@
 		}
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, detail: undefined, meta: { ...r.meta, status: '', requested: false } }
+				? { ...r, href: owned.get(r.meta.tmdb), openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
@@ -608,8 +608,11 @@
 						kind: r.meta?.kind,
 						// A failed action reports here; success shows on the button.
 						badge: (actionState[key]?.ok === false && actionState[key].message) || r.meta?.status || '',
-						// A movie or show the user has: a play mark, and a click plays it.
-						play: !!r.meta?.tmdb && (r.openLabel === 'Play' || !r.meta?.merge),
+						// A movie or show the user has: the play mark is a button that
+						// plays it, while a click elsewhere opens its details.
+						play: r.openLabel === 'Play' && r.href
+							? { run: () => { openUrl(r.href, true); finish(); } }
+							: null,
 						request: resultAction(key, p, r),
 						tags: r.tags,
 						accessory: layout === 'list' ? p.integrationName : '',

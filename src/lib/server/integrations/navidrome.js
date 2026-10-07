@@ -18,8 +18,8 @@ const API_VERSION = '1.16.1';
 // tracks and buries the album.
 const SONG_SHARE = 0.4;
 
-// Covers render 138 CSS px tall; 3x covers phone screens.
-const COVER_SIZE = 420;
+// Covers render 174 CSS px tall; 3x covers phone screens.
+const COVER_SIZE = 520;
 
 const COVER_ID = /^[A-Za-z0-9_-]+$/;
 

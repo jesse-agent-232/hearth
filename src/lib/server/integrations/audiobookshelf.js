@@ -11,8 +11,8 @@
 // this many, the extra ones are skipped.
 const MAX_LIBRARIES = 6;
 
-// Covers render 138 CSS px tall; 3x covers phone screens.
-const COVER_SIZE = 420;
+// Covers render 174 CSS px tall; 3x covers phone screens.
+const COVER_SIZE = 520;
 
 const ITEM_ID = /^[A-Za-z0-9-]+$/;
 
