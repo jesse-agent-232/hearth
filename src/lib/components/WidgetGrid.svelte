@@ -1,5 +1,4 @@
 <script>
-	import { dialog } from '$lib/actions/dialog.js';
 	import { onMount, untrack, getContext } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { browser } from '$app/environment';
@@ -8,6 +7,9 @@
 	import AppIcon from '$lib/components/AppIcon.svelte';
 	import { getBrandBgStyle } from '$lib/iconHelpers.js';
 	import SearchBar from '$lib/components/SearchBar.svelte';
+	import TileContextMenu from '$lib/components/TileContextMenu.svelte';
+	import SetupGuideModal from '$lib/components/SetupGuideModal.svelte';
+	import AddAppPicker from '$lib/components/AddAppPicker.svelte';
 	import { registry, getRegistryEntry, WIDGET_TYPES } from '$lib/widgets/registry.js';
 	import {
 		defaultWidgetLayout,
@@ -20,22 +22,6 @@
 	} from '$lib/widgets/layout.js';
 	import { POPULAR_APPS } from '$lib/popularApps.js';
 	import { recordOpen } from '$lib/launcher/frecency.js';
-
-	// Move a node to document.body so its position:fixed coords resolve to
-	// the viewport even when an ancestor has a transform/filter (which
-	// otherwise turns that ancestor into the containing block — that's the
-	// bug that drifts the picker off to the corner).
-	function portal(node) {
-		if (typeof document === 'undefined') return;
-		document.body.appendChild(node);
-		return {
-			destroy() {
-				if (node.parentNode === document.body) {
-					document.body.removeChild(node);
-				}
-			}
-		};
-	}
 
 	let {
 		guideApp = $bindable(null),
@@ -216,16 +202,6 @@
 		});
 	}
 
-	let guideUrlCopied = $state(false);
-	let guideUrlCopiedTimer;
-	function copyGuideUrl(url) {
-		navigator.clipboard?.writeText(url).then(() => {
-			guideUrlCopied = true;
-			clearTimeout(guideUrlCopiedTimer);
-			guideUrlCopiedTimer = setTimeout(() => (guideUrlCopied = false), 1500);
-		}).catch(() => {});
-	}
-
 	function placeAppOnSurface(appId) {
 		prefs.update((p) => {
 			const layout = Array.isArray(p.widgetLayout) ? p.widgetLayout : [];
@@ -282,7 +258,6 @@
 	// ── Tile context menu (right-click / long-press) — ported from AppGrid ──
 	let contextApp = $state(null);
 	let contextAnchor = $state(null);
-	let contextMenuEl = $state(null);
 	let longPressTimer = null;
 	// Set when a long-press opened the menu, so the click that follows the
 	// finger lifting doesn't also open the app.
@@ -327,112 +302,9 @@
 		guideApp = app;
 	}
 
-	// Position context menu relative to its anchor tile after render, flipping
-	// to stay inside the viewport.
-	$effect(() => {
-		if (contextMenuEl && contextApp && contextAnchor) {
-			contextMenuEl.style.left = '0px';
-			contextMenuEl.style.top = '0px';
-
-			requestAnimationFrame(() => {
-				if (!contextMenuEl || !contextAnchor) return;
-				const anchorRect = contextAnchor.getBoundingClientRect();
-				const menuRect = contextMenuEl.getBoundingClientRect();
-				const vw = window.innerWidth;
-				const vh = window.innerHeight;
-				const pad = 8;
-
-				// Beside the tile, top edges aligned, so it reads as the tile's menu.
-				let x = anchorRect.right + 6;
-				let y = anchorRect.top;
-
-				if (x + menuRect.width > vw - pad) x = anchorRect.left - menuRect.width - 6;
-				if (x < pad) {
-					// No room either side (phones): below the tile, centred on it.
-					x = Math.min(Math.max(anchorRect.left + anchorRect.width / 2 - menuRect.width / 2, pad), vw - menuRect.width - pad);
-					y = anchorRect.bottom + 6;
-					if (y + menuRect.height > vh - pad) y = anchorRect.top - menuRect.height - 6;
-				}
-				if (y + menuRect.height > vh - pad) y = vh - pad - menuRect.height;
-				if (y < pad) y = pad;
-
-				contextMenuEl.style.left = `${x}px`;
-				contextMenuEl.style.top = `${y}px`;
-				contextMenuEl.style.visibility = 'visible';
-			});
-		}
-	});
-
-	// Dismiss the context menu on outside click, and close the guide modal on Esc.
-	$effect(() => {
-		if (!browser) return;
-		function dismiss(e) {
-			if (contextMenuEl && !contextMenuEl.contains(e.target)) contextApp = null;
-		}
-		function onEsc(e) {
-			if (e.key === 'Escape' && guideApp) {
-				e.preventDefault();
-				guideApp = null;
-			}
-		}
-		window.addEventListener('click', dismiss);
-		window.addEventListener('keydown', onEsc);
-		return () => {
-			window.removeEventListener('click', dismiss);
-			window.removeEventListener('keydown', onEsc);
-		};
-	});
-
 	let searchInput = $state('');
 	let pickerOpen = $state(false);
 	let addBtnEl = $state(null);
-	let pickerEl = $state(null);
-	// Anchor coords for the fixed-positioned picker. Recomputed on open and
-	// on scroll/resize. Picker centers horizontally over the button and drops
-	// below it; if it would overflow the viewport bottom, it flips above.
-	let pickerCoords = $state({ left: 0, top: 0, placement: 'below' });
-
-	function computePickerCoords() {
-		if (!addBtnEl) return;
-		const r = addBtnEl.getBoundingClientRect();
-		const pickerWidth = 220;
-		const pickerHeight = 280;
-		const gap = 8;
-		const margin = 12;
-		// Horizontal: center on button, then clamp into viewport.
-		let left = r.left + r.width / 2 - pickerWidth / 2;
-		left = Math.max(margin, Math.min(left, window.innerWidth - pickerWidth - margin));
-		// Vertical: prefer below; flip above if the bottom would clip.
-		let top = r.bottom + gap;
-		let placement = 'below';
-		if (top + pickerHeight > window.innerHeight - margin) {
-			top = r.top - gap - pickerHeight;
-			placement = 'above';
-			if (top < margin) top = margin;
-		}
-		pickerCoords = { left, top, placement };
-	}
-
-	// Recompute on open + on window resize/scroll. Close on outside click.
-	$effect(() => {
-		if (!browser || !pickerOpen) return;
-		computePickerCoords();
-		function onDoc(e) {
-			const inBtn = addBtnEl?.contains(e.target);
-			const inPicker = pickerEl?.contains(e.target);
-			if (!inBtn && !inPicker) pickerOpen = false;
-		}
-		function onResize() { computePickerCoords(); }
-		document.addEventListener('mousedown', onDoc);
-		window.addEventListener('resize', onResize);
-		window.addEventListener('scroll', onResize, { passive: true });
-		return () => {
-			document.removeEventListener('mousedown', onDoc);
-			window.removeEventListener('resize', onResize);
-			window.removeEventListener('scroll', onResize);
-		};
-	});
-
 	// ── GridStack ──
 	let gridEl = $state(null);
 	let grid = null;
@@ -824,132 +696,19 @@
 
 <!-- Tile context menu (portal to body to escape transform containing block) -->
 {#if contextApp}
-	{@const host = (() => { try { return new URL(contextApp.url).host; } catch { return ''; } })()}
-	<div
-		bind:this={contextMenuEl}
-		use:portal
-		class="tile-menu fixed z-50 glass-card menu-surface rounded-xl shadow-theme w-[240px] animate-context-in"
-		style="visibility: hidden;"
-		role="menu"
-		aria-label="{contextApp.name} options"
-	>
-		<!-- Which app this menu belongs to -->
-		<div class="tile-menu-head">
-			<AppIcon icon={contextApp.icon} name={contextApp.name} size="w-[22px] h-[22px]" wrapSize="w-9 h-9" iconStyle="colored" wrap />
-			<div class="min-w-0">
-				<div class="tile-menu-name">{contextApp.name}</div>
-				{#if host}<div class="tile-menu-host">{host}</div>{/if}
-			</div>
-		</div>
-		<div class="py-1.5">
-			<a href={contextApp.url} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem" onclick={() => { recordAppOpen(contextApp.id); contextApp = null; }}>
-				<svg viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-				Open {contextApp.name}
-			</a>
-			<button type="button" class="tile-menu-item" role="menuitem" onclick={() => { navigator.clipboard?.writeText(contextApp.url).catch(() => {}); contextApp = null; }}>
-				<svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-				Copy link
-			</button>
-			{#if contextApp.ios || contextApp.android || contextApp.extension || setupGuides[contextApp.name]}
-				<div class="tile-menu-sep"></div>
-			{/if}
-			{#if contextApp.ios}
-				<a href={contextApp.ios} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
-					<svg viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/></svg>
-					Get the iOS app
-				</a>
-			{/if}
-			{#if contextApp.android}
-				<a href={contextApp.android} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
-					<svg viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/></svg>
-					Get the Android app
-				</a>
-			{/if}
-			{#if contextApp.extension}
-				<a href={contextApp.extension} target="_blank" rel="noopener noreferrer" class="tile-menu-item" role="menuitem">
-					<svg viewBox="0 0 24 24"><path d="M19.4 13a2.5 2.5 0 0 0 0-5H18V5a1 1 0 0 0-1-1h-3v1.5a2.5 2.5 0 0 1-5 0V4H6a1 1 0 0 0-1 1v3h1.5a2.5 2.5 0 0 1 0 5H5v3a1 1 0 0 0 1 1h3v-1.5a2.5 2.5 0 0 1 5 0V17h3a1 1 0 0 0 1-1v-3Z"/></svg>
-					Browser extension
-				</a>
-			{/if}
-			{#if setupGuides[contextApp.name]}
-				<button type="button" class="tile-menu-item" role="menuitem" onclick={() => openGuide(contextApp)}>
-					<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-					Setup guide
-				</button>
-			{/if}
-		</div>
-	</div>
+	<TileContextMenu
+		app={contextApp}
+		anchor={contextAnchor}
+		hasGuide={!!setupGuides[contextApp.name]}
+		onopen={(app) => recordAppOpen(app.id)}
+		onguide={openGuide}
+		onclose={() => (contextApp = null)}
+	/>
 {/if}
 
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
-	{@const guide = setupGuides[guideApp.name]}
-	<div use:portal use:dialog={{ label: `${guideApp.name} setup`, onclose: () => (guideApp = null) }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4">
-		<div class="glass-card rounded-2xl w-full max-w-[400px] overflow-hidden animate-modal-enter shadow-theme relative">
-			<!-- Header: app icon on its dashboard tile + close -->
-			<div class="px-6 pt-5 pb-4 border-b border-border-card relative">
-				<button
-					class="absolute top-3 right-4 bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
-					onclick={() => (guideApp = null)}
-					aria-label="Close"
-				>&times;</button>
-				<div class="flex items-center gap-3 pr-8">
-					<AppIcon icon={guideApp.icon} name={guideApp.name} size="w-6 h-6" wrapSize="w-10 h-10" {iconStyle} wrap />
-					<div class="min-w-0">
-						<h3 class="text-[1rem] font-semibold text-content m-0 truncate">{guide.title}</h3>
-						<p class="text-[0.75rem] text-content-dim m-0 truncate">{guide.subtitle}</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- Steps -->
-			<div class="px-6 pt-4 pb-3 max-h-[260px] overflow-y-auto">
-				{#each guide.steps as step, i}
-					<div class="flex gap-3 {i < guide.steps.length - 1 ? 'mb-3' : ''}">
-						<div class="flex flex-col items-center">
-							<span class="w-6 h-6 rounded-full bg-surface-card-strong text-[0.7rem] font-semibold text-content-muted flex items-center justify-center shrink-0">{i + 1}</span>
-							{#if i < guide.steps.length - 1}
-								<div class="w-px flex-1 bg-surface-card mt-1.5"></div>
-							{/if}
-						</div>
-						<div class="pb-0.5">
-							<p class="text-[0.82rem] text-content font-medium m-0 leading-6">{step.label}</p>
-							<p class="text-[0.75rem] text-content-dim m-0 leading-snug">{step.desc}</p>
-						</div>
-					</div>
-				{/each}
-			</div>
-
-			<!-- Server URL -->
-			<div class="mx-6 {guideApp.ios || guideApp.android ? 'mb-3' : 'mb-6'} pl-3.5 pr-2 py-2 bg-surface-input border border-border-card rounded-xl flex items-center gap-3">
-				<div class="min-w-0 flex-1">
-					<span class="text-[0.65rem] text-content-dim uppercase tracking-[0.15em]">Server URL</span>
-					<p class="text-[0.85rem] text-content-muted font-mono m-0 mt-0.5 truncate">{guideApp.url}</p>
-				</div>
-				<button
-					type="button"
-					class="shrink-0 bg-transparent border border-border-card rounded-lg px-3 py-1.5 text-[0.75rem] font-mono text-content-muted cursor-pointer hover:text-content hover:bg-surface-card transition-colors"
-					onclick={() => copyGuideUrl(guideApp.url)}
-				>{guideUrlCopied ? 'Copied' : 'Copy'}</button>
-			</div>
-
-			<!-- Actions -->
-			{#if guideApp.ios || guideApp.android}
-			<div class="px-6 pb-6 flex gap-2">
-				{#if guideApp.ios}
-					<a href={guideApp.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] text-[0.8rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
-						<img src="/icons/appstore.svg" alt="" class="w-4 h-4 icon-white" /> App Store
-					</a>
-				{/if}
-				{#if guideApp.android}
-					<a href={guideApp.android} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] text-[0.8rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
-						<img src="/icons/googleplay.svg" alt="" class="w-4 h-4 icon-white" /> Play Store
-					</a>
-				{/if}
-			</div>
-			{/if}
-		</div>
-	</div>
+	<SetupGuideModal app={guideApp} guide={setupGuides[guideApp.name]} {iconStyle} onclose={() => (guideApp = null)} />
 {/if}
 
 {#if customizationEnabled}
@@ -971,68 +730,15 @@
 {/if}
 
 {#if editMode && pickerOpen}
-	<!-- Floating picker, position: fixed in viewport coords. Lives outside the
-	     grid so it's not clipped by tile bounds and doesn't read as part of
-	     any single tile. Coords come from computePickerCoords. -->
-	<div
-		class="add-picker"
-		role="listbox"
-		aria-label="Available apps"
-		bind:this={pickerEl}
-		use:portal
-		style="left: {pickerCoords.left}px; top: {pickerCoords.top}px"
-	>
-		{#if trayApps.length === 0 && popularSuggestions.length === 0}
-			<div class="picker-empty">Everything's on your surface. Click × on a tile to send it back.</div>
-		{:else}
-			{#if trayApps.length > 0}
-				<div class="picker-section-label">Your apps</div>
-				{#each trayApps as app (app.id)}
-					<button
-						type="button"
-						class="picker-item"
-						onclick={() => {
-							placeAppOnSurface(app.id);
-							pickerOpen = false;
-						}}
-					>
-						<div
-							class="picker-icon"
-							style={iconStyle === 'colored' ? getBrandBgStyle(app.icon) : ''}
-						>
-							<AppIcon icon={app.icon} name={app.name} size="w-4 h-4" {iconStyle} />
-						</div>
-						<span class="picker-name">{app.name}</span>
-					</button>
-				{/each}
-			{/if}
-			{#if popularSuggestions.length > 0}
-				{@const popularResolved = popularSuggestions.map((p) => ({
-					...p,
-					resolvedIcon: resolveIcon(p.icon)
-				}))}
-				<div class="picker-section-label">Popular</div>
-				{#each popularResolved as app (app.id)}
-					<button
-						type="button"
-						class="picker-item"
-						onclick={() => {
-							placePopularOnSurface(app);
-							pickerOpen = false;
-						}}
-					>
-						<div
-							class="picker-icon"
-							style={iconStyle === 'colored' ? getBrandBgStyle(app.resolvedIcon) : ''}
-						>
-							<AppIcon icon={app.resolvedIcon} name={app.name} size="w-4 h-4" {iconStyle} />
-						</div>
-						<span class="picker-name">{app.name}</span>
-					</button>
-				{/each}
-			{/if}
-		{/if}
-	</div>
+	<AddAppPicker
+		anchor={addBtnEl}
+		{trayApps}
+		{popularSuggestions}
+		{iconStyle}
+		onplace={(app) => { placeAppOnSurface(app.id); pickerOpen = false; }}
+		onplacepopular={(app) => { placePopularOnSurface(app); pickerOpen = false; }}
+		onclose={() => (pickerOpen = false)}
+	/>
 {/if}
 
 <style>
@@ -1130,78 +836,6 @@
 	.add-btn[aria-expanded='true'] .add-icon {
 		border-style: solid;
 		color: var(--text);
-	}
-
-	/* Picker dropdown — floating, fixed-positioned in viewport coords (left/top
-	   set from JS). Rendered outside the grid so it's not visually nested
-	   inside the + tile. */
-	.add-picker {
-		position: fixed;
-		width: 220px;
-		max-height: 280px;
-		overflow-y: auto;
-		padding: 0.25rem;
-		background: var(--glass-menu-bg);
-		backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--hero-search-border);
-		border-radius: 0.6rem;
-		box-shadow:
-			0 12px 28px -10px rgba(0, 0, 0, 0.45),
-			0 4px 12px -4px rgba(0, 0, 0, 0.18);
-		z-index: 80;
-	}
-	.picker-empty {
-		padding: 0.6rem 0.7rem;
-		text-align: center;
-		font-size: 0.7rem;
-		color: var(--hero-search-text-dim);
-	}
-	.picker-section-label {
-		padding: 0.4rem 0.5rem 0.2rem;
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-		color: var(--hero-search-text-dim);
-	}
-	.picker-section-label:first-child {
-		padding-top: 0.2rem;
-	}
-	.picker-item {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.3rem 0.45rem;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: 0.4rem;
-		color: var(--hero-search-text);
-		font: inherit;
-		font-size: 0.72rem;
-		text-align: left;
-		cursor: pointer;
-		transition: background 150ms var(--ease-standard, ease);
-	}
-	.picker-item:hover {
-		background: var(--hero-search-chip-bg);
-	}
-	.picker-icon {
-		width: 22px;
-		height: 22px;
-		border-radius: 6px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		background: var(--tile-bg-default);
-		flex-shrink: 0;
-	}
-	.picker-name {
-		flex: 1;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.surface-header {

@@ -1,5 +1,6 @@
 <script>
 	import { dialog } from '$lib/actions/dialog.js';
+	import { portal } from '$lib/actions/portal.js';
 	import { getContext } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -11,11 +12,6 @@
 	const privacyHtml = privacyConfig.html || null;
 
 	let { open = $bindable(false), standalone = false } = $props();
-
-	function portal(node) {
-		document.body.appendChild(node);
-		return { destroy() { if (node.parentNode) node.parentNode.removeChild(node); } };
-	}
 
 	// Close on Escape while the modal is open
 	$effect(() => {
