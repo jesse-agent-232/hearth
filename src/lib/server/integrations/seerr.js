@@ -44,6 +44,7 @@ const POSTER_PATH = /^\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/;
 const adapter = {
 	id: 'seerr',
 	name: 'Seerr',
+	category: 'Media',
 	icon: 'di:jellyseerr',
 	shortcut: 'sr',
 	description: 'Media requests — play what is there, request what is not',

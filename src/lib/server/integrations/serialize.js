@@ -15,6 +15,7 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 		icon: icon || adapter.icon || null,
 		shortcut: (shortcut || adapter.shortcut || '').toLowerCase() || null,
 		description: adapter.description,
+		category: adapter.category || 'Other',
 		tip: tip || null,
 		configSchema: (adapter.configSchema || []).map((f) => ({
 			key: f.key,

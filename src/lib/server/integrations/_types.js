@@ -103,6 +103,7 @@
  * @property {string} name                                     Display name
  * @property {string} [icon]                                   Fallback icon — normally resolved from the app with the same id in config.yml
  * @property {string} description                              One-line summary
+ * @property {string} [category]                               Group in Configure → Integrations: Media, Photos, Documents, Productivity, Home
  * @property {ConfigField[]} configSchema                      Fields rendered in the connect form
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<TestResult>} test
  * @property {SignIn} [signIn]                                 Replaces the Test/Connect buttons with a code-approval flow

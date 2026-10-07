@@ -34,6 +34,7 @@ const DIGITS = /^\d+$/;
 const adapter = {
 	id: 'plex',
 	name: 'Plex',
+	category: 'Media',
 	icon: 'di:plex',
 	shortcut: 'plex',
 	description: 'Media server — search movies, shows and music',

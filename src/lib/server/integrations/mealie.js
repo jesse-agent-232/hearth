@@ -12,6 +12,7 @@ const ITEM_ID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{1
 const adapter = {
 	id: 'mealie',
 	name: 'Mealie',
+	category: 'Home',
 	icon: 'di:mealie',
 	shortcut: 'r',
 	description: 'Recipe manager — search your recipes',

@@ -54,6 +54,7 @@ function loadCards(cacheKey, base, config, fetch) {
 const adapter = {
 	id: 'planka',
 	name: 'Planka',
+	category: 'Productivity',
 	icon: 'di:planka',
 	shortcut: 'p',
 	description: 'Kanban boards with card search',

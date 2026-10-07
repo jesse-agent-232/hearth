@@ -44,7 +44,7 @@ The key (`immich`) must match the adapter id. If an app in `apps:` has the same 
 ## Connecting (users)
 
 1. Open **Settings → Integrations**.
-2. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to the right settings page.
+2. Your connected apps are listed first, the rest by category; with more than eight, a filter box narrows the list. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to the right settings page.
 3. Press **Connect**. Holm tests the connection first and only saves credentials that work.
 
 Jellyfin skips the form: Holm shows a code, the user approves it under Quick Connect in Jellyfin, and Holm receives that user's own token.
@@ -79,6 +79,7 @@ An integration is one file plus one import line. The settings form, API routes a
    	name: 'My App',
    	shortcut: 'm',               // default !scope
    	description: 'One-line summary',
+   	category: 'Documents',        // Configure group: Media, Photos, Documents, Productivity, Home
 
    	// Fields rendered in the connect form: url, text or secret
    	configSchema: [
@@ -108,7 +109,7 @@ An integration is one file plus one import line. The settings form, API routes a
    };
    ```
 
-2. Import it in `src/lib/server/integrations/index.js` and add it to `KNOWN_ADAPTERS`.
+2. Add a loader for it to `LOADERS` in `src/lib/server/integrations/index.js`. Holm imports an adapter only when the operator enables it, so unused integrations cost nothing.
 3. Add an example entry under `integrations:` in `config.example.yml`.
 
 The full contract, including `signIn` for device-code flows like Quick Connect, `signOut`, `linkedTo` / `connectFromLinked` for signing in through another integration, `actions` for writes from a search result, `details` for a result's detail view, and `prepareConfig` for swapping a typed secret for a derived one before it is saved, is documented in [`_types.js`](../src/lib/server/integrations/_types.js). [`karakeep.js`](../src/lib/server/integrations/karakeep.js) is a short, complete example.

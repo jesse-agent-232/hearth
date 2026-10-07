@@ -10,6 +10,7 @@
 const adapter = {
 	id: 'immich',
 	name: 'Immich',
+	category: 'Photos',
 	icon: 'di:immich',
 	shortcut: 'photos',
 	description: 'Photo library with smart search',

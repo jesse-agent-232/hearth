@@ -7,6 +7,26 @@
 	let { iconStyle = 'colored' } = $props();
 
 	let expandedId = $state(null);
+	let filter = $state('');
+
+	// What the user has connected comes first; the rest are grouped by
+	// category. Past a handful of integrations a filter box appears.
+	const CATEGORY_ORDER = ['Media', 'Photos', 'Documents', 'Productivity', 'Home', 'Other'];
+	const all = $derived($integrationsStore.integrations);
+	const showFilter = $derived(all.length > 8);
+	const groups = $derived.by(() => {
+		const q = filter.trim().toLowerCase();
+		const match = (it) => !q || [it.name, it.description, it.category].some((t) => (t || '').toLowerCase().includes(q));
+		const shown = all.filter(match);
+		const out = [];
+		const connected = shown.filter((it) => it.userState?.connected);
+		if (connected.length) out.push({ label: 'Connected', items: connected });
+		const rest = shown.filter((it) => !it.userState?.connected);
+		const cats = [...new Set(rest.map((it) => it.category || 'Other'))]
+			.sort((a, b) => (CATEGORY_ORDER.indexOf(a) + 1 || 99) - (CATEGORY_ORDER.indexOf(b) + 1 || 99));
+		for (const c of cats) out.push({ label: c, items: rest.filter((it) => (it.category || 'Other') === c) });
+		return out;
+	});
 
 	onMount(() => {
 		integrationsStore.load();
@@ -36,16 +56,34 @@
 			<code class="text-content-muted">integrations:</code> section to <code class="text-content-muted">config.yml</code>.
 		</div>
 	{:else}
-		<div class="flex flex-col gap-1">
-			{#each $integrationsStore.integrations as integration (integration.id)}
-				<IntegrationCard
-					{integration}
-					{iconStyle}
-					expanded={expandedId === integration.id}
-					onExpandRequest={() => { if (expandedId !== integration.id && !confirmDiscardUnsaved()) return; expandedId = integration.id; }}
-					onCollapseRequest={() => { if (expandedId === integration.id) expandedId = null; }}
-				/>
-			{/each}
-		</div>
+		{#if showFilter}
+			<input
+				type="text"
+				bind:value={filter}
+				placeholder="Filter integrations"
+				aria-label="Filter integrations"
+				class="w-full mb-3 bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill"
+				autocomplete="off"
+				spellcheck="false"
+			/>
+		{/if}
+		{#each groups as group (group.label)}
+			<div class="mb-3">
+				<div class="text-[0.65rem] font-mono font-semibold uppercase tracking-[0.16em] text-content-dim px-1 pb-1">{group.label}</div>
+				<div class="flex flex-col gap-1">
+					{#each group.items as integration (integration.id)}
+						<IntegrationCard
+							{integration}
+							{iconStyle}
+							expanded={expandedId === integration.id}
+							onExpandRequest={() => { if (expandedId !== integration.id && !confirmDiscardUnsaved()) return; expandedId = integration.id; }}
+							onCollapseRequest={() => { if (expandedId === integration.id) expandedId = null; }}
+						/>
+					{/each}
+				</div>
+			</div>
+		{:else}
+			<div class="text-[0.75rem] text-content-dim font-mono px-1 py-2">No integrations match “{filter.trim()}”.</div>
+		{/each}
 	{/if}
 </div>

@@ -27,6 +27,7 @@ const COVER_ID = /^[A-Za-z0-9_-]+$/;
 const adapter = {
 	id: 'navidrome',
 	name: 'Navidrome',
+	category: 'Media',
 	icon: 'di:navidrome',
 	shortcut: 'nd',
 	description: 'Music server — search artists, albums and songs',

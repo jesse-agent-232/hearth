@@ -1,28 +1,42 @@
-// Static integration registry.
+// Integration registry.
 //
-// Adapters are imported eagerly so the framework knows about them at boot.
-// `getRegistry()` returns only the ones the operator enabled in config.yml —
-// an integration that isn't listed (or is listed with enabled: false) is
+// Adapters load lazily: `loadEnabledAdapters()` (run from the server hook
+// before every request) imports only the ones the operator enabled in
+// config.yml, so an install with a few integrations never loads the rest.
+// It picks up an integration enabled by a config reload on the next
+// request. `getRegistry()` returns only the enabled, loaded ones — an
+// integration that isn't listed (or is listed with enabled: false) is
 // invisible to users entirely. This is the operator gate.
 //
-// To add a new integration: drop a new file in this directory, import it
-// here, push it onto KNOWN_ADAPTERS. Done.
+// To add a new integration: drop a new file in this directory and add a
+// loader for it to LOADERS. Done. LOADERS order is the order users see
+// within a category.
 
 import { getIntegrationsConfig, getAppsConfig } from '../config.js';
-import immich from './immich.js';
-import paperless from './paperless.js';
-import nextcloud from './nextcloud.js';
-import planka from './planka.js';
-import karakeep from './karakeep.js';
-import jellyfin from './jellyfin.js';
-import plex from './plex.js';
-import navidrome from './navidrome.js';
-import audiobookshelf from './audiobookshelf.js';
-import mealie from './mealie.js';
-import seerr from './seerr.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr];
-const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
+const LOADERS = {
+	immich: () => import('./immich.js'),
+	paperless: () => import('./paperless.js'),
+	nextcloud: () => import('./nextcloud.js'),
+	planka: () => import('./planka.js'),
+	karakeep: () => import('./karakeep.js'),
+	jellyfin: () => import('./jellyfin.js'),
+	plex: () => import('./plex.js'),
+	navidrome: () => import('./navidrome.js'),
+	audiobookshelf: () => import('./audiobookshelf.js'),
+	mealie: () => import('./mealie.js'),
+	seerr: () => import('./seerr.js')
+};
+const BY_ID = new Map();
+
+/** Import any enabled adapter that isn't loaded yet. Cheap once loaded. */
+export async function loadEnabledAdapters() {
+	const cfg = getIntegrationsConfig() || {};
+	const missing = Object.keys(LOADERS).filter((id) => isEnabled(cfg[id]) && !BY_ID.has(id));
+	if (!missing.length) return;
+	const mods = await Promise.all(missing.map((id) => LOADERS[id]()));
+	missing.forEach((id, i) => BY_ID.set(id, mods[i].default));
+}
 
 function resolveApp(id) {
 	const apps = getAppsConfig();
@@ -45,9 +59,11 @@ function isEnabled(operatorEntry) {
 export function getRegistry() {
 	const cfg = getIntegrationsConfig() || {};
 	const out = [];
-	for (const adapter of KNOWN_ADAPTERS) {
-		const operatorEntry = cfg[adapter.id];
+	for (const id of Object.keys(LOADERS)) {
+		const operatorEntry = cfg[id];
 		if (!isEnabled(operatorEntry)) continue;
+		const adapter = BY_ID.get(id);
+		if (!adapter) continue;
 		const app = resolveApp(adapter.id);
 		out.push({
 			adapter,
