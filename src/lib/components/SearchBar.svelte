@@ -476,9 +476,7 @@
 		thumbnail: detailView.data?.thumbnail || detailView.r.thumbnail,
 		badge: (actionState[detailView.key]?.ok === false && actionState[detailView.key].message) || '',
 		request: resultAction(detailView.key, detailView.p, detailView.r),
-		// Seerr's own page asks for its own sign-in, so a title you can't play
-		// only offers it from the actions panel, not as a button or on Enter.
-		open: detailView.r.href && (detailView.r.openLabel === 'Play' || !detailView.r.meta?.merge)
+		open: detailView.r.href
 			? { label: openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
 			: null
 	});

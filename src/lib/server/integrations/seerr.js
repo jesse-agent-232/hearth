@@ -198,9 +198,7 @@ const adapter = {
 							href: playUrl || `${base}/${r.mediaType}/${r.id}`,
 							// A click opens the detail view; Play (or Request) are its buttons.
 							detail: { mediaType: r.mediaType, mediaId: r.id },
-							// Seerr's own page wants its own sign-in: Holm's session stays
-							// on the server, so it's only offered from the actions panel.
-							openLabel: playUrl ? 'Play' : 'Open in Seerr (asks you to sign in)',
+							openLabel: playUrl ? 'Play' : 'Open in Seerr',
 							action: requestable
 								? { key: 'request', label: 'Request', params: { mediaType: r.mediaType, mediaId: r.id } }
 								: undefined,
