@@ -116,12 +116,18 @@
 												type="button"
 												class="launcher-request"
 												class:is-busy={item.request.busy}
-												disabled={item.request.busy}
+												class:is-done={item.request.done}
+												disabled={item.request.busy || item.request.done}
 												onmousedown={(e) => e.preventDefault()}
-												onclick={(e) => { e.stopPropagation(); item.request.run(); }}
-											>{item.request.busy ? `${item.request.label}…` : item.request.label}</button>
+												onclick={(e) => { e.stopPropagation(); item.request.run?.(); }}
+											>
+												{#if item.request.done}
+													<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+												{/if}
+												{item.request.busy ? `${item.request.label}…` : item.request.label}
+											</button>
 										{/if}
-										{#if item.badge && !item.request}<span class="launcher-badge">{item.badge}</span>{/if}
+										{#if item.badge}<span class="launcher-badge" class:is-top={item.request}>{item.badge}</span>{/if}
 									</div>
 									{#if section.layout === 'poster'}
 										<div class="launcher-poster-title">{item.title}</div>

@@ -1803,11 +1803,27 @@ body.search-active .hero-area {
 	opacity: 0;
 	transition: opacity 0.15s ease;
 }
+.launcher-request {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+}
+.launcher-request svg { width: 12px; height: 12px; flex: none; }
 .launcher-item:hover .launcher-request,
 .launcher-item.is-selected .launcher-request,
 .launcher-request:focus-visible,
 .launcher-request.is-busy { opacity: 1; }
-.launcher-request:disabled { cursor: default; opacity: 0.8; }
+.launcher-request:disabled { cursor: default; }
+.launcher-request.is-busy { opacity: 0.8; }
+/* Already requested: stays visible, greyed like a pressed button. */
+.launcher-request.is-done {
+	opacity: 1;
+	background: rgba(9, 9, 11, 0.78);
+	color: rgba(250, 250, 250, 0.72);
+	box-shadow: inset 0 0 0 1px rgba(250, 250, 250, 0.14);
+}
+.launcher-badge.is-top { top: 5px; bottom: auto; }
 @media (hover: none) {
 	.launcher-request { opacity: 1; }
 }
