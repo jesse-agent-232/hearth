@@ -25,6 +25,11 @@ Search reaches inside the apps people have connected, with their own login: one 
 ![Launcher searching Jellyfin, Paperless and Immich at once](docs/screenshots/integrations.jpg)
 <sub>Mock data. Search-result photos in these screenshots are CC0 from Wikimedia Commons; the <i>Spring</i> poster is by Blender Studio, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</sub>
 
+With Seerr connected, films and shows that aren't on the media server yet can be requested right from the results, as that person. Titles already there play in Jellyfin or Plex.
+
+![Launcher with Seerr: play what's there, request what isn't](docs/screenshots/seerr.jpg)
+<sub>Mock data. Posters are Blender open movies from Wikimedia Commons: <i>Spring</i>, <i>Sprite Fright</i> and <i>Cosmos Laundromat</i> <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; <i>Sintel</i>, <i>Big Buck Bunny</i> and <i>Tears of Steel</i> <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>, © Blender Foundation / Blender Studio.</sub>
+
 Each app can carry a short setup guide: what to install, the steps, and the server URL to copy.
 
 ![Setup guide for Photos](docs/screenshots/setup-guide.jpg)
