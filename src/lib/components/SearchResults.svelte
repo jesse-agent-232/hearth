@@ -6,7 +6,7 @@
 	// the keyboard; this only renders. Focus never leaves the input: the
 	// selected row is announced through aria-activedescendant.
 	//
-	// sections: [{ id, label, layout: 'list'|'grid'|'poster', loading, error, items }]
+	// sections: [{ id, label, layout: 'list'|'grid'|'poster'|'tracks', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, badge?, play?,
 	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
 	let {
@@ -159,12 +159,19 @@
 					{#if section.error}
 						<div class="launcher-error">{section.error}</div>
 					{/if}
-					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : 'launcher-rows'}>
+					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : 'launcher-rows'}>
 						{#each { length: section.skeleton || 0 } as _}
-							<div class="launcher-item is-skeleton {section.layout === 'grid' ? 'is-tile' : 'is-poster'}" aria-hidden="true">
-								<div class="launcher-thumb-wrap"></div>
-								{#if section.layout === 'poster'}<div class="launcher-skeleton-line"></div><div class="launcher-skeleton-line is-short"></div>{/if}
-							</div>
+							{#if section.layout === 'tracks'}
+								<div class="launcher-item is-skeleton is-track" aria-hidden="true">
+									<div class="launcher-icon-box launcher-track-art"></div>
+									<span class="launcher-text"><span class="launcher-skeleton-line"></span><span class="launcher-skeleton-line is-short"></span></span>
+								</div>
+							{:else}
+								<div class="launcher-item is-skeleton {section.layout === 'grid' ? 'is-tile' : 'is-poster'}" aria-hidden="true">
+									<div class="launcher-thumb-wrap"></div>
+									{#if section.layout === 'poster'}<div class="launcher-skeleton-line"></div><div class="launcher-skeleton-line is-short"></div>{/if}
+								</div>
+							{/if}
 						{/each}
 						{#each section.items as item (item.key)}
 							{@const isSel = item.key === selectedKey}
@@ -174,7 +181,7 @@
 								aria-selected={isSel}
 								aria-label={section.layout === 'list' ? undefined : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
 								tabindex="-1"
-								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : 'is-row'}"
+								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : 'is-row'}"
 								class:is-selected={isSel}
 								use:scrollIntoView={isSel}
 								onpointermove={() => { if (!isSel) onselect(item.key); }}
@@ -182,7 +189,23 @@
 								onclick={(e) => onrun(item, e)}
 								onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); onrun(item, e); } }}
 							>
-								{#if item.more && section.layout !== 'list'}
+								{#if section.layout === 'tracks'}
+									<!-- Music: small square cover, title over details. -->
+									<div class="launcher-icon-box launcher-track-art">
+										{#if item.more}
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
+										{:else}
+											<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
+											{#if item.thumbnail}
+												<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
+											{/if}
+										{/if}
+									</div>
+									<span class="launcher-text">
+										<span class="launcher-title">{item.title}</span>
+										{#if item.subtitle}<span class="launcher-subtitle">{item.subtitle}</span>{/if}
+									</span>
+								{:else if item.more && section.layout !== 'list'}
 									<div class="launcher-thumb-wrap launcher-more">{item.title}</div>
 								{:else if section.layout === 'grid' || section.layout === 'poster'}
 									<div class="launcher-thumb-wrap">

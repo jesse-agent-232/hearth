@@ -610,7 +610,8 @@
 				.filter((r) => r.meta?.merge || !merged.has(r.meta?.tmdb))
 				.map(fromMediaServer);
 			const kind = results[0]?.meta?.kind || p.kind || 'other';
-			const layout = kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list';
+			// Navidrome is all music: compact cover-and-title cards, not posters.
+			const layout = kind === 'photo' ? 'grid' : p.integrationId === 'navidrome' ? 'tracks' : kind === 'media' ? 'poster' : 'list';
 			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
 			return {
 				id: `p-${p.providerId}`,
@@ -620,7 +621,7 @@
 				kind,
 				loading: !!data.loading && q.length >= 3,
 				// Placeholder posters until the first results arrive.
-				skeleton: !!data.loading && q.length >= 3 && !results.length && layout !== 'list' ? (layout === 'grid' ? 6 : 5) : 0,
+				skeleton: !!data.loading && q.length >= 3 && !results.length && layout !== 'list' ? (layout === 'poster' ? 5 : 6) : 0,
 				error: data.error || '',
 				items: [...results.slice(0, max).map((r) => {
 					const key = `r:${p.providerId}:${r.id}`;
@@ -692,36 +693,23 @@
 			provSections.splice(provSections.indexOf(mediaSections[0]), 0, shelf);
 			for (const s of mediaSections) {
 				const rest = s.items.filter((it) => !it.more && !it.showDetail);
-				if (rest.length) Object.assign(s, { items: rest, loading: false, skeleton: 0, error: '' });
+				// What's left is music (albums, artists, songs): same cards as Navidrome.
+				if (rest.length) Object.assign(s, { layout: 'tracks', items: rest, loading: false, skeleton: 0, error: '' });
 				else provSections.splice(provSections.indexOf(s), 1);
 			}
 		}
 		provSections.sort((a, b) => (PROVIDER_KIND_ORDER[a.kind] ?? 99) - (PROVIDER_KIND_ORDER[b.kind] ?? 99));
 		out.push(...provSections);
 
-		// Fallbacks: always reachable, last in the list. Their icons are grey
-		// so they don't pull the eye from the results above.
+		// Fallback: the web search, always last. One row only; each app's
+		// results are already above, and its !shortcut still scopes to it.
+		// The icon is grey so it doesn't pull the eye from the results.
 		if (q) {
 			const fb = [];
-			if (!activeScope) {
-				for (const it of $integrationsStore.integrations) {
-					if (!it.shortcut || !it.userState?.connected) continue;
-					if (it.userState?.surfaces?.search === false) continue;
-					if (!(it.availableSurfaces || []).includes('search')) continue;
-					fb.push({
-						key: `scope:${it.id}`,
-						title: `Search ${it.name} for “${q}”`,
-						subtitle: `!${it.shortcut}`,
-						appIcon: it.icon ? resolveIcon(it.icon) : null,
-						iconStyle: 'grayed',
-						actions: [{ label: `Search ${it.name}`, run: () => { activeScope = it.id; inputEl?.focus(); } }]
-					});
-				}
-			}
 			if (searchConfig?.url) {
 				const param = searchConfig.param || 'q';
 				const url = `${searchConfig.url}${searchConfig.url.includes('?') ? '&' : '?'}${param}=${encodeURIComponent(q)}`;
-				fb.unshift({
+				fb.push({
 					key: 'web',
 					title: `Search the web for “${q}”`,
 					subtitle: searchConfig.name || 'Web',
