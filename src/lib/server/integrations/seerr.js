@@ -66,9 +66,11 @@ const adapter = {
 
 	linkedTo: ['jellyfin', 'plex'],
 
-	// Which of those can actually sign in here: the one Seerr runs on.
+	// Which of those can actually sign in here: the one Seerr runs on, or
+	// null when Seerr didn't say.
 	async linkedVia({ config, fetch }) {
 		const type = await serverType(stripTrailingSlash(config.url), fetch);
+		if (type == null) return null;
 		return type === SERVER.JELLYFIN ? ['jellyfin'] : type === SERVER.PLEX ? ['plex'] : [];
 	},
 
@@ -380,8 +382,10 @@ async function sessionFromLinked(config, linked, fetch) {
 		if (session.noAccount) return { error: session.error };
 		via = 'jellyfin';
 	} else if (type === SERVER.PLEX && linked?.plex?.accessToken) {
-		// Seerr checks the token with plex.tv, so this only works when it is the
-		// account token, i.e. for the server's owner. Others fall back to signIn.
+		// Seerr checks the token with plex.tv, so it must be an account token:
+		// the one a Plex sign-in lends for its first connect (`forLinked`), or
+		// the stored one, which is the account token only for the server's
+		// owner. So only the owner renews this way; others get a code.
 		session = await authenticate(base, 'plex', { authToken: linked.plex.accessToken }, fetch);
 		via = 'plex';
 	}
