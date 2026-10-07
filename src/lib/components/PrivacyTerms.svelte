@@ -34,11 +34,10 @@
 {#if open}
 	<div
 		use:portal
-		use:dialog={{ label: 'Privacy & Terms' }}
+		use:dialog={{ label: 'Privacy & Terms', onclose: () => (open = false) }}
 		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4"
-		onclick={() => open = false}
 	>
-	<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[80vh] overflow-hidden shadow-theme animate-modal-enter flex flex-col relative" onclick={(e) => e.stopPropagation()}>
+	<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[80vh] overflow-hidden shadow-theme animate-modal-enter flex flex-col relative">
 		<!-- Header strip -->
 		<div class="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border-card">
 			<span class="text-[0.8rem] font-semibold text-content">Privacy & Terms</span>

@@ -160,13 +160,11 @@
 {#if open}
 	<div
 		use:portal
-		use:dialog={{ label: 'Configure' }}
+		use:dialog={{ label: 'Configure', onclose: requestClose }}
 		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4"
-		onclick={requestClose}
 	>
 		<div
 			class="glass-card rounded-2xl w-full max-w-[620px] h-[520px] max-md:max-w-full max-md:h-[75vh] max-md:rounded-xl overflow-hidden animate-modal-enter shadow-theme relative flex flex-col"
-			onclick={(e) => e.stopPropagation()}
 		>
 			<!-- Header strip -->
 			<div class="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border-card">
@@ -270,7 +268,7 @@
 				<div class="mb-4">
 					<div class="flex items-center justify-between">
 						<span class="text-[0.8rem] text-content-muted">Open apps in new tab</span>
-						<button class="bg-transparent border-none cursor-pointer p-0" onclick={toggleOpenInNewTab}>
+						<button class="bg-transparent border-none cursor-pointer p-0" role="switch" aria-checked={openInNewTab} aria-label="Open apps in new tab" onclick={toggleOpenInNewTab}>
 							<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {openInNewTab ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
 								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {openInNewTab ? 'translate-x-4' : 'translate-x-0.5'}"></div>
 							</div>
@@ -282,7 +280,7 @@
 				<div class="mb-4 {theme !== 'auto' ? 'opacity-40 pointer-events-none' : ''}">
 					<div class="flex items-center justify-between mb-3">
 						<span class="text-[0.8rem] text-content-muted">Wallpaper {theme !== 'auto' ? '(Dynamic only)' : ''}</span>
-						<button class="bg-transparent border-none cursor-pointer p-0" onclick={toggleWallpaper}>
+						<button class="bg-transparent border-none cursor-pointer p-0" role="switch" aria-checked={wallpaperEnabled && theme === 'auto'} aria-label="Wallpaper" onclick={toggleWallpaper}>
 							<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {wallpaperEnabled && theme === 'auto' ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
 								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {wallpaperEnabled && theme === 'auto' ? 'translate-x-4' : 'translate-x-0.5'}"></div>
 							</div>

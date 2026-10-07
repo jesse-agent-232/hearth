@@ -184,6 +184,8 @@
 						{/each}
 						{#each section.items as item (item.key)}
 							{@const isSel = item.key === selectedKey}
+							<!-- Keyboard lives on the search input (combobox + aria-activedescendant). -->
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<div
 								id="{listId}-{item.key}"
 								role="option"
