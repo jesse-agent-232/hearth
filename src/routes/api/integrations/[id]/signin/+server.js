@@ -71,6 +71,9 @@ export async function POST({ cookies, url, request, params, fetch }) {
 				const connected = await adapter
 					.connectFromLinked({ config, linked, fetch: withDeadline(fetch, STEP_TIMEOUT_MS) })
 					.catch(() => null);
+				// The linked account was accepted but Seerr has no user for it:
+				// a code would fail the same way.
+				if (connected?.error) return json({ error: connected.error }, { status: 502 });
 				if (connected) return json(await saveSignIn(user.username, adapter, connected));
 			}
 		}
@@ -88,7 +91,9 @@ export async function POST({ cookies, url, request, params, fetch }) {
 				expires: Date.now() + FLOW_TTL_MS
 			});
 			const link = typeof res.link === 'string' && /^https?:\/\//.test(res.link) ? res.link : null;
-			return json({ flowId, code: res.code, link, expiresIn: FLOW_TTL_MS / 1000 });
+			// Instructions that depend on the server (Seerr on Plex or Jellyfin).
+			const help = typeof res.help === 'string' ? res.help : null;
+			return json({ flowId, code: res.code, link, help, expiresIn: FLOW_TTL_MS / 1000 });
 		} catch (err) {
 			return json({ error: `Couldn’t reach the server: ${describeFetchError(err, STEP_TIMEOUT_MS)}` }, { status: 502 });
 		}
@@ -113,8 +118,11 @@ export async function POST({ cookies, url, request, params, fetch }) {
 
 		const saved = await saveSignIn(user.username, adapter, { ...flow.config, ...res.config });
 		// One sign-in can connect others too (Jellyfin → Seerr). Its own
-		// deadline: whatever the poll left over may be too little.
-		await autoConnect(user.username, withDeadline(fetch, AUTO_CONNECT_TIMEOUT_MS)).catch(() => {});
+		// deadline: whatever the poll left over may be too little. `forLinked`
+		// is what the sign-in can lend them once (Plex's account token), never
+		// saved.
+		const fresh = res.forLinked ? { [adapter.id]: { ...flow.config, ...res.config, ...res.forLinked } } : {};
+		await autoConnect(user.username, withDeadline(fetch, AUTO_CONNECT_TIMEOUT_MS), fresh).catch(() => {});
 		return json(saved);
 	}
 

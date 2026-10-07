@@ -13,8 +13,9 @@
 // Holm never see a Seerr sign-in: `connectFromLinked` starts Seerr's
 // Jellyfin Quick Connect and approves the code with the user's own Jellyfin
 // token, or hands Seerr the user's Plex token. When the 30-day session
-// lapses, the same path renews it. Anyone else signs in with a Quick Connect
-// code once.
+// lapses, the same path renews it. Anyone else signs in with a code for the
+// app Seerr runs on: Jellyfin Quick Connect, or a plex.tv/link PIN whose
+// account token goes to Seerr once and is then dropped.
 
 // MediaStatus from server/constants/media.ts. A result with no mediaInfo has
 // never been requested.
@@ -28,6 +29,11 @@ const STATUS_LABEL = {
 
 // MediaServerType from server/constants/server.ts.
 const SERVER = { PLEX: 1, JELLYFIN: 2, EMBY: 3 };
+
+// Permission bits from server/lib/permissions.ts. ADMIN passes every check.
+const PERM = { ADMIN: 2, REQUEST: 32, REQUEST_MOVIE: 262144, REQUEST_TV: 524288 };
+
+const PLEX_TV = 'https://plex.tv';
 
 const MEDIA_LABEL = { movie: 'Movie', tv: 'Show' };
 
@@ -60,6 +66,12 @@ const adapter = {
 
 	linkedTo: ['jellyfin', 'plex'],
 
+	// Which of those can actually sign in here: the one Seerr runs on.
+	async linkedVia({ config, fetch }) {
+		const type = await serverType(stripTrailingSlash(config.url), fetch);
+		return type === SERVER.JELLYFIN ? ['jellyfin'] : type === SERVER.PLEX ? ['plex'] : [];
+	},
+
 	async connectFromLinked({ config, linked, fetch }) {
 		return (await sessionFromLinked(config, linked, fetch)) || null;
 	},
@@ -68,30 +80,51 @@ const adapter = {
 		// The route tries connectFromLinked first, so with Jellyfin or Plex
 		// connected this signs in without showing a code.
 		label: 'Sign in',
-		help: 'In Jellyfin, open your **profile → Quick Connect** and enter this code. Connecting Jellyfin or Plex in Holm signs you in to Seerr automatically.',
+		help: 'Connecting Jellyfin or Plex in Holm signs you in to Seerr without a code. Otherwise, **Sign in** gives you a code for the app your Seerr uses.',
 
-		async start({ config, linked, fetch }) {
+		async start({ config, fetch }) {
 			const base = stripTrailingSlash(config.url);
 			const type = await serverType(base, fetch);
 			if (type == null) return { error: 'That URL didn’t answer like a Seerr server' };
-			if (type !== SERVER.JELLYFIN) {
-				// The route already tried the linked Plex token; Seerr only takes
-				// the Plex server owner's.
+			if (type === SERVER.PLEX) {
+				// Any Plex user, owner or not: plex.tv hands back the account token,
+				// which is what Seerr checks.
+				const clientId = `holm-seerr-${crypto.randomUUID()}`;
+				const res = await fetch(`${PLEX_TV}/api/v2/pins`, { method: 'POST', headers: plexHeaders(clientId) });
+				if (!res.ok) return { error: `Couldn’t get a code from plex.tv (${res.status})` };
+				const pin = await res.json();
+				if (!pin?.id || !pin?.code) return { error: 'plex.tv sent an unexpected reply' };
 				return {
-					error: linked?.plex
-						? 'Your Plex account can’t sign in to this Seerr — ask the admin to add you in Seerr'
-						: 'This Seerr uses Plex — connect Plex in Holm and Seerr connects with it'
+					code: String(pin.code),
+					help: 'This Seerr uses Plex. Go to [plex.tv/link](https://plex.tv/link), sign in to Plex if asked, and enter this code.',
+					state: { kind: 'plex', pinId: pin.id, clientId }
 				};
 			}
+			if (type !== SERVER.JELLYFIN) return { error: 'This Seerr uses Emby, which Holm can’t sign in to yet' };
 			const res = await fetch(`${base}/api/v1/auth/jellyfin/quickconnect/initiate`, { method: 'POST', headers: JSON_HEADERS });
 			if (!res.ok) return { error: `Couldn’t start Quick Connect (${res.status})` };
 			const data = await res.json();
 			if (!data?.code || !data?.secret) return { error: 'Seerr sent an unexpected reply' };
-			return { code: String(data.code), state: { secret: data.secret } };
+			return {
+				code: String(data.code),
+				help: 'This Seerr uses Jellyfin. In any Jellyfin app, open your **profile → Quick Connect** and enter this code.',
+				state: { kind: 'jellyfin', secret: data.secret }
+			};
 		},
 
 		async poll({ config, state, fetch }) {
 			const base = stripTrailingSlash(config.url);
+			if (state.kind === 'plex') {
+				const res = await fetch(`${PLEX_TV}/api/v2/pins/${encodeURIComponent(state.pinId)}`, { headers: plexHeaders(state.clientId) });
+				if (res.status === 404) return { status: 'error', error: 'The code expired — start again' };
+				if (!res.ok) return { status: 'error', error: `plex.tv returned ${res.status}` };
+				const authToken = (await res.json())?.authToken;
+				if (!authToken) return { status: 'pending' };
+				// Used once here and not kept: Holm stores only the Seerr session.
+				const session = await authenticate(base, 'plex', { authToken }, fetch);
+				if (session.error) return { status: 'error', error: session.error };
+				return { status: 'done', config: { session: session.cookie, via: 'seerr', userName: session.userName } };
+			}
 			const res = await fetch(`${base}/api/v1/auth/jellyfin/quickconnect/check?secret=${encodeURIComponent(state.secret)}`, {
 				headers: JSON_HEADERS
 			});
@@ -106,7 +139,7 @@ const adapter = {
 
 	async test({ config, fetch }) {
 		if (!config?.url || !config?.session) {
-			return { ok: false, message: 'Connect Jellyfin or Plex, or sign in with Quick Connect' };
+			return { ok: false, message: 'Connect Jellyfin or Plex, or sign in with a code' };
 		}
 		try {
 			const res = await fetch(`${stripTrailingSlash(config.url)}/api/v1/auth/me`, { headers: sessionHeaders(config) });
@@ -137,6 +170,7 @@ const adapter = {
 					throw new Error(`Seerr search failed: ${res.status}`);
 				}
 				const data = await res.json();
+				const perms = await permissions(ctx);
 				const items = (data?.results || []).filter(
 					(r) => (r.mediaType === 'movie' || r.mediaType === 'tv') && Number.isInteger(r.id)
 				);
@@ -146,7 +180,12 @@ const adapter = {
 						const year = (r.mediaType === 'movie' ? r.releaseDate : r.firstAirDate)?.slice(0, 4);
 						const status = r.mediaInfo?.status;
 						const playUrl = (status === STATUS.AVAILABLE || status === STATUS.PARTIAL) && r.mediaInfo?.mediaUrl;
-						const requestable = !r.mediaInfo || status === STATUS.UNKNOWN || status === STATUS.DELETED;
+						// A partly available show can still get its missing seasons;
+						// Seerr drops the ones it already has from a seasons: 'all' request.
+						const requestable =
+							(!r.mediaInfo || status === STATUS.UNKNOWN || status === STATUS.DELETED ||
+								(status === STATUS.PARTIAL && r.mediaType === 'tv')) &&
+							canRequest(perms, r.mediaType);
 						const requested = status === STATUS.PENDING || status === STATUS.PROCESSING;
 						return {
 							id: `${r.mediaType}-${r.id}`,
@@ -159,7 +198,9 @@ const adapter = {
 							href: playUrl || `${base}/${r.mediaType}/${r.id}`,
 							// A click opens the detail view; Play (or Request) are its buttons.
 							detail: { mediaType: r.mediaType, mediaId: r.id },
-							openLabel: playUrl ? 'Play' : 'Open in Seerr',
+							// Seerr's own page wants its own sign-in: Holm's session stays
+							// on the server, so it's only offered from the actions panel.
+							openLabel: playUrl ? 'Play' : 'Open in Seerr (asks you to sign in)',
 							action: requestable
 								? { key: 'request', label: 'Request', params: { mediaType: r.mediaType, mediaId: r.id } }
 								: undefined,
@@ -196,6 +237,8 @@ const adapter = {
 					body: JSON.stringify(body)
 				});
 				const data = await res.json().catch(() => null);
+				// 202: every season is already there or requested.
+				if (res.status === 202) return { ok: true, message: 'Requested' };
 				if (!res.ok) {
 					return { ok: false, message: data?.message || `Seerr returned ${res.status}` };
 				}
@@ -271,6 +314,38 @@ function sessionHeaders(config) {
 	return { ...JSON_HEADERS, cookie: config.session };
 }
 
+function plexHeaders(clientId) {
+	return { accept: 'application/json', 'X-Plex-Product': 'Holm', 'X-Plex-Device-Name': 'Holm (Seerr sign-in)', 'X-Plex-Client-Identifier': clientId };
+}
+
+// A user's Seerr permissions, so Request only shows for those who can.
+// Cached per session for a few minutes; a failed lookup shows Request and
+// lets Seerr say no.
+const PERMS_TTL_MS = 5 * 60 * 1000;
+const permsCache = new Map();
+
+async function permissions(ctx) {
+	const key = ctx.config.session;
+	const hit = permsCache.get(key);
+	if (hit && hit.at > Date.now() - PERMS_TTL_MS) return hit.value;
+	let value = null;
+	try {
+		const res = await seerrFetch(ctx, '/api/v1/auth/me');
+		if (res.ok) value = (await res.json())?.permissions ?? null;
+	} catch {
+		/* unknown: treated as allowed */
+	}
+	if (permsCache.size > 500) permsCache.clear();
+	permsCache.set(key, { at: Date.now(), value });
+	return value;
+}
+
+function canRequest(perms, mediaType) {
+	if (!Number.isInteger(perms)) return true;
+	const kind = mediaType === 'movie' ? PERM.REQUEST_MOVIE : PERM.REQUEST_TV;
+	return !!(perms & (PERM.ADMIN | PERM.REQUEST | kind));
+}
+
 function displayName(user) {
 	return user?.displayName || user?.jellyfinUsername || user?.plexUsername || user?.username || '';
 }
@@ -302,6 +377,9 @@ async function sessionFromLinked(config, linked, fetch) {
 		});
 		if (!ok.ok) return null;
 		session = await authenticate(base, 'jellyfin/quickconnect/authenticate', { secret }, fetch);
+		// Jellyfin vouched for the user and Seerr still said no: a code would
+		// end the same way, so say why instead of showing one.
+		if (session.noAccount) return { error: session.error };
 		via = 'jellyfin';
 	} else if (type === SERVER.PLEX && linked?.plex?.accessToken) {
 		// Seerr checks the token with plex.tv, so this only works when it is the
@@ -320,7 +398,7 @@ async function authenticate(base, path, body, fetch) {
 		body: JSON.stringify(body)
 	});
 	if (!res.ok) {
-		if (res.status === 403) return { error: 'Seerr has no account for you — ask the admin to import your user' };
+		if (res.status === 403) return { noAccount: true, error: 'Seerr has no account for you — ask the admin to import your user' };
 		return { error: `Seerr sign-in failed (${res.status})` };
 	}
 	const cookie = (res.headers.getSetCookie?.() || [])
@@ -343,9 +421,12 @@ async function seerrFetch(ctx, path, init = {}) {
 	// A 403 is also "not allowed"; only renew when the session itself is gone.
 	const me = await fetch(`${base}/api/v1/auth/me`, { headers: sessionHeaders(config) });
 	if (me.ok) return res;
-	const renewed = config.via !== 'seerr' && (await renewOnce(config, ctx.linked, fetch));
-	if (!renewed) throw new Error('Seerr session ended — sign in again in Settings → Integrations');
+	// Also for a code sign-in: Jellyfin or Plex may have been connected since.
+	const renewed = await renewOnce(config, ctx.linked, fetch);
+	if (!renewed || renewed.error) throw new Error('Seerr session ended — sign in again in Settings → Integrations');
 	await ctx.saveConfig?.(renewed);
+	// Later calls in this request use the new session, not the lapsed one.
+	ctx.config = renewed;
 	return call(renewed);
 }
 

@@ -93,8 +93,8 @@
  *
  * @property {string} label                                    Button text, e.g. 'Sign in with Quick Connect'
  * @property {string} [help]                                   Markdown shown next to the code
- * @property {(ctx: { config: object, linked?: Record<string, object>, fetch: typeof fetch }) => Promise<{ code: string, link?: string, state: object } | { error: string }>} start  `link` is where the user enters the code
- * @property {(ctx: { config: object, state: object, fetch: typeof fetch }) => Promise<{ status: 'pending' } | { status: 'done', config: object } | { status: 'error', error: string }>} poll
+ * @property {(ctx: { config: object, linked?: Record<string, object>, fetch: typeof fetch }) => Promise<{ code: string, link?: string, help?: string, state: object } | { error: string }>} start  `link` is where the user enters the code; `help` replaces `signIn.help` while the code shows
+ * @property {(ctx: { config: object, state: object, fetch: typeof fetch }) => Promise<{ status: 'pending' } | { status: 'done', config: object, forLinked?: object } | { status: 'error', error: string }>} poll  `forLinked` is lent to `linkedTo` adapters for one connect and never saved (Plex: the account token)
  */
 
 /**
@@ -108,7 +108,8 @@
  * @property {SignIn} [signIn]                                 Replaces the Test/Connect buttons with a code-approval flow
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<void>} [signOut]  Best-effort token revoke on disconnect
  * @property {string[]} [linkedTo]                       Ids of integrations this one can sign in through (Seerr: jellyfin, plex)
- * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, or null
+ * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|{ error: string }|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, null to fall back to `signIn`, or `{ error }` when a code would fail the same way
+ * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<string[]>} [linkedVia]  Which of `linkedTo` can sign in at the operator's URL (Seerr: the server it runs on), for the cards' wording
  * @property {Record<string, Action>} [actions]             Writes triggered from search results
  * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, cast?: string[], thumbnail?: string, backdrop?: string } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
  * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token

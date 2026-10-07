@@ -16,11 +16,17 @@ const failedAt = new Map();
  * Configs of the connected integrations an adapter is linked to, by id.
  * Empty unless the adapter points at the operator's own server: a user-typed
  * URL never gets to sign in with the user's Jellyfin or Plex account.
+ * `fresh` overrides a stored config for this call only (e.g. the Plex account
+ * token from a sign-in that just finished, which is never stored).
  */
-export async function linkedConfigs(username, adapter, config) {
+export async function linkedConfigs(username, adapter, config, fresh = {}) {
 	const out = {};
 	if (!matchesOperator(adapter, config)) return out;
 	for (const id of adapter.linkedTo || []) {
+		if (fresh[id]) {
+			out[id] = fresh[id];
+			continue;
+		}
 		const conn = await getConnection(username, id);
 		if (conn?.connected) out[id] = conn.config;
 	}
@@ -42,13 +48,15 @@ export async function adapterContext(username, adapter, conn, config = conn?.con
 /**
  * Connects every enabled linked integration the user has no row for yet.
  * A row that exists but is empty means the user disconnected it, so it is
- * left alone. Best effort: failures are remembered and skipped for a while.
+ * left alone. Best effort: failures are remembered and skipped for a while,
+ * unless `fresh` brings a just-signed-in account to try with.
  */
-export async function autoConnect(username, fetch) {
+export async function autoConnect(username, fetch, fresh = {}) {
 	for (const { adapter, operator } of getRegistry()) {
 		if (!adapter.connectFromLinked) continue;
 		const key = `${username}\n${adapter.id}`;
-		if (Date.now() - (failedAt.get(key) || 0) < RETRY_AFTER_MS) continue;
+		const tryFresh = (adapter.linkedTo || []).some((id) => fresh[id]);
+		if (!tryFresh && Date.now() - (failedAt.get(key) || 0) < RETRY_AFTER_MS) continue;
 		if (await getConnection(username, adapter.id)) continue;
 
 		const config = {};
@@ -58,12 +66,12 @@ export async function autoConnect(username, fetch) {
 			}
 		}
 		if (!config.url) continue;
-		const linked = await linkedConfigs(username, adapter, config);
+		const linked = await linkedConfigs(username, adapter, config, fresh);
 		if (!Object.keys(linked).length) continue;
 
 		try {
 			const connected = await adapter.connectFromLinked({ config, linked, fetch });
-			if (connected) {
+			if (connected && !connected.error) {
 				await upsertConnection(username, adapter.id, { config: connected, surfaces: { search: true } });
 				failedAt.delete(key);
 				continue;
@@ -73,6 +81,35 @@ export async function autoConnect(username, fetch) {
 		}
 		failedAt.set(key, Date.now());
 	}
+}
+
+/**
+ * The linked integrations that can really sign this one in, for the cards'
+ * wording (Seerr on Plex: only Plex). Asks the operator's server, cached; if
+ * it can't tell, all of `linkedTo`.
+ */
+const VIA_TTL_MS = 10 * 60 * 1000;
+const viaCache = new Map();
+
+export async function linkedVia(adapter, operator, fetch) {
+	if (!adapter.linkedVia) return adapter.linkedTo || null;
+	const config = {};
+	for (const field of adapter.configSchema || []) {
+		if (field.fromOperatorDefault && operator?.[field.fromOperatorDefault]) {
+			config[field.key] = String(operator[field.fromOperatorDefault]);
+		}
+	}
+	if (!config.url) return adapter.linkedTo;
+	const hit = viaCache.get(adapter.id);
+	if (hit && hit.url === config.url && hit.at > Date.now() - VIA_TTL_MS) return hit.ids;
+	let ids = adapter.linkedTo;
+	try {
+		ids = await adapter.linkedVia({ config, fetch });
+		viaCache.set(adapter.id, { url: config.url, at: Date.now(), ids });
+	} catch {
+		/* unreachable: keep the general wording, ask again next time */
+	}
+	return ids;
 }
 
 // True when every field the operator sets a default for still has that value.
