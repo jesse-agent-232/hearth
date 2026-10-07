@@ -451,26 +451,18 @@
 			</div>
 
 			<!-- Surface toggles -->
-			{#if connected}
+			{#if connected && hasSearch}
 				<div class="space-y-2 pt-2 border-t border-border-card">
 					<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Use for</div>
-					{#if hasSearch}
-						<button
-							class="flex items-center justify-between w-full bg-transparent border-none cursor-pointer text-left py-1"
-							onclick={() => toggleSurface('search')}
-						>
-							<span class="text-[0.75rem] text-content-muted">Search provider</span>
-							<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {formSurfaces.search ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
-								<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {formSurfaces.search ? 'translate-x-4' : 'translate-x-0.5'}"></div>
-							</div>
-						</button>
-					{/if}
-					<div class="flex items-center justify-between py-1 opacity-50" title="Coming in a future release">
-						<span class="text-[0.75rem] text-content-muted">Widgets <span class="text-[0.7rem] text-content-dim">(soon)</span></span>
-						<div class="w-9 h-5 rounded-full bg-surface-toggle-off relative shrink-0">
-							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow translate-x-0.5"></div>
+					<button
+						class="flex items-center justify-between w-full bg-transparent border-none cursor-pointer text-left py-1"
+						onclick={() => toggleSurface('search')}
+					>
+						<span class="text-[0.75rem] text-content-muted">Search provider</span>
+						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {formSurfaces.search ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
+							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {formSurfaces.search ? 'translate-x-4' : 'translate-x-0.5'}"></div>
 						</div>
-					</div>
+					</button>
 				</div>
 			{/if}
 		</div>
