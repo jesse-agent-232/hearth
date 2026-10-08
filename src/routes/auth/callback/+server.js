@@ -40,7 +40,8 @@ export async function GET({ url, cookies }) {
 
 	// Try userinfo endpoint for more complete data
 	try {
-		const userinfo = await client.fetchUserInfo(config, tokens.access_token);
+		// openid-client checks the reply is for the ID token's subject.
+		const userinfo = await client.fetchUserInfo(config, tokens.access_token, claims?.sub);
 		if (userinfo.preferred_username) username = userinfo.preferred_username;
 		else if (userinfo.email) username = userinfo.email.split('@')[0];
 		if (userinfo.name || userinfo.display_name) name = userinfo.name || userinfo.display_name;
