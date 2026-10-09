@@ -203,9 +203,9 @@ export async function upsertIntegrationRow(username, integrationId, configBlob, 
 export async function deleteIntegrationRow(username, integrationId) {
 	await ensureInit();
 	if (!db) return false;
-	const before = db.getRowsModified();
 	db.run('DELETE FROM user_integrations WHERE username = ? AND integration_id = ?', [username, integrationId]);
-	const changed = db.getRowsModified() > before;
+	// getRowsModified() counts the last statement only, so this is the DELETE.
+	const changed = db.getRowsModified() > 0;
 	if (changed) saveToDisk();
 	return changed;
 }
