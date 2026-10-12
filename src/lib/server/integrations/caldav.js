@@ -152,7 +152,12 @@ async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term =
 					if (!event.alarms.length) silent.add(r.href);
 				}
 			}
-			if (alarms && silent.size) await borrowAlarms(config, fetch, calendar, [...silent], out, timeZone);
+			if (alarms && silent.size) {
+				// A failed lookup only loses the borrowed alarms, not the rest.
+				try {
+					await borrowAlarms(config, fetch, calendar, [...silent], out, timeZone);
+				} catch {}
+			}
 			return out;
 		})
 	);

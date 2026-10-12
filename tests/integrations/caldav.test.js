@@ -166,7 +166,7 @@ test('credentials only go to the configured origin, its https upgrade, or iCloud
 
 // ── The adapter against a fake server ─────────────────────────────
 
-function fakeServer({ now, expandDropsAlarms = false }) {
+function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) {
 	const start = icsTime(now + 30 * MIN);
 	const event = [
 		'BEGIN:VCALENDAR',
@@ -183,6 +183,8 @@ function fakeServer({ now, expandDropsAlarms = false }) {
 		'END:VEVENT',
 		'END:VCALENDAR'
 	].join('\r\n');
+	// No alarm, so reminders always look it up in the stored copies.
+	const gym = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:gym', 'SUMMARY:Gym', `DTSTART:${start}`, 'DURATION:PT1H', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
 	const ms = (body) => new Response(`<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${body}</d:multistatus>`, { status: 207 });
 	const ok = '<d:status>HTTP/1.1 200 OK</d:status>';
 	const calls = [];
@@ -192,6 +194,7 @@ function fakeServer({ now, expandDropsAlarms = false }) {
 			return new Response('', { status: 401 });
 		}
 		const path = new URL(url).pathname;
+		if (multigetThrows && init.body?.includes('calendar-multiget')) throw new TypeError('fetch failed');
 		if (path === '/') return new Response('', { status: 301, headers: { location: '/dav/' } });
 		if (path === '/dav/' && init.method === 'PROPFIND') {
 			return ms(`<d:response><d:href>/dav/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype><d:current-user-principal><d:href>/dav/alice/</d:href></d:current-user-principal></d:prop>${ok}</d:propstat></d:response>`);
@@ -212,7 +215,8 @@ function fakeServer({ now, expandDropsAlarms = false }) {
 			// Stalwart: expanded instances come back without their VALARMs.
 			const expanded = !init.body.includes('calendar-multiget');
 			const data = expandDropsAlarms && expanded ? event.replace(/BEGIN:VALARM[\s\S]*END:VALARM\r\n/, '') : event;
-			return ms(`<d:response><d:href>/dav/alice/cals/home/dentist.ics</d:href><d:propstat><d:prop><c:calendar-data>${data.replace(/&/g, '&amp;')}</c:calendar-data></d:prop>${ok}</d:propstat></d:response>`);
+			const response = (name, ics) => `<d:response><d:href>/dav/alice/cals/home/${name}.ics</d:href><d:propstat><d:prop><c:calendar-data>${ics.replace(/&/g, '&amp;')}</c:calendar-data></d:prop>${ok}</d:propstat></d:response>`;
+			return ms(response('dentist', data) + response('gym', gym));
 		}
 		return new Response('', { status: 404 });
 	};
@@ -246,7 +250,7 @@ test('search: matches the title, falls back when text-match fails', async () => 
 	assert.equal(results[0].href, config.url);
 	assert.equal(calls.filter((c) => c.method === 'REPORT').length, 2);
 
-	const none = await caldav.searchProviders.events.query({ config, fetch, query: 'gym', limit: 10, timeZone: 'UTC' });
+	const none = await caldav.searchProviders.events.query({ config, fetch, query: 'swim', limit: 10, timeZone: 'UTC' });
 	assert.deepEqual(none.results, []);
 });
 
@@ -273,4 +277,11 @@ test('reminders: alarms the server dropped while expanding come from the stored 
 	assert.equal(reminders[0].at, reminders[0].start - 15 * MIN);
 	const multiget = calls.find((c) => c.body?.includes('calendar-multiget'));
 	assert.match(multiget.body, /<d:href>\/dav\/alice\/cals\/home\/dentist\.ics<\/d:href>/);
+});
+
+test('reminders: a failed lookup of the stored events keeps the alarms that came back', async () => {
+	const now = Date.now();
+	const { fetch } = fakeServer({ now, multigetThrows: true });
+	const reminders = await caldav.reminders({ config, fetch, timeZone: 'UTC', now });
+	assert.deepEqual(reminders.map((r) => r.title), ['Dentist']);
 });
