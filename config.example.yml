@@ -228,7 +228,9 @@ integrations:
     surfaces:
       search: true
       widgets: false
-  linkwarden:                 # no di: icon; give an app with id: linkwarden an icon URL
+  # No di: icon exists for Linkwarden; give an app with id: linkwarden
+  # icon: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/linkwarden.png"
+  linkwarden:
     enabled: true
     name: "Linkwarden"
     default_url: "https://linkwarden.example.com"
