@@ -24,6 +24,7 @@ Holm has two kinds of app support.
 | Calendar (CalDAV) | Events, by title, a month back to a year ahead; optional reminders and upcoming events on the page | URL + username + app password | `!cal` |
 | Miniflux | Articles from the user's feeds (full text) | URL + API key | `!rss` |
 | Komga | Comics, manga and book series (full text) | URL + API key (Komga 1.20 or later) | `!komga` |
+| Kavita | Manga, comics and book series | URL + Auth Key (Kavita 0.9 or later) | `!kavita` |
 
 Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders and upcoming events.
 

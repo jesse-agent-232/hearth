@@ -24,8 +24,9 @@ import seerr from './seerr.js';
 import caldav from './caldav.js';
 import miniflux from './miniflux.js';
 import komga from './komga.js';
+import kavita from './kavita.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, linkwarden, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr, caldav, miniflux, komga];
+const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, linkwarden, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr, caldav, miniflux, komga, kavita];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {
