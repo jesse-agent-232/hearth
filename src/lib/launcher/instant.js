@@ -119,7 +119,7 @@ function mathAnswer(q, locale) {
 	// are searches, not sums. Dates and version numbers are left alone too.
 	if (!/\d/.test(q)) return null;
 	const tokens = tokenize(q);
-	if (!tokens || !tokens.some((t) => (t.t === 'op' && t.v !== '(' && t.v !== ')') || (t.t === 'id' && t.v in FUNCS))) return null;
+	if (!tokens || !tokens.some((t) => (t.t === 'op' && t.v !== '(' && t.v !== ')') || (t.t === 'id' && (t.v in FUNCS || t.v === 'mod')))) return null;
 	if (/^\d{4}-\d{1,2}-\d{1,2}$|^\d+(\.\d+){2,}$/.test(q)) return null;
 	const v = calculate(q);
 	if (v === null) return null;
@@ -168,10 +168,10 @@ const ALIASES = {
 	millimeter: 'mm', millimetre: 'mm', centimeter: 'cm', centimetre: 'cm', meter: 'm', metre: 'm',
 	kilometer: 'km', kilometre: 'km', inch: 'in', inches: 'in', '"': 'in', foot: 'ft', feet: 'ft', "'": 'ft',
 	yard: 'yd', mile: 'mi', 'nautical mile': 'nmi',
-	milligram: 'mg', gram: 'g', kilogram: 'kg', kilo: 'kg', tonne: 't', ton: 't', ounce: 'oz', pound: 'lb', lbs: 'lb', stone: 'st',
+	milligram: 'mg', gram: 'g', kilogram: 'kg', kilo: 'kg', tonne: 't', ounce: 'oz', pound: 'lb', lbs: 'lb', stone: 'st',
 	milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l', teaspoon: 'tsp', tablespoon: 'tbsp',
 	'fl oz': 'floz', 'fluid ounce': 'floz', pint: 'pt', quart: 'qt', gallon: 'gal',
-	b: 'B', byte: 'B', kb: 'KB', kilobyte: 'KB', mb: 'MB', megabyte: 'MB', gb: 'GB', gigabyte: 'GB', tb: 'TB', terabyte: 'TB', pb: 'PB', petabyte: 'PB',
+	byte: 'B', kb: 'KB', kilobyte: 'KB', mb: 'MB', megabyte: 'MB', gb: 'GB', gigabyte: 'GB', tb: 'TB', terabyte: 'TB', pb: 'PB', petabyte: 'PB',
 	kib: 'KiB', mib: 'MiB', gib: 'GiB', tib: 'TiB', kbps: 'kbit', mbps: 'Mbit', gbps: 'Gbit', kilobit: 'kbit', megabit: 'Mbit', gigabit: 'Gbit',
 	millisecond: 'ms', sec: 's', second: 's', minute: 'min', mins: 'min', hr: 'h', hrs: 'h', hour: 'h', day: 'd', days: 'd', week: 'wk', weeks: 'wk', year: 'yr', yrs: 'yr',
 	mps: 'm/s', kph: 'km/h', kmh: 'km/h', kmph: 'km/h', knot: 'kn', knots: 'kn', kt: 'kn', fps: 'ft/s',
@@ -187,8 +187,13 @@ for (const [alias, key] of Object.entries(ALIASES)) {
 	LOOKUP.set(alias, { key, group });
 }
 
+// A lower-case b after a capital prefix is bits (Mb, Gb); all lower case
+// ("mb") is read the casual way, as bytes.
+const BITS = { b: 'bit', Kb: 'kbit', Mb: 'Mbit', Gb: 'Gbit' };
+
 function findUnit(raw) {
 	const s = raw.trim().replace(/°\s*/g, '').replace(/\s+/g, ' ');
+	if (s in BITS) return { key: BITS[s], group: 'data' };
 	const lower = s.toLowerCase();
 	// Plurals: "miles", "litres", "hours".
 	return LOOKUP.get(lower) || (lower.endsWith('s') ? LOOKUP.get(lower.slice(0, -1)) : undefined);

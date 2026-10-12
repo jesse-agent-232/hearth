@@ -38,6 +38,7 @@ test('only answers queries that have something to work out', () => {
 	assert.equal(a.to.value, '0.3');
 	assert.equal(answer('2^20').to.value, '1,048,576');
 	assert.equal(answer('2^20').copy, '1048576');
+	assert.equal(answer('10 mod 3').to.value, '1');
 });
 
 test('converts units within a group, and refuses across groups', () => {
@@ -46,6 +47,11 @@ test('converts units within a group, and refuses across groups', () => {
 	assert.equal(convert(0, '°C', 'kelvin').value, 273.15);
 	assert.equal(convert(1, 'GiB', 'mb').value, 1073.741824);
 	assert.equal(convert(3, 'hours', 'minutes').value, 180);
+	// Capital prefix + lower-case b is bits; all lower case is bytes.
+	assert.equal(convert(100, 'Mb', 'MB').value, 12.5);
+	assert.equal(convert(100, 'mb', 'MB').value, 100);
+	assert.equal(convert(8, 'b', 'B').value, 1);
+	assert.equal(convert(1, 'ton', 'kg'), null);
 	assert.equal(convert(5, 'km', 'kg'), null);
 	assert.equal(convert(5, 'parsecs', 'km'), null);
 });
