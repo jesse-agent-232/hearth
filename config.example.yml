@@ -157,8 +157,8 @@ search:
 
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
-# Nextcloud, Planka, Karakeep, Jellyfin, Plex, Navidrome, Audiobookshelf,
-# Mealie, Seerr. Add more in
+# Nextcloud, Planka, Karakeep, Linkwarden, Jellyfin, Plex, Navidrome,
+# Audiobookshelf, Mealie, Seerr. Add more in
 # src/lib/server/integrations/.
 #
 # Each key must match both the adapter's `id` AND an app `id` in the apps
@@ -225,6 +225,13 @@ integrations:
     enabled: true
     name: "Bookmarks"
     default_url: "https://karakeep.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  linkwarden:                 # no di: icon; give an app with id: linkwarden an icon URL
+    enabled: true
+    name: "Linkwarden"
+    default_url: "https://linkwarden.example.com"
     surfaces:
       search: true
       widgets: false

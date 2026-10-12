@@ -15,6 +15,7 @@ Holm has two kinds of app support.
 | Jellyfin | Movies, shows and music | Quick Connect sign-in, no key to copy | `!jf` |
 | Planka | Cards, by name (cached up to 5 minutes, `cache_ttl`) | URL + API key | `!p` |
 | Karakeep | Bookmarks (full text) | URL + API key | `!b` |
+| Linkwarden | Links by name, URL, description and tags (full text with Meilisearch) | URL + access token | `!lw` |
 | Plex | Movies, shows and music | Code at plex.tv/link, no key to copy | `!plex` |
 | Navidrome | Artists, albums and songs; optional player for songs | URL + username + password (only a derived token is kept) | `!nd` |
 | Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
