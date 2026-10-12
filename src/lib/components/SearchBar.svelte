@@ -12,7 +12,7 @@
 	import { arrangeProviderSections } from '$lib/launcher/sections.js';
 	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
-	import { instantAnswer } from '$lib/launcher/instant.js';
+	import { instantAnswers } from '$lib/launcher/instant.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -505,19 +505,19 @@
 		if (!activeScope) {
 			// Maths, conversions and times answer in place, above everything,
 			// so Enter copies the answer.
-			const answer = instantAnswer(q);
-			if (answer) {
+			const answers = instantAnswers(q);
+			if (answers.length) {
 				out.push({
 					id: 'answer',
-					label: { math: 'Calculator', unit: 'Conversion', time: 'Time' }[answer.kind],
+					label: { math: 'Calculator', unit: 'Conversion', time: 'Time' }[answers[0].kind],
 					layout: 'answer',
-					items: [{
-						key: 'answer',
+					items: answers.map((answer, i) => ({
+						key: `answer:${i}`,
 						title: answer.to.value,
 						subtitle: answer.from.value,
 						answer,
 						actions: [{ label: 'Copy answer', run: () => { copyText(answer.copy); finish(); } }]
-					}]
+					}))
 				});
 			}
 

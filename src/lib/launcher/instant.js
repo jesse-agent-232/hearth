@@ -5,11 +5,17 @@
 // instantAnswer() returns { kind, from: { value, label }, to: { value, label }, copy }
 // or null when the query isn't a question it can answer.
 
-export function instantAnswer(query, { now = new Date(), timeZone, locale } = {}) {
+export function instantAnswer(query, opts) {
+	return instantAnswers(query, opts)[0] || null;
+}
+
+/** Every answer for the query: one, or a few when a bare "2ft" has more than one usual conversion. */
+export function instantAnswers(query, { now = new Date(), timeZone, locale } = {}) {
 	const q = (query || '').trim();
-	if (!q || q.length > 120 || q.startsWith('!')) return null;
+	if (!q || q.length > 120 || q.startsWith('!')) return [];
 	const local = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-	return timeAnswer(q, now, local, locale) || unitAnswer(q, locale) || mathAnswer(q, locale);
+	const one = timeAnswer(q, now, local, locale) || unitAnswer(q, locale) || mathAnswer(q, locale);
+	return one ? [one] : bareUnitAnswers(q, locale);
 }
 
 // ── Maths ─────────────────────────────────────────────────────────
@@ -219,8 +225,32 @@ export function convert(value, fromRaw, toRaw) {
 function unitAnswer(q, locale) {
 	const m = q.match(/^(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*([a-z°'"/ ]+?)\s+(?:in|to|as|=|->|→)\s+([a-z°'"/ ]+)$/i);
 	if (!m) return null;
-	const amount = parseFloat(m[1]);
-	const r = convert(amount, m[2], m[3]);
+	return conversion(parseFloat(m[1]), m[2], m[3], locale);
+}
+
+// A quantity with no target ("5km", "2 ft", "72f") converts to the usual
+// unit on the other side of metric and imperial. Data sizes and durations
+// have no such side, so they get no answer.
+const USUAL = {
+	km: ['mi'], mi: ['km'], m: ['ft'], cm: ['in'], mm: ['in'], in: ['cm'], ft: ['in', 'cm'], yd: ['m'], nmi: ['km'],
+	kg: ['lb'], lb: ['kg'], g: ['oz'], oz: ['g'], st: ['kg'],
+	l: ['gal'], ml: ['floz'], floz: ['ml'], cup: ['ml'], pt: ['ml'], qt: ['l'], gal: ['l'],
+	'°C': ['°F'], '°F': ['°C'], K: ['°C'],
+	'km/h': ['mph'], mph: ['km/h'], kn: ['km/h'], 'm/s': ['km/h']
+};
+
+function bareUnitAnswers(q, locale) {
+	const m = q.match(/^(-?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-z°'"/ ]+?)$/i);
+	if (!m) return [];
+	// A lone "k" is more often thousands ("5k run") than kelvin, and "5g" a
+	// network than grams.
+	if (['k', 'g'].includes(m[2].trim().toLowerCase())) return [];
+	const from = findUnit(m[2]);
+	return (USUAL[from?.key] || []).map((to) => conversion(parseFloat(m[1]), from.key, to, locale)).filter(Boolean);
+}
+
+function conversion(amount, fromRaw, toRaw, locale) {
+	const r = convert(amount, fromRaw, toRaw);
 	if (!r || !Number.isFinite(r.value)) return null;
 	const unit = (k) => (k.startsWith('°') || k === 'K' ? k : ` ${k}`);
 	return {

@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { instantAnswer, calculate, convert } from '../../src/lib/launcher/instant.js';
+import { instantAnswer, instantAnswers, calculate, convert } from '../../src/lib/launcher/instant.js';
 
 // 15:00 in Kolkata on a Monday; London is on BST, New York on EDT.
 const opts = { now: new Date('2026-10-12T09:30:00Z'), timeZone: 'Asia/Kolkata', locale: 'en-US' };
@@ -62,6 +62,23 @@ test('unit answers show both sides with their names', () => {
 	assert.deepEqual([a.kind, a.from.value, a.from.label, a.to.value, a.to.label, a.copy], ['unit', '5 km', 'Kilometres', '3.10686 mi', 'Miles', '3.10686']);
 	assert.equal(answer('100 F to C').to.value, '37.7778°C');
 	assert.equal(answer('60 mph to km/h').to.value, '96.5606 km/h');
+});
+
+test('a bare quantity converts to the usual unit on the other side', () => {
+	const all = (q) => instantAnswers(q, opts).map((a) => a.to.value);
+	assert.deepEqual(all('5km'), ['3.10686 mi']);
+	assert.deepEqual(all('5 km'), ['3.10686 mi']);
+	assert.deepEqual(all('2ft'), ['24 in', '60.96 cm']);
+	assert.deepEqual(all('72f'), ['22.2222°C']);
+	assert.deepEqual(all('72°F'), ['22.2222°C']);
+	assert.deepEqual(all('30c'), ['86°F']);
+	assert.deepEqual(all('10 lbs'), ['4.53592 kg']);
+	assert.deepEqual(all('100 km/h'), ['62.1371 mph']);
+	assert.equal(instantAnswers('5km', opts)[0].kind, 'unit');
+	// No usual other side, or more likely something else.
+	for (const q of ['5k', '5g', '4 GB', '30 min', '5 parsecs', 'km', '5']) assert.deepEqual(all(q), [], q);
+	// An explicit target still gives just the one answer.
+	assert.deepEqual(all('2 ft in m'), ['0.6096 m']);
 });
 
 test('tells the time elsewhere', () => {

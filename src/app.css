@@ -1744,7 +1744,7 @@ body.search-active .hero-area {
 @media (prefers-reduced-motion: reduce) { .launcher-item.is-skeleton .launcher-track-art { animation: none; } }
 
 /* Instant answers (maths, conversions, times): question → answer */
-.launcher-answers { padding: 4px 4px 6px; }
+.launcher-answers { padding: 4px 4px 6px; display: grid; gap: 6px; }
 .launcher-item.is-answer {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
