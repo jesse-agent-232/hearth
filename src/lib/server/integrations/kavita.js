@@ -4,7 +4,7 @@
 //   - searchProviders.series — searches manga, comics and book series, with
 //     their covers
 //
-// Auth is an Auth Key in the x-api-key header (Kavita 0.9 or later).
+// Auth is an Auth Key in the x-api-key header (Kavita 0.8.9 or later).
 // Kavita 0.9.0's image routes reject a header-only key with a 400, so the
 // cover request repeats it as ?apiKey=; that URL is built and fetched here,
 // server-side, and never reaches the browser.
@@ -80,6 +80,8 @@ const adapter = {
 					method: 'GET',
 					headers: authHeaders(config)
 				});
+				// A user with no libraries gets a 400 ("libraries-restricted").
+				if (res.status === 400) return { results: [] };
 				if (!res.ok) {
 					throw new Error(`Kavita search failed: ${res.status}`);
 				}
