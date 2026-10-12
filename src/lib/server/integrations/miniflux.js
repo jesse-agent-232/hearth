@@ -61,7 +61,7 @@ const adapter = {
 				if (!trimmed) return { results: [] };
 
 				const base = stripTrailingSlash(config.url);
-				// Miniflux ranks matches first; the order only breaks ties.
+				// The API sorts by date before rank, so the newest matches come first.
 				const params = new URLSearchParams({
 					search: trimmed,
 					limit: String(Math.min(limit || 10, 25)),
