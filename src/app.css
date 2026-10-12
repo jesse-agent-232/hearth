@@ -1744,7 +1744,7 @@ body.search-active .hero-area {
 @media (prefers-reduced-motion: reduce) { .launcher-item.is-skeleton .launcher-track-art { animation: none; } }
 
 /* Instant answers (maths, conversions, times): question → answer */
-.launcher-answers { padding: 4px 4px 6px; display: grid; gap: 6px; }
+.launcher-answers { padding: 4px 4px 6px; }
 .launcher-item.is-answer {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1785,6 +1785,14 @@ body.search-active .hero-area {
 	color: var(--hero-search-text-dim);
 }
 .launcher-answer-arrow { width: 18px; height: 18px; color: var(--hero-search-text-dim); }
+/* A bare "2ft": its conversions side by side, sharing the right half. */
+.launcher-answer-results {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-evenly;
+	gap: 8px 20px;
+	min-width: 0;
+}
 @media (max-width: 767px) {
 	.launcher-item.is-answer { padding: 12px 10px; gap: 8px; }
 	.launcher-answer-value { font-size: 0.9rem; }

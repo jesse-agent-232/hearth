@@ -5,17 +5,11 @@
 // instantAnswer() returns { kind, from: { value, label }, to: { value, label }, copy }
 // or null when the query isn't a question it can answer.
 
-export function instantAnswer(query, opts) {
-	return instantAnswers(query, opts)[0] || null;
-}
-
-/** Every answer for the query: one, or a few when a bare "2ft" has more than one usual conversion. */
-export function instantAnswers(query, { now = new Date(), timeZone, locale } = {}) {
+export function instantAnswer(query, { now = new Date(), timeZone, locale } = {}) {
 	const q = (query || '').trim();
-	if (!q || q.length > 120 || q.startsWith('!')) return [];
+	if (!q || q.length > 120 || q.startsWith('!')) return null;
 	const local = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-	const one = timeAnswer(q, now, local, locale) || unitAnswer(q, locale) || mathAnswer(q, locale);
-	return one ? [one] : bareUnitAnswers(q, locale);
+	return timeAnswer(q, now, local, locale) || unitAnswer(q, locale) || bareUnitAnswer(q, locale) || mathAnswer(q, locale);
 }
 
 // ── Maths ─────────────────────────────────────────────────────────
@@ -239,14 +233,18 @@ const USUAL = {
 	'km/h': ['mph'], mph: ['km/h'], kn: ['km/h'], 'm/s': ['km/h']
 };
 
-function bareUnitAnswers(q, locale) {
+// One card for all of them: `to` is the first, `also` the rest, each with
+// what to copy.
+function bareUnitAnswer(q, locale) {
 	const m = q.match(/^(-?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-z°'"/ ]+?)$/i);
-	if (!m) return [];
+	if (!m) return null;
 	// A lone "k" is more often thousands ("5k run") than kelvin, and "5g" a
 	// network than grams.
-	if (['k', 'g'].includes(m[2].trim().toLowerCase())) return [];
+	if (['k', 'g'].includes(m[2].trim().toLowerCase())) return null;
 	const from = findUnit(m[2]);
-	return (USUAL[from?.key] || []).map((to) => conversion(parseFloat(m[1]), from.key, to, locale)).filter(Boolean);
+	const all = (USUAL[from?.key] || []).map((to) => conversion(parseFloat(m[1]), from.key, to, locale)).filter(Boolean);
+	if (!all.length) return null;
+	return { ...all[0], also: all.slice(1).map((a) => ({ ...a.to, copy: a.copy })) };
 }
 
 function conversion(amount, fromRaw, toRaw, locale) {

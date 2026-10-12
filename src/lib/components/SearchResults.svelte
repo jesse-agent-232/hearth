@@ -9,7 +9,7 @@
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster'|'tracks', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, color?, badge?, play?,
 	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }],
-	//             answer?: { from: { value, label }, to: { value, label } } }
+	//             answer?: { from: { value, label }, to: { value, label }, also?: [{ value, label }] } }
 	let {
 		sections = [],
 		selectedKey = null,
@@ -218,7 +218,7 @@
 								id="{listId}-{item.key}"
 								role="option"
 								aria-selected={isSel}
-								aria-label={section.layout === 'list' ? undefined : item.answer ? `${item.answer.from.value} = ${item.answer.to.value}` : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
+								aria-label={section.layout === 'list' ? undefined : item.answer ? `${item.answer.from.value} = ${[item.answer.to, ...(item.answer.also || [])].map((r) => r.value).join(' = ')}` : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
 								tabindex="-1"
 								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : section.layout === 'answer' ? 'is-answer' : 'is-row'}"
 								class:is-selected={isSel}
@@ -235,9 +235,13 @@
 										<span class="launcher-answer-label">{item.answer.from.label}</span>
 									</div>
 									<svg class="launcher-answer-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
-									<div class="launcher-answer-side">
-										<span class="launcher-answer-value is-result">{item.answer.to.value}</span>
-										<span class="launcher-answer-label">{item.answer.to.label}</span>
+									<div class="launcher-answer-results">
+										{#each [item.answer.to, ...(item.answer.also || [])] as result}
+											<div class="launcher-answer-side">
+												<span class="launcher-answer-value is-result">{result.value}</span>
+												<span class="launcher-answer-label">{result.label}</span>
+											</div>
+										{/each}
 									</div>
 								{:else if section.layout === 'tracks'}
 									<!-- Music: small square cover, title over details. -->

@@ -12,7 +12,7 @@
 	import { arrangeProviderSections } from '$lib/launcher/sections.js';
 	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
-	import { instantAnswers } from '$lib/launcher/instant.js';
+	import { instantAnswer } from '$lib/launcher/instant.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -505,19 +505,25 @@
 		if (!activeScope) {
 			// Maths, conversions and times answer in place, above everything,
 			// so Enter copies the answer.
-			const answers = instantAnswers(q);
-			if (answers.length) {
+			const answer = instantAnswer(q);
+			if (answer) {
+				// A bare "2ft" answers in more than one unit: Enter copies the
+				// first, the actions panel offers each.
+				const values = [{ ...answer.to, copy: answer.copy }, ...(answer.also || [])];
 				out.push({
 					id: 'answer',
-					label: { math: 'Calculator', unit: 'Conversion', time: 'Time' }[answers[0].kind],
+					label: { math: 'Calculator', unit: 'Conversion', time: 'Time' }[answer.kind],
 					layout: 'answer',
-					items: answers.map((answer, i) => ({
-						key: `answer:${i}`,
+					items: [{
+						key: 'answer',
 						title: answer.to.value,
 						subtitle: answer.from.value,
 						answer,
-						actions: [{ label: 'Copy answer', run: () => { copyText(answer.copy); finish(); } }]
-					}))
+						actions: values.map((v) => ({
+							label: values.length > 1 ? `Copy ${v.value}` : 'Copy answer',
+							run: () => { copyText(v.copy); finish(); }
+						}))
+					}]
 				});
 			}
 
