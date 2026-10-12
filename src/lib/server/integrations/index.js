@@ -20,8 +20,9 @@ import navidrome from './navidrome.js';
 import audiobookshelf from './audiobookshelf.js';
 import mealie from './mealie.js';
 import seerr from './seerr.js';
+import caldav from './caldav.js';
 
-const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr];
+const KNOWN_ADAPTERS = [immich, paperless, nextcloud, planka, karakeep, jellyfin, plex, navidrome, audiobookshelf, mealie, seerr, caldav];
 const BY_ID = new Map(KNOWN_ADAPTERS.map((a) => [a.id, a]));
 
 function resolveApp(id) {

@@ -4,6 +4,7 @@ import { getAdapter } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
 import { adapterContext } from '$lib/server/integrations/linked.js';
+import { validZone } from '$lib/server/integrations/ical.js';
 
 // The response is bounded by SEARCH_TIMEOUT_MS, but the adapter's own fetches
 // get the longer UPSTREAM_TIMEOUT_MS and aren't tied to request.signal: the
@@ -14,7 +15,7 @@ import { adapterContext } from '$lib/server/integrations/linked.js';
 const SEARCH_TIMEOUT_MS = 8000;
 const UPSTREAM_TIMEOUT_MS = 30000;
 
-// POST /api/search   body: { provider, query, limit? }
+// POST /api/search   body: { provider, query, limit?, timeZone? }
 //
 // `provider` is the colon-joined "<integrationId>:<providerKey>" string
 // chosen by the user (e.g. "immich:photos"). The dispatcher resolves the
@@ -38,6 +39,7 @@ export async function POST({ cookies, url, request, fetch }) {
 	const provider = String(body?.provider || '');
 	const query = String(body?.query || '');
 	const limit = Number.isFinite(body?.limit) ? Math.min(Math.max(body.limit, 1), 50) : 20;
+	const timeZone = validZone(body?.timeZone) ? body.timeZone : 'UTC';
 
 	const [integrationId, providerKey] = provider.split(':');
 	if (!integrationId || !providerKey) {
@@ -62,6 +64,7 @@ export async function POST({ cookies, url, request, fetch }) {
 			config: conn.config,
 			query,
 			limit,
+			timeZone,
 			fetch: withDeadline(fetch, UPSTREAM_TIMEOUT_MS)
 		});
 		pending.catch(() => {}); // may settle after we've already answered

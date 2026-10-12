@@ -270,6 +270,13 @@ integrations:
     surfaces:
       search: true
       widgets: false
+  caldav:
+    enabled: true
+    name: "Calendar"
+    # default_url: "https://cloud.example.com/remote.php/dav"  # Optional: pins every user to one CalDAV server
+    surfaces:
+      search: true
+      widgets: true                           # Reminders: users can turn on event reminders on the page
 
 # ── Wallpapers ──────────────────────────────────────────────
 wallpapers:

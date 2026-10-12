@@ -74,7 +74,8 @@
 					shelf: prov.shelf,
 					// Navidrome's player widget: songs play in Holm instead of opening.
 					player: it.userState?.surfaces?.widgets === true && (it.availableSurfaces || []).includes('widgets'),
-					searchUrl: it.operatorDefaults?.url || it.userState?.config?.url || null
+					// The Calendar's CalDAV URL is no page to browse; its web address is.
+					searchUrl: it.userState?.config?.webUrl || it.operatorDefaults?.url || it.userState?.config?.url || null
 				});
 			}
 		}
@@ -208,7 +209,7 @@
 			const res = await fetch('/api/search', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ provider: provider.providerId, query: q, limit: 24 }),
+				body: JSON.stringify({ provider: provider.providerId, query: q, limit: 24, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
 				signal
 			});
 			if (!res.ok) {

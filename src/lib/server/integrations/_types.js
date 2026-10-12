@@ -61,6 +61,19 @@
  * @property {typeof fetch} fetch
  * @property {Record<string, object>} [linked]   Only for `linkedTo` adapters: the user's configs for those integrations, when connected
  * @property {(config: object) => Promise<void>} [saveConfig]  Only for `linkedTo` adapters: replaces the stored config (e.g. a renewed session)
+ * @property {string} [timeZone]                 Search only: the user's IANA time zone, from the browser (UTC when it sent none)
+ */
+
+/**
+ * @typedef {Object} Reminder
+ * @property {string} id                         Stable across polls: the page shows each id once
+ * @property {string} title
+ * @property {number} at                         When to show it, ms since the epoch
+ * @property {number} start                      When the event starts, ms
+ * @property {number|null} [end]
+ * @property {boolean} [allDay]
+ * @property {string} [location]
+ * @property {string} [href]                     Opened by the reminder's Open button
  */
 
 /**
@@ -120,6 +133,7 @@
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, { label: string, description?: string }>} [widgets]  Widgets behind the `widgets` surface, e.g. Navidrome's player; the user's switch is `surfaces.widgets`
+ * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due from ten minutes ago to a day ahead, for GET /api/reminders; asked only while the user's widgets switch is on
  */
 
 export {};
