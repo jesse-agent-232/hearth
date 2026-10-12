@@ -8,7 +8,8 @@
 	//
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster'|'tracks', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, color?, badge?, play?,
-	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
+	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }],
+	//             answer?: { from: { value, label }, to: { value, label } } }
 	let {
 		sections = [],
 		selectedKey = null,
@@ -195,7 +196,7 @@
 					{#if section.error}
 						<div class="launcher-error">{section.error}</div>
 					{/if}
-					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : 'launcher-rows'}>
+					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : section.layout === 'answer' ? 'launcher-answers' : 'launcher-rows'}>
 						{#each { length: section.skeleton || 0 } as _}
 							{#if section.layout === 'tracks'}
 								<div class="launcher-item is-skeleton is-track" aria-hidden="true">
@@ -217,9 +218,9 @@
 								id="{listId}-{item.key}"
 								role="option"
 								aria-selected={isSel}
-								aria-label={section.layout === 'list' ? undefined : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
+								aria-label={section.layout === 'list' ? undefined : item.answer ? `${item.answer.from.value} = ${item.answer.to.value}` : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
 								tabindex="-1"
-								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : 'is-row'}"
+								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : section.layout === 'answer' ? 'is-answer' : 'is-row'}"
 								class:is-selected={isSel}
 								use:scrollIntoView={isSel}
 								onpointermove={() => { if (!isSel) onselect(item.key); }}
@@ -227,7 +228,18 @@
 								onclick={(e) => onrun(item, e)}
 								onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); onrun(item, e); } }}
 							>
-								{#if section.layout === 'tracks'}
+								{#if item.answer}
+									<!-- Instant answer: the question on the left, the answer on the right. -->
+									<div class="launcher-answer-side">
+										<span class="launcher-answer-value">{item.answer.from.value}</span>
+										<span class="launcher-answer-label">{item.answer.from.label}</span>
+									</div>
+									<svg class="launcher-answer-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+									<div class="launcher-answer-side">
+										<span class="launcher-answer-value is-result">{item.answer.to.value}</span>
+										<span class="launcher-answer-label">{item.answer.to.label}</span>
+									</div>
+								{:else if section.layout === 'tracks'}
 									<!-- Music: small square cover, title over details. -->
 									<div class="launcher-icon-box launcher-track-art">
 										{#if item.more}

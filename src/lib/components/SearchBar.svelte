@@ -12,6 +12,7 @@
 	import { arrangeProviderSections } from '$lib/launcher/sections.js';
 	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
+	import { instantAnswer } from '$lib/launcher/instant.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -190,6 +191,7 @@
 		FIRST_HINT,
 		...(scopeHint ? [scopeHint] : []),
 		'Type a command, like “dark” or “wallpaper”',
+		'Do quick maths, like “12 * 7” or “5 km in mi”',
 		`Press / or ${isMac ? '⌘K' : 'Ctrl K'} anywhere to search`
 	]);
 	let placeholderText = $state(FIRST_HINT);
@@ -501,6 +503,24 @@
 		}
 
 		if (!activeScope) {
+			// Maths, conversions and times answer in place, above everything,
+			// so Enter copies the answer.
+			const answer = instantAnswer(q);
+			if (answer) {
+				out.push({
+					id: 'answer',
+					label: { math: 'Calculator', unit: 'Conversion', time: 'Time' }[answer.kind],
+					layout: 'answer',
+					items: [{
+						key: 'answer',
+						title: answer.to.value,
+						subtitle: answer.from.value,
+						answer,
+						actions: [{ label: 'Copy answer', run: () => { copyText(answer.copy); finish(); } }]
+					}]
+				});
+			}
+
 			const scoredApps = apps
 				.map((a) => ({
 					a,

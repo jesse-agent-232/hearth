@@ -1743,6 +1743,54 @@ body.search-active .hero-area {
 }
 @media (prefers-reduced-motion: reduce) { .launcher-item.is-skeleton .launcher-track-art { animation: none; } }
 
+/* Instant answers (maths, conversions, times): question → answer */
+.launcher-answers { padding: 4px 4px 6px; }
+.launcher-item.is-answer {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+	padding: 16px 14px;
+	border-radius: 12px;
+	background: var(--hero-search-chip-bg);
+	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
+}
+.launcher-item.is-answer.is-selected { box-shadow: inset 0 0 0 1px var(--launcher-sel-ring); }
+.launcher-answer-side {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	text-align: center;
+}
+.launcher-answer-value {
+	max-width: 100%;
+	/* One line height for both sides, so the labels underneath line up. */
+	line-height: 2rem;
+	font-size: 1.05rem;
+	color: var(--hero-search-text);
+	overflow-wrap: anywhere;
+	font-variant-numeric: tabular-nums;
+}
+.launcher-answer-value.is-result {
+	font-size: 1.4rem;
+	font-weight: 600;
+	color: var(--hero-search-text-strong);
+}
+.launcher-answer-label {
+	font-size: 0.62rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--hero-search-text-dim);
+}
+.launcher-answer-arrow { width: 18px; height: 18px; color: var(--hero-search-text-dim); }
+@media (max-width: 767px) {
+	.launcher-item.is-answer { padding: 12px 10px; gap: 8px; }
+	.launcher-answer-value { font-size: 0.9rem; }
+	.launcher-answer-value.is-result { font-size: 1.15rem; }
+}
+
 /* Photo grid and poster rows */
 .launcher-grid, .launcher-posters {
 	display: flex;
