@@ -7,7 +7,7 @@
 //                              page, through `reminders` and GET /api/reminders
 
 import { createHash } from 'node:crypto';
-import { parseEvents } from './ical.js';
+import { alarmTimes, parseEvents } from './ical.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
@@ -108,7 +108,7 @@ const adapter = {
 	 * Alarms only come from the events themselves: no reminder set, no popup.
 	 */
 	async reminders({ config, fetch, timeZone, now = Date.now() }) {
-		const events = await eventsBetween(config, fetch, now - DAY, now + 8 * DAY, { timeZone });
+		const events = await eventsBetween(config, fetch, now - DAY, now + 8 * DAY, { timeZone, alarms: true });
 		const href = config.webUrl || config.url;
 		const out = [];
 		for (const e of events) {
@@ -132,7 +132,7 @@ const adapter = {
 
 // ── Events ────────────────────────────────────────────────────────
 
-async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term = '' } = {}) {
+async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term = '', alarms = false } = {}) {
 	const calendars = await findCalendars(config, fetch);
 	const lists = await Promise.all(
 		calendars.map(async (calendar) => {
@@ -142,18 +142,53 @@ async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term =
 			if (term && res.status !== 207) res = await dav(config, fetch, calendar.href, 'REPORT', calendarQuery(from, to, ''), 1);
 			if (res.status !== 207) throw new Error(`Calendar “${calendar.name}” answered ${res.status}`);
 			const out = [];
-			for (const r of parseMultistatus(await res.text())) {
+			const silent = new Set();
+			for (const r of parseMultistatus(await res.text(), res.url)) {
 				const data = r.props['calendar-data'];
 				if (!data) continue;
 				for (const event of parseEvents(data, timeZone)) {
 					if ((event.end ?? event.start) < from || event.start > to) continue;
 					out.push({ ...event, calendar });
+					if (!event.alarms.length) silent.add(r.href);
 				}
 			}
+			if (alarms && silent.size) await borrowAlarms(config, fetch, calendar, [...silent], out, timeZone);
 			return out;
 		})
 	);
 	return lists.flat();
+}
+
+/**
+ * Some servers (Stalwart) drop VALARMs from the instances they expand, so a
+ * reminder never shows. Fetch the stored copies of the events that came back
+ * without alarms and give each instance the alarms of the event it came from.
+ */
+async function borrowAlarms(config, fetch, calendar, hrefs, events, timeZone) {
+	const res = await dav(config, fetch, calendar.href, 'REPORT', calendarMultiget(hrefs), 1);
+	if (res.status !== 207) return;
+	const stored = new Map();
+	for (const r of parseMultistatus(await res.text(), res.url)) {
+		for (const e of parseEvents(r.props['calendar-data'] || '', timeZone)) {
+			const key = e.recurrenceId == null ? e.uid : `${e.uid}@${e.recurrenceId}`;
+			if (!stored.has(key)) stored.set(key, e);
+		}
+	}
+	for (const e of events) {
+		if (e.alarms.length) continue;
+		const own = e.recurrenceId != null ? stored.get(`${e.uid}@${e.recurrenceId}`) : null;
+		const from = own || stored.get(e.uid);
+		if (!from?.alarmSpecs.length) continue;
+		e.alarms = alarmTimes(from.alarmSpecs, e.start, e.end, timeZone, { relativeOnly: from.start !== e.start });
+	}
+}
+
+function calendarMultiget(hrefs) {
+	const list = hrefs.map((h) => `<d:href>${escapeXml(new URL(h).pathname)}</d:href>`).join('');
+	return `<?xml version="1.0" encoding="utf-8"?>
+<c:calendar-multiget xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+  <d:prop><c:calendar-data/></d:prop>${list}
+</c:calendar-multiget>`;
 }
 
 function calendarQuery(from, to, term) {

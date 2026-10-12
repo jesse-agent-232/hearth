@@ -166,7 +166,7 @@ test('credentials only go to the configured origin, its https upgrade, or iCloud
 
 // ── The adapter against a fake server ─────────────────────────────
 
-function fakeServer({ now }) {
+function fakeServer({ now, expandDropsAlarms = false }) {
 	const start = icsTime(now + 30 * MIN);
 	const event = [
 		'BEGIN:VCALENDAR',
@@ -209,7 +209,10 @@ function fakeServer({ now }) {
 		if (path === '/dav/alice/cals/home/' && init.method === 'REPORT') {
 			// Pretend text-match is unsupported, as some servers do.
 			if (init.body.includes('text-match')) return new Response('', { status: 501 });
-			return ms(`<d:response><d:href>/dav/alice/cals/home/dentist.ics</d:href><d:propstat><d:prop><c:calendar-data>${event.replace(/&/g, '&amp;')}</c:calendar-data></d:prop>${ok}</d:propstat></d:response>`);
+			// Stalwart: expanded instances come back without their VALARMs.
+			const expanded = !init.body.includes('calendar-multiget');
+			const data = expandDropsAlarms && expanded ? event.replace(/BEGIN:VALARM[\s\S]*END:VALARM\r\n/, '') : event;
+			return ms(`<d:response><d:href>/dav/alice/cals/home/dentist.ics</d:href><d:propstat><d:prop><c:calendar-data>${data.replace(/&/g, '&amp;')}</c:calendar-data></d:prop>${ok}</d:propstat></d:response>`);
 		}
 		return new Response('', { status: 404 });
 	};
@@ -260,4 +263,14 @@ test('reminders: the event’s own alarm, inside the window', async () => {
 
 	// Two days on, the alarm has long passed.
 	assert.deepEqual(await caldav.reminders({ config, fetch, timeZone: 'UTC', now: now + 2 * 24 * 60 * MIN }), []);
+});
+
+test('reminders: alarms the server dropped while expanding come from the stored event', async () => {
+	const now = Date.now();
+	const { fetch, calls } = fakeServer({ now, expandDropsAlarms: true });
+	const reminders = await caldav.reminders({ config, fetch, timeZone: 'UTC', now });
+	assert.equal(reminders.length, 1);
+	assert.equal(reminders[0].at, reminders[0].start - 15 * MIN);
+	const multiget = calls.find((c) => c.body?.includes('calendar-multiget'));
+	assert.match(multiget.body, /<d:href>\/dav\/alice\/cals\/home\/dentist\.ics<\/d:href>/);
 });

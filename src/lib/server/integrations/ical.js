@@ -123,16 +123,32 @@ function finishEvent({ props, alarms }, zone) {
 	}
 	// A recurring event's instances share a UID; RECURRENCE-ID tells them apart.
 	const uid = props.UID?.value || '';
+	const rid = props['RECURRENCE-ID'];
 	return {
 		uid,
 		id: `${uid}@${start.t}`,
+		recurrenceId: rid ? (parseTime(rid.value, rid.params, zone)?.t ?? null) : null,
 		summary: props.SUMMARY ? unescapeText(props.SUMMARY.value) : '',
 		location: props.LOCATION ? unescapeText(props.LOCATION.value) : '',
 		start: start.t,
 		end: end ?? null,
 		allDay: start.allDay,
-		alarms: alarms.map((a) => alarmTime(a, start.t, end ?? start.t, zone)).filter((t) => t != null)
+		alarms: alarmTimes(alarms, start.t, end, zone),
+		// As written, to place on other instances of the event: see alarmTimes.
+		alarmSpecs: alarms
 	};
+}
+
+/**
+ * When an event's alarms go off. `specs` are its VALARMs as parsed; pass
+ * `{ relativeOnly: true }` when borrowing them for another instance of a
+ * repeating event, where a fixed date-time trigger belongs to the original.
+ */
+export function alarmTimes(specs, start, end, zone = 'UTC', { relativeOnly = false } = {}) {
+	return specs
+		.filter((a) => !relativeOnly || a.TRIGGER?.params.VALUE?.toUpperCase() !== 'DATE-TIME')
+		.map((a) => alarmTime(a, start, end ?? start, zone))
+		.filter((t) => t != null);
 }
 
 function alarmTime(alarm, start, end, zone) {
