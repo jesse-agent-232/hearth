@@ -1756,6 +1756,20 @@ body.search-active .hero-area {
 	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
 }
 .launcher-item.is-answer.is-selected { box-shadow: inset 0 0 0 1px var(--launcher-sel-ring); }
+.launcher-item.is-answer { cursor: pointer; transition: background-color 120ms ease; }
+.launcher-item.is-answer:hover { background: color-mix(in srgb, var(--hero-search-text) 6%, var(--hero-search-chip-bg)); }
+/* Each result value is its own copy target. */
+.launcher-answer-copy {
+	padding: 6px 10px;
+	border: none;
+	border-radius: 10px;
+	background: transparent;
+	font: inherit;
+	cursor: pointer;
+	transition: background-color 120ms ease;
+}
+.launcher-answer-copy:hover { background: color-mix(in srgb, var(--hero-search-text) 9%, transparent); }
+.launcher-answer-copy.is-copied .launcher-answer-label { color: var(--hero-search-text-strong); }
 .launcher-answer-side {
 	display: flex;
 	flex-direction: column;

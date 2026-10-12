@@ -309,6 +309,18 @@
 		try { await navigator.clipboard.writeText(text); } catch {}
 	}
 
+	// Which value of the answer card was just copied, for its "Copied" label.
+	// Tied to the query, so typing on clears it.
+	let answerCopied = $state(null);
+	let answerCopiedTimer;
+	function copyAnswer(value, index) {
+		copyText(value.copy);
+		answerCopied = { index, query };
+		clearTimeout(answerCopiedTimer);
+		answerCopiedTimer = setTimeout(() => (answerCopied = null), 1500);
+		inputEl?.focus();
+	}
+
 	function finish() {
 		query = '';
 		activeScope = null;
@@ -508,7 +520,8 @@
 			const answer = instantAnswer(q);
 			if (answer) {
 				// A bare "2ft" answers in more than one unit: Enter copies the
-				// first, the actions panel offers each.
+				// first, the actions panel offers each. Copying keeps the search
+				// open, so it works as a calculator.
 				const values = [{ ...answer.to, copy: answer.copy }, ...(answer.also || [])];
 				out.push({
 					id: 'answer',
@@ -519,9 +532,9 @@
 						title: answer.to.value,
 						subtitle: answer.from.value,
 						answer,
-						actions: values.map((v) => ({
+						actions: values.map((v, i) => ({
 							label: values.length > 1 ? `Copy ${v.value}` : 'Copy answer',
-							run: () => { copyText(v.copy); finish(); }
+							run: () => copyAnswer(v, i)
 						}))
 					}]
 				});
@@ -1019,6 +1032,8 @@
 			onselect={(k) => { selectedKey = k; userMoved = true; }}
 			onrun={runItem}
 			onaction={(item, action) => { panelOpen = false; action.run(); }}
+			answerCopied={answerCopied?.query === query ? answerCopied.index : -1}
+			oncopyanswer={(item, i) => item.actions[i]?.run()}
 			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
 		/>
 	{/if}

@@ -22,7 +22,9 @@
 		onselect = () => {},
 		onrun = () => {},
 		onaction = () => {},
-		onpanel = () => {}
+		onpanel = () => {},
+		answerCopied = -1,
+		oncopyanswer = () => {}
 	} = $props();
 
 	const flat = $derived(sections.flatMap((s) => s.items));
@@ -236,11 +238,19 @@
 									</div>
 									<svg class="launcher-answer-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
 									<div class="launcher-answer-results">
-										{#each [item.answer.to, ...(item.answer.also || [])] as result}
-											<div class="launcher-answer-side">
+										{#each [item.answer.to, ...(item.answer.also || [])] as result, j}
+											<!-- Each value copies itself; the card copies the first. -->
+											<button
+												type="button"
+												tabindex="-1"
+												class="launcher-answer-side launcher-answer-copy"
+												class:is-copied={answerCopied === j}
+												title="Copy {result.value}"
+												onclick={(e) => { e.stopPropagation(); oncopyanswer(item, j); }}
+											>
 												<span class="launcher-answer-value is-result">{result.value}</span>
-												<span class="launcher-answer-label">{result.label}</span>
-											</div>
+												<span class="launcher-answer-label">{answerCopied === j ? '✓ Copied' : result.label}</span>
+											</button>
 										{/each}
 									</div>
 								{:else if section.layout === 'tracks'}
