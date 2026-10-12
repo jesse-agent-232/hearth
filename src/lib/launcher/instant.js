@@ -145,7 +145,7 @@ const UNITS = {
 	data: {
 		bit: 0.125, B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12, PB: 1e15,
 		KiB: 1024, MiB: 1024 ** 2, GiB: 1024 ** 3, TiB: 1024 ** 4,
-		kbit: 125, Mbit: 125e3, Gbit: 125e6
+		kbit: 125, Mbit: 125e3, Gbit: 125e6, Tbit: 125e9
 	},
 	time: { ms: 0.001, s: 1, min: 60, h: 3600, d: 86400, wk: 604800, yr: 31557600 },
 	speed: { 'm/s': 1, 'km/h': 1 / 3.6, mph: 0.44704, kn: 1852 / 3600, 'ft/s': 0.3048 },
@@ -157,7 +157,7 @@ const NAMES = {
 	mg: 'Milligrams', g: 'Grams', kg: 'Kilograms', t: 'Tonnes', oz: 'Ounces', lb: 'Pounds', st: 'Stone',
 	ml: 'Millilitres', cl: 'Centilitres', dl: 'Decilitres', l: 'Litres', tsp: 'Teaspoons', tbsp: 'Tablespoons', floz: 'US fluid ounces', cup: 'US cups', pt: 'US pints', qt: 'US quarts', gal: 'US gallons',
 	bit: 'Bits', B: 'Bytes', KB: 'Kilobytes', MB: 'Megabytes', GB: 'Gigabytes', TB: 'Terabytes', PB: 'Petabytes',
-	KiB: 'Kibibytes', MiB: 'Mebibytes', GiB: 'Gibibytes', TiB: 'Tebibytes', kbit: 'Kilobits', Mbit: 'Megabits', Gbit: 'Gigabits',
+	KiB: 'Kibibytes', MiB: 'Mebibytes', GiB: 'Gibibytes', TiB: 'Tebibytes', kbit: 'Kilobits', Mbit: 'Megabits', Gbit: 'Gigabits', Tbit: 'Terabits',
 	ms: 'Milliseconds', s: 'Seconds', min: 'Minutes', h: 'Hours', d: 'Days', wk: 'Weeks', yr: 'Years',
 	'm/s': 'Metres per second', 'km/h': 'Kilometres per hour', mph: 'Miles per hour', kn: 'Knots', 'ft/s': 'Feet per second',
 	'°C': 'Celsius', '°F': 'Fahrenheit', K: 'Kelvin'
@@ -172,7 +172,7 @@ const ALIASES = {
 	milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l', teaspoon: 'tsp', tablespoon: 'tbsp',
 	'fl oz': 'floz', 'fluid ounce': 'floz', pint: 'pt', quart: 'qt', gallon: 'gal',
 	byte: 'B', kb: 'KB', kilobyte: 'KB', mb: 'MB', megabyte: 'MB', gb: 'GB', gigabyte: 'GB', tb: 'TB', terabyte: 'TB', pb: 'PB', petabyte: 'PB',
-	kib: 'KiB', mib: 'MiB', gib: 'GiB', tib: 'TiB', kbps: 'kbit', mbps: 'Mbit', gbps: 'Gbit', kilobit: 'kbit', megabit: 'Mbit', gigabit: 'Gbit',
+	kib: 'KiB', mib: 'MiB', gib: 'GiB', tib: 'TiB', kbps: 'kbit', mbps: 'Mbit', gbps: 'Gbit', tbps: 'Tbit', kilobit: 'kbit', megabit: 'Mbit', gigabit: 'Gbit', terabit: 'Tbit',
 	millisecond: 'ms', sec: 's', second: 's', minute: 'min', mins: 'min', hr: 'h', hrs: 'h', hour: 'h', day: 'd', days: 'd', week: 'wk', weeks: 'wk', year: 'yr', yrs: 'yr',
 	mps: 'm/s', kph: 'km/h', kmh: 'km/h', kmph: 'km/h', knot: 'kn', knots: 'kn', kt: 'kn', fps: 'ft/s',
 	c: '°C', celsius: '°C', centigrade: '°C', f: '°F', fahrenheit: '°F', k: 'K', kelvin: 'K'
@@ -189,7 +189,7 @@ for (const [alias, key] of Object.entries(ALIASES)) {
 
 // A lower-case b after a capital prefix is bits (Mb, Gb); all lower case
 // ("mb") is read the casual way, as bytes.
-const BITS = { b: 'bit', Kb: 'kbit', Mb: 'Mbit', Gb: 'Gbit' };
+const BITS = { b: 'bit', Kb: 'kbit', Mb: 'Mbit', Gb: 'Gbit', Tb: 'Tbit' };
 
 function findUnit(raw) {
 	const s = raw.trim().replace(/°\s*/g, '').replace(/\s+/g, ' ');

@@ -50,6 +50,7 @@ test('converts units within a group, and refuses across groups', () => {
 	// Capital prefix + lower-case b is bits; all lower case is bytes.
 	assert.equal(convert(100, 'Mb', 'MB').value, 12.5);
 	assert.equal(convert(100, 'mb', 'MB').value, 100);
+	assert.equal(convert(1, 'Tb', 'GB').value, 125);
 	assert.equal(convert(8, 'b', 'B').value, 1);
 	assert.equal(convert(1, 'ton', 'kg'), null);
 	assert.equal(convert(5, 'km', 'kg'), null);
