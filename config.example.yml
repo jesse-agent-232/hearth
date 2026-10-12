@@ -158,7 +158,7 @@ search:
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
 # Nextcloud, Planka, Karakeep, Linkwarden, Jellyfin, Plex, Navidrome,
-# Audiobookshelf, Mealie, Seerr, Miniflux. Add more in
+# Audiobookshelf, Mealie, Seerr, Miniflux, Komga. Add more in
 # src/lib/server/integrations/.
 #
 # Each key must match both the adapter's `id` AND an app `id` in the apps
@@ -290,6 +290,13 @@ integrations:
     enabled: true
     name: "News"
     default_url: "https://miniflux.example.com"
+    surfaces:
+      search: true
+      widgets: false
+  komga:
+    enabled: true
+    name: "Comics"
+    default_url: "https://komga.example.com"
     surfaces:
       search: true
       widgets: false
