@@ -49,6 +49,7 @@ const adapter = {
 		{
 			key: 'webUrl',
 			type: 'url',
+			link: true,
 			label: 'Calendar web address',
 			placeholder: 'https://cloud.example.com/apps/calendar',
 			help: 'Optional. Where an event opens when you pick it in search.'
@@ -284,10 +285,16 @@ async function dav(config, fetch, url, method, body, depth) {
 	throw new Error('Too many redirects');
 }
 
+// Providers that move each account to a host of its own beside the one the
+// user typed: iCloud answers on caldav.icloud.com and hands each account a
+// pNN-caldav.icloud.com. Only listed here, never inferred: on a shared
+// domain (duckdns.org, ngrok.io) the host next door is someone else's.
+const SIBLING_DOMAINS = ['icloud.com'];
+
 /**
- * Where the user's password may be sent: the configured origin, or an https
- * host one level beside it — iCloud answers on caldav.icloud.com and hands
- * each account a pNN-caldav.icloud.com.
+ * Where the user's password may be sent: the configured origin, the same
+ * host upgraded to https, or, for a listed provider, another https host of
+ * that provider.
  */
 export function allowedUrl(url, base) {
 	let u, b;
@@ -298,9 +305,11 @@ export function allowedUrl(url, base) {
 		return false;
 	}
 	if (u.origin === b.origin) return true;
-	if (u.protocol !== 'https:' || b.protocol !== 'https:' || (u.port || '443') !== (b.port || '443')) return false;
-	const parent = b.hostname.split('.').slice(1).join('.');
-	return parent.includes('.') && u.hostname.endsWith('.' + parent);
+	if (u.protocol !== 'https:') return false;
+	if (b.protocol === 'http:') return u.hostname === b.hostname;
+	return SIBLING_DOMAINS.some(
+		(d) => (b.hostname === d || b.hostname.endsWith('.' + d)) && u.hostname.endsWith('.' + d)
+	);
 }
 
 // ── A small, forgiving multistatus reader ─────────────────────────
@@ -364,8 +373,10 @@ function decodeXml(s) {
 	return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>|&(#x[0-9a-f]+|#\d+|lt|gt|amp|quot|apos);/gi, (m, cdata, ent) => {
 		if (cdata != null) return cdata;
 		const e = ent.toLowerCase();
-		if (e.startsWith('#x')) return String.fromCodePoint(parseInt(e.slice(2), 16));
-		if (e.startsWith('#')) return String.fromCodePoint(parseInt(e.slice(1), 10));
+		if (e.startsWith('#')) {
+			const code = e.startsWith('#x') ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+			return code <= 0x10ffff ? String.fromCodePoint(code) : '\ufffd';
+		}
 		return { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" }[e];
 	});
 }

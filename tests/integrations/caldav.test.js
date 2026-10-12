@@ -137,11 +137,25 @@ END:VCALENDAR]]></calendar-data></prop>
 	assert.equal(principal.props['calendar-data'], 'BEGIN:VCALENDAR\nEND:VCALENDAR');
 });
 
-test('credentials only go to the configured origin, or an https sibling host', () => {
+test('multistatus: an out-of-range character reference does not throw', () => {
+	const xml = '<multistatus><response><href>/c/</href><propstat><prop><calendar-data>SUMMARY:a&#x110000;b&#65;</calendar-data></prop><status>HTTP/1.1 200 OK</status></propstat></response></multistatus>';
+	assert.equal(parseMultistatus(xml)[0].props['calendar-data'], 'SUMMARY:a\ufffdbA');
+});
+
+test('credentials only go to the configured origin, its https upgrade, or iCloud\'s account hosts', () => {
 	assert.equal(allowedUrl('https://cloud.example.com/remote.php/dav/x', 'https://cloud.example.com/remote.php/dav'), true);
 	assert.equal(allowedUrl('https://p42-caldav.icloud.com/123/', 'https://caldav.icloud.com'), true);
 	assert.equal(allowedUrl('http://p42-caldav.icloud.com/123/', 'https://caldav.icloud.com'), false);
 	assert.equal(allowedUrl('https://evil.example.org/', 'https://cloud.example.com'), false);
+	// Shared parent domains: the host next door is someone else's.
+	assert.equal(allowedUrl('https://evil.duckdns.org/', 'https://me.duckdns.org/'), false);
+	assert.equal(allowedUrl('https://attacker.ngrok.io/', 'https://me.ngrok.io/'), false);
+	assert.equal(allowedUrl('https://other.example.com/', 'https://cloud.example.com/'), false);
+	// Same host, upgraded to https: fine. Downgraded: no.
+	assert.equal(allowedUrl('https://radicale.home/alice/', 'http://radicale.home:5232/'), true);
+	assert.equal(allowedUrl('http://cloud.example.com/', 'https://cloud.example.com/'), false);
+	// iCloud from plain http is not iCloud.
+	assert.equal(allowedUrl('https://p42-caldav.icloud.com/', 'http://caldav.icloud.com/'), false);
 	assert.equal(allowedUrl('https://cloud.example.com:8443/', 'https://cloud.example.com'), false);
 	// One label short of a real domain: no siblings, or every .com would pass.
 	assert.equal(allowedUrl('https://other.com/', 'https://example.com'), false);

@@ -50,9 +50,12 @@ export function checkUrls(adapter, operator, config) {
 	return { ok: true, config: out };
 }
 
-/** True when any URL field points at a different origin in `after`. */
+/**
+ * True when any URL field Holm sends credentials to points at a different
+ * origin in `after`. `link` fields are pages for the browser only.
+ */
 export function urlOriginChanged(adapter, before, after) {
-	return urlFields(adapter).some((field) => {
+	return urlFields(adapter).filter((field) => !field.link).some((field) => {
 		const was = before?.[field.key];
 		return !!was && originOf(was) !== originOf(after?.[field.key]);
 	});

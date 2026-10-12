@@ -18,6 +18,7 @@
  * @property {string} [fromOperatorDefault]     If set, the form pre-fills from `integrations.<id>.<value>` in config.yml
  * @property {boolean} [hidden]                 Stored and redacted like any field, but never rendered — filled by `signIn`
  * @property {boolean} [trim]                   Defaults to true; set false where surrounding spaces matter (a password)
+ * @property {boolean} [link]                   A 'url' field the browser only opens (a web page) and Holm never sends credentials to, so changing its origin keeps the stored secrets
  */
 
 /**

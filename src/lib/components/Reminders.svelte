@@ -42,8 +42,17 @@
 		try { localStorage.setItem(SHOWN_KEY, JSON.stringify(shown)); } catch { /* private mode: shows again next load */ }
 	}
 
+	// Due while this tab is hidden and can't notify: wait until it's seen, so
+	// a tab the user is looking at gets the reminder first.
+	const waiting = new Map();
+
 	function show(r) {
 		if (readShown()[r.id]) return;
+		if (document.hidden && permission !== 'granted') {
+			waiting.set(r.id, r);
+			return;
+		}
+		waiting.delete(r.id);
 		markShown(r.id);
 		toasts = [...toasts.filter((t) => t.id !== r.id), r].slice(-MAX_TOASTS);
 		if (document.hidden && permission === 'granted') {
@@ -83,6 +92,7 @@
 		const onVisible = () => {
 			if (document.visibilityState === 'visible') {
 				now = Date.now();
+				for (const r of [...waiting.values()]) show(r);
 				refresh();
 			}
 		};

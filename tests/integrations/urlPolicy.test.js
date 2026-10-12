@@ -56,6 +56,13 @@ test('origin changes are detected, path changes are not', () => {
 	assert.equal(urlOriginChanged(adapter, {}, { url: 'https://new.example.org' }), false);
 });
 
+test('a link field moving origin keeps the secrets', () => {
+	const withLink = { configSchema: [...adapter.configSchema, { key: 'webUrl', type: 'url', label: 'Web', link: true }] };
+	const before = { url: 'https://a.example.org/dav', webUrl: 'https://a.example.org/web' };
+	assert.equal(urlOriginChanged(withLink, before, { ...before, webUrl: 'https://web.example.net/' }), false);
+	assert.equal(urlOriginChanged(withLink, before, { ...before, url: 'https://b.example.net/dav' }), true);
+});
+
 test('withoutSecrets drops secret and server-set fields only', () => {
 	const out = withoutSecrets(adapter, {
 		url: 'https://a.example.org',
