@@ -1760,7 +1760,7 @@ body.search-active .hero-area {
 .launcher-item.is-answer:hover { background: color-mix(in srgb, var(--hero-search-text) 6%, var(--hero-search-chip-bg)); }
 /* Each result value is its own copy target. */
 .launcher-answer-copy {
-	padding: 6px 10px;
+	padding: 6px 22px;
 	border: none;
 	border-radius: 10px;
 	background: transparent;
@@ -1804,7 +1804,7 @@ body.search-active .hero-area {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: space-evenly;
-	gap: 8px 20px;
+	gap: 8px 6px;
 	min-width: 0;
 }
 @media (max-width: 767px) {
