@@ -10,6 +10,9 @@
 
 	const MAX = 5;
 	const fields = $derived(integration.configSchema.filter((f) => !f.hidden));
+	// Advanced starts open when one of its fields already has a value, and
+	// isn't closed again while it's being edited.
+	const openIf = (node, open) => { node.open = !!open; };
 	const accounts = $derived(integration.userState?.config?.accounts || []);
 	const first = $derived(integration.userState?.config || {});
 
@@ -185,7 +188,7 @@
 		{/snippet}
 		{#each fields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
 		{#if fields.some((f) => f.advanced)}
-			<details class="advanced">
+			<details class="advanced" use:openIf={fields.some((f) => f.advanced && form[f.key])}>
 				<summary class="text-[0.7rem] text-content-dim">Advanced</summary>
 				<div class="space-y-2 pt-2">
 					{#each fields.filter((f) => f.advanced) as field}{@render fieldRow(field)}{/each}

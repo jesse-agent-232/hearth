@@ -53,6 +53,9 @@
 	const hasSearch = $derived((integration.availableSurfaces || []).includes('search'));
 	const hasWidgets = $derived((integration.availableSurfaces || []).includes('widgets') && integration.widgets?.length > 0);
 	const visibleFields = $derived(integration.configSchema.filter((f) => !f.hidden));
+	// Advanced starts open when one of its fields already has a value, and
+	// isn't closed again while it's being edited.
+	const openIf = (node, open) => { node.open = !!open; };
 	const signedInAs = $derived(integration.signIn && connected ? integration.userState?.config?.userName : '');
 	// Seerr can sign in through Jellyfin or Plex: config.via names the app,
 	// or the integration itself for a direct sign-in.
@@ -418,7 +421,7 @@
 					{/snippet}
 					{#each visibleFields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
 					{#if visibleFields.some((f) => f.advanced)}
-						<details class="advanced">
+						<details class="advanced" use:openIf={visibleFields.some((f) => f.advanced && formConfig[f.key])}>
 							<summary class="text-[0.7rem] text-content-dim">Advanced</summary>
 							<div class="space-y-2 pt-2">
 								{#each visibleFields.filter((f) => f.advanced) as field}{@render fieldRow(field)}{/each}
