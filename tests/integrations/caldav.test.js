@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseEvents, parseTime, parseDuration } from '../../src/lib/server/integrations/ical.js';
+import { parseEvents, parseTime, parseDuration, onlyLink } from '../../src/lib/server/integrations/ical.js';
 import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress, serverName } from '../../src/lib/server/integrations/caldav.js';
 
 const MIN = 60 * 1000;
@@ -367,4 +367,13 @@ test('parseEvents: finds the video call link', () => {
 	assert.equal(ev(['URL:https://example.com/agenda', 'DESCRIPTION:See https://zoom.us.evil.example/j/1']).call, null);
 	assert.equal(ev(['CONFERENCE;VALUE=URI:http://meet.jit.si/Room']).call, null);
 	assert.equal(ev(['CONFERENCE;VALUE=URI:javascript:alert(1)']).call, null);
+});
+
+test('onlyLink: a location that is just the call link', () => {
+	// The call link comes back normalised; the location as typed.
+	assert.equal(onlyLink('https://meet.jit.si', 'https://meet.jit.si/'), true);
+	assert.equal(onlyLink(' https://meet.jit.si/Room ', 'https://meet.jit.si/Room'), true);
+	assert.equal(onlyLink('Room 4, https://meet.jit.si/Room', 'https://meet.jit.si/Room'), false);
+	assert.equal(onlyLink('https://meet.jit.si/Room', null), false);
+	assert.equal(onlyLink('', 'https://meet.jit.si/Room'), false);
 });

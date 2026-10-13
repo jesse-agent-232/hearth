@@ -1,7 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
-	import { nowPlaying } from '$lib/stores/player.js';
 
 	// Calendar reminders, shown on the page at the times the events' own
 	// reminders say. Only runs while some connected integration has its
@@ -151,7 +150,7 @@
 </script>
 
 {#if toasts.length}
-	<div class="reminders" class:above-player={$nowPlaying} role="region" aria-label="Reminders" aria-live="polite">
+	<div class="reminders" role="region" aria-label="Reminders" aria-live="polite">
 		{#each toasts as r (r.id)}
 			<div class="reminder glass-card menu-surface animate-slide-up">
 				<div class="reminder-icon" aria-hidden="true">
@@ -160,10 +159,10 @@
 				<div class="reminder-text">
 					<div class="reminder-title" title={r.title}>{r.title}</div>
 					<div class="reminder-sub">{when(r, now)}</div>
-					{#if r.location && r.location !== r.call}<div class="reminder-sub" title={r.location}>{r.location}</div>{/if}
+					{#if r.location}<div class="reminder-sub" title={r.location}>{r.location}</div>{/if}
 					<div class="reminder-actions">
 						{#if r.call}
-							<a class="reminder-btn" href={r.call} target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Join call</a>
+							<a class="reminder-btn" href={r.call} title="Opens {new URL(r.call).host}" target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Join call</a>
 						{/if}
 						{#if r.href}
 							<a class="reminder-btn" href={r.href} target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Open</a>
@@ -178,24 +177,8 @@
 {/if}
 
 <style>
-	/* Bottom right, clear of the profile button; stacked above the corner
-	   player when a song is playing (70px tall, 8px apart). */
-	.reminders {
-		--reminders-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-		position: fixed;
-		z-index: 60;
-		bottom: var(--reminders-bottom);
-		right: 16px;
-		width: min(340px, calc(100vw - 24px));
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-	.reminders.above-player { bottom: calc(var(--reminders-bottom) + 78px); }
-	/* Phones: the search is docked at the bottom, so sit just above it. */
-	@media (max-width: 767px) {
-		.reminders { right: 12px; --reminders-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + 50px + 10px); }
-	}
+	/* Placed by CornerStack, above the player. */
+	.reminders { display: flex; flex-direction: column; gap: 8px; }
 	.reminder {
 		display: flex;
 		gap: 12px;

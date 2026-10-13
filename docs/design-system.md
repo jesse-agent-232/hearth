@@ -261,6 +261,17 @@ Copy-paste these for common components.
 </div>
 ```
 
+### Corner stack
+
+Small cards that come and go on their own (a calendar reminder, the music player) live in the bottom-right corner, above the docked search on a phone. They share one container, `CornerStack.svelte`, mounted once on the page; each component renders its cards in flow inside it, so a new card pushes the others up instead of covering them. Don't give these cards `position: fixed` or their own offsets. The last child sits nearest the corner, so put what stays longest (the player) last.
+
+```svelte
+<CornerStack>
+  <Reminders />
+  <MiniPlayer />
+</CornerStack>
+```
+
 ### Hero search palette
 
 ```html

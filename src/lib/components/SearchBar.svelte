@@ -409,9 +409,10 @@
 		open: detailView.r.href
 			? { label: openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
 			: null,
-		// A link the details bring (an event's video call).
+		// A link the details bring (an event's video call). The label names
+		// the host, since anyone who sends an invite picks the link.
 		link: detailView.data?.link?.href && /^https:\/\//.test(detailView.data.link.href)
-			? { label: detailView.data.link.label || 'Open', run: () => { openUrl(detailView.data.link.href, true); finish(); } }
+			? { label: `${detailView.data.link.label || 'Open'} · ${new URL(detailView.data.link.href).host}`, run: () => { openUrl(detailView.data.link.href, true); finish(); } }
 			: null
 	});
 

@@ -177,6 +177,11 @@ export function callLink(props) {
 	return null;
 }
 
+/** Whether `text` (an event's location, say) is nothing but the link `href`. */
+export function onlyLink(text, href) {
+	return !!href && !!text && httpsUrl(text)?.href === href;
+}
+
 /**
  * When an event's alarms go off. `specs` are its VALARMs as parsed; pass
  * `{ relativeOnly: true }` when borrowing them for another instance of a

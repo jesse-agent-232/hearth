@@ -9,7 +9,7 @@
 //                              its menu, through `upcoming` and GET /api/upcoming
 
 import { createHash } from 'node:crypto';
-import { alarmTimes, parseEvents, validZone } from './ical.js';
+import { alarmTimes, onlyLink, parseEvents, validZone } from './ical.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
@@ -123,7 +123,7 @@ const adapter = {
 		return {
 			title: e.summary || 'Untitled event',
 			// A location that is only the call link shows as the button instead.
-			facts: [formatWhen(when, timeZone), e.call && e.location.trim() === e.call ? '' : e.location].filter(Boolean),
+			facts: [formatWhen(when, timeZone), onlyLink(e.location, e.call) ? '' : e.location].filter(Boolean),
 			// Where the calendar lives, as a chip: a calendar's own name
 			// ("Stalwart Calendar (you@…)") says little.
 			genres: server ? [server] : [],
@@ -155,7 +155,8 @@ const adapter = {
 				out.push({
 					id: `caldav:${e.calendar.href}#${e.id}@${at}`,
 					title: e.summary || 'Untitled event',
-					location: e.location,
+					// A location that is only the call link shows as Join call.
+					location: onlyLink(e.location, e.call) ? '' : e.location,
 					start: e.start,
 					end: e.end,
 					allDay: e.allDay,

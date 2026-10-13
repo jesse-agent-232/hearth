@@ -95,12 +95,9 @@
 {/if}
 
 <style>
+	/* Placed by CornerStack. */
 	.mini-player {
-		position: fixed;
-		z-index: 55;
-		right: 16px;
-		bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-		width: min(340px, calc(100vw - 24px));
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: 12px;
@@ -108,10 +105,6 @@
 		border-radius: 16px;
 		overflow: hidden;
 		box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
-	}
-	/* Phones: the search is docked at the bottom, so sit just above it. */
-	@media (max-width: 767px) {
-		.mini-player { right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + 50px + 10px); }
 	}
 	.mini-player-art {
 		position: relative;
