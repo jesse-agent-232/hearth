@@ -49,7 +49,10 @@
 	let latest = [];
 
 	// A reminder's id is its event's, then `@` and the alarm time.
-	const eventOf = (id) => id.slice(0, id.lastIndexOf('@'));
+	const eventOf = (id) => {
+		const i = id.lastIndexOf('@');
+		return i < 0 ? id : id.slice(0, i);
+	};
 
 	// One card per event: a later alarm replaces the earlier one's card.
 	function show(r) {
