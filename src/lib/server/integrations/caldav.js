@@ -230,7 +230,6 @@ async function allEvents(config, fetch, from, to, opts) {
 	return ok.flatMap((l) => l.value);
 }
 
-// What details() needs to find the event again.
 function hostOf(url) {
 	try {
 		return new URL(url).host;
@@ -239,6 +238,7 @@ function hostOf(url) {
 	}
 }
 
+// What details() needs to find the event again.
 function detailParams(e, timeZone) {
 	return { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone, account: e.account.id };
 }
