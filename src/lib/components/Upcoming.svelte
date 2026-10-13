@@ -209,10 +209,10 @@
 	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
 	.pill-meta { display: none; }
 	@media (max-width: 767px) {
-		/* Rows of a fixed 1rem, so they line up with the weather's city. */
-		.upcoming-pill { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 0.375rem; row-gap: 4px; line-height: 1rem; text-align: left; }
-		.pill-when { display: none; }
-		.pill-meta { display: block; grid-column: 2; }
+		/* Title over time, flush with the clock: no calendar icon. */
+		.upcoming-pill { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 4px; line-height: 1rem; text-align: left; }
+		.upcoming-pill > .header-glyph, .pill-when { display: none; }
+		.pill-meta { display: block; }
 	}
 	.upcoming-pill:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 3px; border-radius: 4px; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
