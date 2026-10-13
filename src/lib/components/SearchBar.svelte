@@ -26,9 +26,19 @@
 	let resultsMaxHeight = $state(420);
 	// On desktop the open palette slides up toward the top of the viewport,
 	// Spotlight-style, so short screens (a 14" laptop) give the results most
-	// of the height instead of the strip under a mid-page bar. Phones leave
-	// the bar where it is. `lift` is the px the bar is raised by.
+	// of the height instead of the strip under a mid-page bar. On phones it
+	// pins to the top, just under the status bar, above the keyboard.
+	// `lift` is the px the bar is raised by.
 	let lift = $state(0);
+	// env(safe-area-inset-top) in px: the status bar in an installed app.
+	function safeAreaTop() {
+		const probe = document.createElement('div');
+		probe.style.cssText = 'position:absolute;visibility:hidden;padding-top:env(safe-area-inset-top, 0px)';
+		document.body.appendChild(probe);
+		const px = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+		probe.remove();
+		return px;
+	}
 	function recomputeResultsMaxHeight() {
 		if (!containerEl || typeof window === 'undefined') return;
 		const rect = containerEl.getBoundingClientRect();
@@ -38,8 +48,8 @@
 		const restTop = rect.top - shift;
 		const restBottom = rect.bottom - shift;
 		const desktop = window.matchMedia('(min-width: 768px)').matches;
-		const targetTop = Math.max(48, window.innerHeight * 0.1);
-		lift = desktop && inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
+		const targetTop = desktop ? Math.max(48, window.innerHeight * 0.1) : safeAreaTop() + 12;
+		lift = inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
 		const gap = 24;
 		// The visible bottom: above the on-screen keyboard, which on iOS
 		// covers the page without resizing it.

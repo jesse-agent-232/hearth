@@ -755,12 +755,10 @@ body.search-active .hero-area {
 	position: relative;
 	z-index: 2;
 }
-/* The open palette lifts over the header on desktop; the header sits
-   above the search bar for its weather menu, so swap them while the
-   palette is open (the header is dimmed and inert then anyway). */
-@media (min-width: 768px) {
-	body.search-active .launcher-host { z-index: 40; }
-}
+/* The open palette lifts over the header; the header sits above the
+   search bar for its weather menu, so swap them while the palette is open
+   (the header is dimmed and inert then anyway). */
+body.search-active .launcher-host { z-index: 40; }
 /* Focus state on .hero-search-form (defined above) handles the open-palette
    lift; keeping a separate body.search-active shadow would compete with it. */
 
@@ -2048,6 +2046,7 @@ body.search-active .hero-area {
 	font-size: 0.72rem;
 	color: var(--hero-search-text-dim);
 }
+.launcher-detail-facts > span { white-space: nowrap; }
 .launcher-detail-facts > span + span::before { content: '·'; margin-right: 6px; }
 .launcher-detail-rating { display: inline-flex; align-items: center; gap: 3px; color: var(--hero-search-text-strong); }
 .launcher-detail-rating svg { width: 11px; height: 11px; color: var(--accent, #f5b942); }
@@ -2061,6 +2060,16 @@ body.search-active .hero-area {
 .launcher-detail-body.is-compact .launcher-detail-buttons:empty { display: none; }
 @media (max-width: 640px) {
 	.launcher-detail-body.is-compact .launcher-detail-info { flex-direction: column; align-items: flex-start; gap: 8px; }
+	/* An event on a phone: a small icon beside the title, then the date, time
+	   and place across the full width, so they keep to one line. */
+	.launcher-detail-body.is-compact { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
+	.launcher-detail-body.is-compact .launcher-detail-info,
+	.launcher-detail-body.is-compact .launcher-detail-head { display: contents; }
+	.launcher-detail-poster.is-icon { width: 40px; }
+	.launcher-detail-body.is-compact .launcher-detail-title { font-size: 1.05rem; }
+	.launcher-detail-body.is-compact .launcher-detail-facts,
+	.launcher-detail-body.is-compact .launcher-detail-head > :not(.launcher-detail-title),
+	.launcher-detail-body.is-compact .launcher-detail-buttons { grid-column: 1 / -1; }
 }
 .launcher-detail-btn {
 	display: inline-flex;
@@ -2204,15 +2213,14 @@ body.search-active .hero-area {
 @media (min-width: 768px) {
 	.hero-search-input { font-size: 0.95rem; }
 }
-/* Desktop: the open palette rises toward the top of the viewport
-   (SearchBar sets --search-lift) so results get the screen height. */
-@media (min-width: 768px) {
-	.hero-search {
-		transform: translateY(calc(-1 * var(--search-lift, 0px)));
-		transition: transform 220ms var(--ease-standard);
-	}
+/* The open palette rises toward the top of the viewport (SearchBar sets
+   --search-lift) so results get the screen height: on phones, right up
+   under the status bar. */
+.hero-search {
+	transform: translateY(calc(-1 * var(--search-lift, 0px)));
+	transition: transform 220ms var(--ease-standard);
 }
-@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
 	.hero-search,
 	.hero-search.is-open { transition: none; }
 }
