@@ -107,6 +107,14 @@
 		open = false;
 	}
 
+	function hostOf(url) {
+		try {
+			return new URL(url).host;
+		} catch {
+			return '';
+		}
+	}
+
 	// The search bar opens the event's details, with its title as the query.
 	function showDetails(e) {
 		close();
@@ -131,7 +139,7 @@
 </script>
 
 {#if next}
-	<div class="relative min-w-0 self-start max-w-full" bind:this={rootEl}>
+	<div class="relative flex items-center gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
 			data-near={nearness}
@@ -145,6 +153,9 @@
 			<span class="truncate">{next.title}</span>
 			<span class="shrink-0 tabular-nums">· {when(next)}</span>
 		</button>
+		{#if next.call}
+			<a class="upcoming-call pill-call" href={next.call} target="_blank" rel="noopener noreferrer" title="Join call · {hostOf(next.call)}" aria-label="Join call on {hostOf(next.call)}">{@render camera()}</a>
+		{/if}
 
 		{#if open}
 			<div
@@ -156,17 +167,22 @@
 					{#each groups as g, gi (g.label)}
 						<div class="px-4 pt-2.5 pb-1 text-[0.68rem] uppercase tracking-[0.12em] text-content-dim {gi ? 'border-t border-border-card mt-1' : ''}">{g.label}</div>
 						{#each g.events as e (e.id)}
+							<div class="upcoming-item">
 							{#if e.detail && e.integrationId}
-								<button type="button" class="upcoming-row hover:bg-surface-card-hover" onclick={() => showDetails(e)}>
+								<button type="button" class="upcoming-row" onclick={() => showDetails(e)}>
 									{@render row(e)}
 								</button>
 							{:else if e.href}
-								<a class="upcoming-row hover:bg-surface-card-hover" href={e.href} target="_blank" rel="noopener noreferrer" onclick={close}>
+								<a class="upcoming-row" href={e.href} target="_blank" rel="noopener noreferrer" onclick={close}>
 									{@render row(e)}
 								</a>
 							{:else}
 								<div class="upcoming-row">{@render row(e)}</div>
 							{/if}
+							{#if e.call}
+								<a class="upcoming-call" href={e.call} target="_blank" rel="noopener noreferrer" onclick={close} title="Join call · {hostOf(e.call)}" aria-label="Join call on {hostOf(e.call)}">{@render camera()}</a>
+							{/if}
+							</div>
 						{/each}
 					{/each}
 				</div>
@@ -174,6 +190,10 @@
 		{/if}
 	</div>
 {/if}
+
+{#snippet camera()}
+	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/></svg>
+{/snippet}
 
 {#snippet row(e)}
 	<span class="tabular-nums text-content-muted">
@@ -198,7 +218,29 @@
 	.upcoming-pill:hover > *,
 	.upcoming-pill:focus-visible > * { opacity: 1; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
+	/* A row and, when the event has a video call, its camera on the right. */
+	.upcoming-item { display: flex; align-items: center; }
+	.upcoming-item:hover { background: var(--color-surface-card-hover); }
+	.upcoming-call {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		width: 1.75rem;
+		height: 1.75rem;
+		margin-right: 10px;
+		border-radius: 0.5rem;
+		color: var(--color-content-muted);
+		transition: color 0.15s ease, background 0.15s ease;
+	}
+	.upcoming-call:hover, .upcoming-call:focus-visible { color: var(--color-content); background: var(--color-surface-card-strong); }
+	.upcoming-call :global(svg) { width: 1rem; height: 1rem; }
+	/* Beside the pill, at the line's size. */
+	.pill-call { margin: 0; width: 1.5rem; height: 1.5rem; opacity: 0.75; }
+	.pill-call:hover, .pill-call:focus-visible { opacity: 1; }
 	.upcoming-row {
+		flex: 1;
+		min-width: 0;
 		display: grid;
 		grid-template-columns: 3.75rem minmax(0, 1fr);
 		gap: 10px;

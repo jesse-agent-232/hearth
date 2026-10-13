@@ -186,13 +186,14 @@ const adapter = {
 			.map((e) => ({
 				id: `caldav:${e.calendar.href}#${e.id}`,
 				title: e.summary || 'Untitled event',
-				location: e.location,
+				location: onlyLink(e.location, e.call) ? '' : e.location,
 				// Opens its details in search, as a search result would.
 				detail: detailParams(e, timeZone),
 				start: e.start,
 				end: e.end,
 				allDay: e.allDay,
-				href: webAddress(e.account)
+				href: webAddress(e.account),
+				call: e.call
 			}));
 	}
 };

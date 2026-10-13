@@ -378,6 +378,21 @@ test('upcoming: events still on or ahead, soonest first', async () => {
 	assert.deepEqual(await caldav.upcoming({ config, fetch, timeZone: 'UTC', now: now + 2 * 60 * MIN }), []);
 });
 
+test('upcoming: carries the video call, and a place that is only the link is dropped', async () => {
+	const now = Date.now();
+	const { fetch } = fakeServer({ now });
+	const call = async (url, init) => {
+		const res = await fetch(url, init);
+		if (init?.method !== 'REPORT') return res;
+		const text = (await res.text()).replace('LOCATION:High St', 'LOCATION:https://meet.jit.si/Room');
+		return new Response(text, { status: res.status, headers: res.headers });
+	};
+	const [dentist, gym] = await caldav.upcoming({ config, fetch: call, timeZone: 'UTC', now });
+	assert.equal(dentist.call, 'https://meet.jit.si/Room');
+	assert.equal(dentist.location, '');
+	assert.equal(gym.call, null);
+});
+
 test('parseEvents: finds the video call link', () => {
 	const ev = (lines) => parseEvents(['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:x', 'DTSTART:20261013T093000Z', ...lines, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n'))[0];
 	assert.equal(ev(['CONFERENCE;VALUE=URI;FEATURE=VIDEO:https://meet.jit.si/Room']).call, 'https://meet.jit.si/Room');
