@@ -132,7 +132,10 @@
 </script>
 
 {#if next}
-	<div class="relative flex items-center max-md:items-start gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
+	<!-- Phones: static, so the menu hangs from the header's wrap and spans
+	     its full width, edge to edge with the search bar. The wrap's height
+	     includes the header's 1.5rem bottom margin, so the menu backs it out. -->
+	<div class="relative max-md:static flex items-center max-md:items-start gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
 			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content"
@@ -154,7 +157,7 @@
 
 		{#if open}
 			<div
-				class="absolute left-0 top-full mt-2 z-[70] w-[20rem] max-w-[calc(100vw-2rem)] glass-card menu-surface rounded-xl shadow-theme animate-menu-up normal-case tracking-normal text-[0.78rem] font-mono text-content overflow-hidden"
+				class="absolute left-0 max-md:right-0 top-full max-md:top-[calc(100%-1.5rem)] mt-2 z-[70] w-[20rem] max-md:w-auto max-w-[calc(100vw-2rem)] max-md:max-w-none glass-card menu-surface rounded-xl shadow-theme animate-menu-up normal-case tracking-normal text-[0.78rem] font-mono text-content overflow-hidden"
 				role="dialog"
 				aria-label="Upcoming events"
 			>
