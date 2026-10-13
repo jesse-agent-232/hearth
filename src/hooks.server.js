@@ -3,6 +3,7 @@ import { dirname, join } from 'path';
 import { getConfig, getIntegrationsConfig } from '$lib/server/config.js';
 import { getMasterKey } from '$lib/server/secrets.js';
 import { resolveDbPath } from '$lib/server/db.js';
+import { parseFrameAncestors, allowFraming } from '$lib/server/framing.js';
 
 // Runs once at startup. Any problem here stops Holm with the reason, rather
 // than serving with sign-in off or an encryption key nobody chose.
@@ -36,10 +37,14 @@ export function init() {
 			console.warn(`[holm] config: integrations.${id} has no default_url, so users can point it at any http(s) host Holm can reach`);
 		}
 	}
+	for (const entry of parseFrameAncestors(config.security?.frame_ancestors).invalid) {
+		console.warn(`[holm] config: security.frame_ancestors entry ${JSON.stringify(entry)} is not an origin like https://dash.example.com, so it is ignored`);
+	}
 }
 
 // Response headers for every request. The Content-Security-Policy itself is
-// in svelte.config.js, where SvelteKit can add per-page nonces to it.
+// in svelte.config.js, where SvelteKit can add per-page nonces to it; only
+// its frame-ancestors is changed here, when the operator allows framing.
 const SECURITY_HEADERS = {
 	'x-frame-options': 'DENY',
 	'x-content-type-options': 'nosniff',
@@ -62,4 +67,5 @@ function addHeaders(headers) {
 	for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
 		if (!headers.has(name)) headers.set(name, value);
 	}
+	allowFraming(headers, parseFrameAncestors(getConfig().security?.frame_ancestors).allowed);
 }

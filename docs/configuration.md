@@ -231,6 +231,20 @@ Users connect integrations with their own credentials, encrypted at rest with AE
 
 For the list of supported apps, how users connect and how to add a new integration, see [integrations.md](integrations.md).
 
+## Embedding Holm in another page
+
+By default no other site can show Holm in a frame: every page answers `X-Frame-Options: DENY` and `frame-ancestors 'none'`. To embed it in a dashboard such as Dynacat or Homepage, list the pages' origins:
+
+```yaml
+security:
+  frame_ancestors:
+    - "https://dash.example.com"
+```
+
+Holm then answers `frame-ancestors 'self' https://dash.example.com` and drops `X-Frame-Options`. Each entry is a scheme and host with an optional port (`https://*.example.com` covers its subdomains). Anything else, such as a path or a bare `*`, is ignored with a warning at startup.
+
+Sign-in cookies are `SameSite=Lax`, so the browser only sends them into a frame whose parent page is on the same site. `dash.example.com` framing `home.example.com` works once you've signed in to Holm in a normal tab. Other sites, and a parent on a bare IP, get a signed-out page. Sign-in itself can't happen inside the frame, because identity providers refuse to be framed.
+
 ## Reference
 
 Every key Holm reads. "Reload" means a save takes effect without a restart.
@@ -261,4 +275,5 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `weather.enabled` | bool | `false` | yes | Users set their own location |
 | `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | See [Onboarding](#onboarding) |
 | `privacy.enabled` / `last_updated` / `file` / `sections` | | off | yes | `file` is relative to `config.yml` |
+| `security.frame_ancestors` | list of origins | none | yes | Pages allowed to show Holm in a frame. See [Embedding](#embedding-holm-in-another-page) |
 | `tips.*` | | | | Accepted, no effect in this release |

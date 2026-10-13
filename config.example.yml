@@ -356,3 +356,10 @@ privacy:
 # ── Tips ────────────────────────────────────────────────────
 # First-week tips are switched off in this release; a tips: block is accepted
 # and ignored.
+
+# ── Embedding ───────────────────────────────────────────────
+# Pages allowed to show Holm in an iframe, e.g. a dashboard. Unset, framing is
+# blocked. Origins only (scheme, host, optional port); see docs/configuration.md.
+# security:
+#   frame_ancestors:
+#     - "https://dash.example.com"
