@@ -5,10 +5,10 @@
 	// Calendar reminders, shown on the page at the times the events' own
 	// reminders say. Only runs while some connected integration has its
 	// Reminders widget switched on. A reminder stays up in every open tab,
-	// through reloads, until it is dismissed or put off with Later in any one.
+	// through reloads, until it is dismissed or snoozed in any one.
 	const POLL_MS = 5 * 60 * 1000;
-	// Reminder id → hidden until (ms): far ahead once dismissed, a while on
-	// for Later. Kept per browser; other tabs follow it through storage events.
+	// Reminder id → hidden until (ms): far ahead once dismissed, 10 minutes
+	// on Snooze. Kept per browser; other tabs follow it through storage events.
 	const CLOSED_KEY = 'holm_reminders_closed';
 	const DISMISSED_MS = 2 * 24 * 60 * 60 * 1000;
 	const MIN = 60 * 1000;
@@ -59,7 +59,7 @@
 		for (const t of timers.values()) clearTimeout(t);
 		timers.clear();
 		for (const r of reminders) {
-			// Put off with Later: back when that runs out.
+			// Snoozed: back when that runs out.
 			const delay = Math.max(r.at, closedUntil(r.id)) - Date.now();
 			if (delay <= 0) show(r);
 			else timers.set(r.id, setTimeout(() => show(r), Math.min(delay, 2 ** 31 - 1)));
@@ -88,7 +88,7 @@
 			}
 		};
 		// Dismissed or put off in another tab: clear it here too, and come
-		// back when that tab's Later runs out.
+		// back when that tab's Snooze runs out.
 		const onStorage = (e) => {
 			if (e.key !== CLOSED_KEY && e.key !== null) return;
 			toasts = toasts.filter((t) => closedUntil(t.id) <= Date.now());
@@ -113,19 +113,16 @@
 		toasts = toasts.filter((t) => t.id !== id);
 	}
 
-	// Back in 10 minutes once the event is half an hour off, every 30 in the
-	// two hours before that, and two hours before it starts if it's further.
-	// All-day events come back every 30.
-	function laterFor(r, at) {
+	// Back in 10 minutes, or when the event starts if that's sooner, the way
+	// the Mac's Calendar snoozes.
+	const SNOOZE_MS = 10 * MIN;
+	function snoozeFor(r, at) {
 		const left = r.start - at;
-		if (r.allDay) return 30 * MIN;
-		if (left <= 30 * MIN) return 10 * MIN;
-		if (left <= 2 * 60 * MIN) return Math.min(30 * MIN, left - 30 * MIN);
-		return left - 2 * 60 * MIN;
+		return left > 0 ? Math.min(SNOOZE_MS, left) : SNOOZE_MS;
 	}
 
-	function later(r) {
-		close(r.id, laterFor(r, Date.now()));
+	function snooze(r) {
+		close(r.id, snoozeFor(r, Date.now()));
 		toasts = toasts.filter((t) => t.id !== r.id);
 		schedule(latest);
 	}
@@ -167,7 +164,7 @@
 						{#if r.href}
 							<a class="reminder-btn" href={r.href} target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Open</a>
 						{/if}
-						<button type="button" class="reminder-btn" onclick={() => later(r)}>Later</button>
+						<button type="button" class="reminder-btn" onclick={() => snooze(r)}>Snooze</button>
 						<button type="button" class="reminder-btn" onclick={() => dismiss(r.id)}>Dismiss</button>
 					</div>
 				</div>
