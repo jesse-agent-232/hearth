@@ -137,7 +137,7 @@
 		>
 			<svg class="header-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
-			<span class="shrink-0 text-content-muted tabular-nums">· {when(next)}</span>
+			<span class="shrink-0 tabular-nums">· {when(next)}</span>
 		</button>
 
 		{#if open}
@@ -181,11 +181,12 @@
 	/* A smaller line under the clock. */
 	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; }
 	/* On the children, so the fade-in animation on the pill doesn't fight it. */
-	.upcoming-pill > * { opacity: 0.5; transition: opacity 0.6s ease; }
-	.upcoming-pill[data-near='1'] > * { opacity: 0.65; }
-	.upcoming-pill[data-near='2'] > * { opacity: 0.8; }
+	.upcoming-pill > * { opacity: 0.6; transition: opacity 0.6s ease; }
+	.upcoming-pill[data-near='1'] > * { opacity: 0.72; }
+	.upcoming-pill[data-near='2'] > * { opacity: 0.86; }
 	.upcoming-pill[data-near='3'] > *,
-	.upcoming-pill:hover > * { opacity: 1; }
+	.upcoming-pill:hover > *,
+	.upcoming-pill:focus-visible > * { opacity: 1; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	.upcoming-row {
 		display: grid;
