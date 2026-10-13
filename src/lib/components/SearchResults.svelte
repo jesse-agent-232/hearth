@@ -85,7 +85,9 @@
 	{#if detail}
 		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
 		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
-			<div class="launcher-detail-hero" class:is-empty={!detail.loading && !detail.data?.backdrop}>
+			<!-- An event never has a backdrop, so it gets the short hero while loading
+			     too, rather than a movie-sized one that collapses when it lands. -->
+			<div class="launcher-detail-hero" class:is-empty={!detail.data?.backdrop && (!detail.loading || detail.r?.meta?.kind === 'event')}>
 				{#if detail.data?.backdrop}
 					<img class="launcher-detail-backdrop is-loading" use:thumbLoading src={detail.data.backdrop} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
 				{/if}
@@ -144,7 +146,7 @@
 				</div>
 			</div>
 			{#if detail.loading}
-				<div class="launcher-detail-text"><span class="launcher-spinner" role="status" aria-label="Loading details"></span></div>
+				<div class="launcher-detail-text launcher-detail-placeholder" role="status" aria-label="Loading details"><span class="launcher-skeleton-line"></span><span class="launcher-skeleton-line"></span><span class="launcher-skeleton-line is-short"></span></div>
 			{:else if detail.error}
 				<div class="launcher-error">{detail.error}</div>
 			{:else if detail.data}

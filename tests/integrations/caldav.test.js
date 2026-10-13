@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseEvents, parseTime, parseDuration } from '../../src/lib/server/integrations/ical.js';
-import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress } from '../../src/lib/server/integrations/caldav.js';
+import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress, serverName } from '../../src/lib/server/integrations/caldav.js';
 
 const MIN = 60 * 1000;
 
@@ -248,14 +248,15 @@ test('search: matches the title, falls back when text-match fails', async () => 
 	const { results } = await caldav.searchProviders.events.query({ config, fetch, query: 'denT', limit: 10, timeZone: 'UTC' });
 	assert.equal(results.length, 1);
 	assert.equal(results[0].title, 'Dentist');
-	assert.match(results[0].subtitle, /· High St · Home$/);
+	assert.match(results[0].subtitle, /· High St$/);
 	assert.equal(calls.filter((c) => c.method === 'REPORT').length, 2);
 	// No web address for this server: picking it shows the details instead.
 	assert.equal(results[0].href, undefined);
 	assert.equal(results[0].detail.href, 'https://cal.example.net/dav/alice/cals/home/dentist.ics');
 	const details = await caldav.details({ config, fetch, params: results[0].detail });
 	assert.equal(details.title, 'Dentist');
-	assert.deepEqual(details.facts.slice(1), ['High St', 'Home']);
+	assert.deepEqual(details.facts.slice(1), ['High St']);
+	assert.deepEqual(details.genres, []);
 	assert.equal(details.overview, 'Bring the forms\nand the card');
 	assert.equal(await caldav.details({ config, fetch, params: { ...results[0].detail, href: 'https://elsewhere.example.org/x.ics' } }), null);
 
@@ -309,6 +310,16 @@ test('web address: the one given, else the known calendar page of Nextcloud, iCl
 	assert.equal(webAddress({ url: 'https://notfastmail.com/' }), null);
 });
 
+test('serverName: names the known services, null otherwise', () => {
+	assert.equal(serverName({ url: 'https://caldav.icloud.com/' }), 'iCloud');
+	assert.equal(serverName({ url: 'https://caldav.fastmail.com/dav/calendars' }), 'Fastmail');
+	assert.equal(serverName({ url: 'https://cloud.example.com/remote.php/dav' }), 'Nextcloud');
+	assert.equal(serverName({ url: 'https://mail.example.com/dav/cal/alice/default/' }), 'Stalwart');
+	assert.equal(serverName({ url: 'https://icloud.com.evil.example/' }), null);
+	assert.equal(serverName({ url: 'https://cal.example.net/dav/alice/' }), null);
+	assert.equal(serverName({ url: 'nope' }), null);
+});
+
 test('details: a moved occurrence shows its own title, found by RECURRENCE-ID', async () => {
 	const ics = [
 		'BEGIN:VCALENDAR',
@@ -331,7 +342,6 @@ test('upcoming: events still on or ahead, soonest first', async () => {
 	const { fetch } = fakeServer({ now });
 	const events = await caldav.upcoming({ config, fetch, timeZone: 'UTC', now });
 	assert.deepEqual(events.map((e) => e.title), ['Dentist', 'Gym']);
-	assert.equal(events[0].calendar, 'Home');
 	assert.equal(events[0].location, 'High St');
 	assert.equal(events[0].href, null);
 	// Once both are over, nothing is left.

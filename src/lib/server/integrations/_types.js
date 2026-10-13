@@ -85,7 +85,6 @@
  * @property {number|null} [end]
  * @property {boolean} [allDay]
  * @property {string} [location]
- * @property {string} [calendar]                 The calendar's name
  * @property {string|null} [href]                Where the event opens, if anywhere
  */
 

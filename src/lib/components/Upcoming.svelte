@@ -171,8 +171,8 @@
 	</span>
 	<span class="min-w-0">
 		<span class="block truncate">{e.title}</span>
-		{#if e.location || e.calendar}
-			<span class="block truncate text-[0.7rem] text-content-dim">{[e.location, e.calendar].filter(Boolean).join(' · ')}</span>
+		{#if e.location}
+			<span class="block truncate text-[0.7rem] text-content-dim">{e.location}</span>
 		{/if}
 	</span>
 {/snippet}

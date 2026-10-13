@@ -91,7 +91,7 @@ const adapter = {
 					results: [...upcoming, ...past].slice(0, limit || 20).map((e) => ({
 						id: `${e.calendar.href}#${e.id}`,
 						title: e.summary || 'Untitled event',
-						subtitle: [formatWhen(e, timeZone), e.location, e.calendar.name].filter(Boolean).join(' · '),
+						subtitle: [formatWhen(e, timeZone), e.location].filter(Boolean).join(' · '),
 						...(href
 							? { href }
 							: { detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone } }),
@@ -118,12 +118,14 @@ const adapter = {
 		const rid = Number.isFinite(params.recurrenceId) ? params.recurrenceId : start;
 		const e = events.find((x) => x.recurrenceId === rid) || events.find((x) => x.recurrenceId == null) || events[0];
 		if (!e) return null;
-		const calendars = await findCalendars(config, fetch);
-		const calendar = calendars.find((c) => href.startsWith(c.href));
 		const when = { start, end: Number.isFinite(end) ? end : null, allDay: allDay === true };
+		const server = serverName(config);
 		return {
 			title: e.summary || 'Untitled event',
-			facts: [formatWhen(when, timeZone), e.location, calendar?.name].filter(Boolean),
+			facts: [formatWhen(when, timeZone), e.location].filter(Boolean),
+			// Where the calendar lives, as a chip: a calendar's own name
+			// ("Stalwart Calendar (you@…)") says little.
+			genres: server ? [server] : [],
 			overview: e.description
 		};
 	},
@@ -176,7 +178,6 @@ const adapter = {
 				id: `caldav:${e.calendar.href}#${e.id}`,
 				title: e.summary || 'Untitled event',
 				location: e.location,
-				calendar: e.calendar.name,
 				start: e.start,
 				end: e.end,
 				allDay: e.allDay,
@@ -267,6 +268,27 @@ function calendarQuery(from, to, term) {
  * Where an event opens: the address the user gave, or for a server whose
  * calendar page is known, that page. Null when there is none.
  */
+/**
+ * The calendar service a CalDAV URL points at, from its host or path, for
+ * the chip on an event's details. Null when it can't be told.
+ * @param {Record<string, any>} config
+ */
+export function serverName(config) {
+	let u;
+	try {
+		u = new URL(config.url);
+	} catch {
+		return null;
+	}
+	const host = u.hostname.toLowerCase();
+	const on = (domain) => host === domain || host.endsWith(`.${domain}`);
+	if (on('icloud.com')) return 'iCloud';
+	if (on('fastmail.com')) return 'Fastmail';
+	if (u.pathname.includes('/remote.php/')) return 'Nextcloud';
+	if (u.pathname.startsWith('/dav/cal/')) return 'Stalwart';
+	return null;
+}
+
 export function webAddress(config) {
 	if (config.webUrl) return config.webUrl;
 	let u;

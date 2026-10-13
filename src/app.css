@@ -1990,7 +1990,7 @@ body.search-active .hero-area {
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 /* An event has no poster, only its icon. */
-.launcher-detail-poster.is-icon { width: 72px; aspect-ratio: 1; }
+.launcher-detail-poster.is-icon { width: 72px; aspect-ratio: 1; align-self: flex-start; }
 .launcher-detail-info {
 	min-width: 0;
 	display: flex;
@@ -2057,6 +2057,10 @@ body.search-active .hero-area {
 	color: var(--hero-search-text-strong);
 }
 .launcher-detail-text p { margin: 0 0 10px; white-space: pre-line; }
+/* Lines standing in for the description while the details load. */
+.launcher-detail-placeholder { max-width: 56ch; }
+.launcher-detail-placeholder .launcher-skeleton-line { display: block; width: 100%; margin: 0 0 12px; }
+.launcher-detail-placeholder .launcher-skeleton-line.is-short { width: 55%; }
 .launcher-detail-tagline { font-style: italic; color: var(--hero-search-text-dim); }
 .launcher-detail-cast { color: var(--hero-search-text-dim); }
 .launcher-detail-cast span { color: var(--hero-search-text-strong); font-weight: 600; margin-right: 4px; }
