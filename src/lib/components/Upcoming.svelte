@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 
-	// "At a glance" for the calendar: the next event beside the clock, and the
+	// "At a glance" for the calendar: the next event on a small line under the clock, and the
 	// week ahead in its menu. Only runs while some connected integration has
 	// its Upcoming events widget switched on.
 	const POLL_MS = 5 * 60 * 1000;

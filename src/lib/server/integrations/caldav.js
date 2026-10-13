@@ -5,7 +5,7 @@
 //   - searchProviders.events — finds events by title, from a month back to a year ahead
 //   - widgets.reminders      — pops up the event's own reminders (VALARM) on the
 //                              page, through `reminders` and GET /api/reminders
-//   - widgets.upcoming       — the next event beside the clock, the week ahead in
+//   - widgets.upcoming       — the next event under the clock, the week ahead in
 //                              its menu, through `upcoming` and GET /api/upcoming
 
 import { createHash } from 'node:crypto';
@@ -132,7 +132,7 @@ const adapter = {
 	// it on.
 	widgets: {
 		reminders: { label: 'Reminders', description: 'Show event reminders on this page, at the times set in your calendar' },
-		upcoming: { label: 'Upcoming events', description: 'Your next event next to the clock, and the week ahead a click away' }
+		upcoming: { label: 'Upcoming events', description: 'Your next event under the clock, and the week ahead a click away' }
 	},
 
 	/**
