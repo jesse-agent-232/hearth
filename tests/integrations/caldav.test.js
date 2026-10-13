@@ -243,6 +243,20 @@ test('test(): follows the redirect, finds event calendars, skips task lists', as
 	});
 });
 
+test('test(): reads iCloud\'s single-quoted component list', async () => {
+	// iCloud writes name='VEVENT', with single quotes and a namespace per element.
+	const comp = (n) => `<comp name='${n}' xmlns='urn:ietf:params:xml:ns:caldav'/>`;
+	const cal = (name, comps) =>
+		`<response xmlns="DAV:"><href>/1/calendars/${name}/</href><propstat><prop><resourcetype><collection/><calendar xmlns="urn:ietf:params:xml:ns:caldav"/></resourcetype><supported-calendar-component-set xmlns="urn:ietf:params:xml:ns:caldav">${comps}</supported-calendar-component-set></prop><status>HTTP/1.1 200 OK</status></propstat></response>`;
+	const fetch = async (url) => {
+		const body = new URL(url).pathname === '/1/calendars/'
+			? cal('home', comp('VEVENT')) + cal('work', comp('VEVENT')) + cal('reminders', comp('VTODO'))
+			: `<response xmlns="DAV:"><href>/</href><propstat><prop><calendar-home-set xmlns="urn:ietf:params:xml:ns:caldav"><href>/1/calendars/</href></calendar-home-set></prop><status>HTTP/1.1 200 OK</status></propstat></response>`;
+		return new Response(`<?xml version="1.0"?><multistatus xmlns="DAV:">${body}</multistatus>`, { status: 207 });
+	};
+	assert.deepEqual(await caldav.test({ config: { ...config, username: 'icloud' }, fetch }), { ok: true, message: 'Connected — 2 calendars' });
+});
+
 test('test(): a redirect to another host is refused', async () => {
 	const fetch = async () => new Response('', { status: 302, headers: { location: 'https://elsewhere.example.org/dav/' } });
 	const res = await caldav.test({ config: { ...config, username: 'bob' }, fetch });

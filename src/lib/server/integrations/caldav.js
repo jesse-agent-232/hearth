@@ -456,7 +456,7 @@ async function discover(config, fetch) {
 function isCalendar(r) {
 	if (!/<calendar\b/.test(r.props.resourcetype || '')) return false;
 	const comps = r.props['supported-calendar-component-set'];
-	return !comps || /name="VEVENT"/i.test(comps);
+	return !comps || /name=["']VEVENT["']/i.test(comps);
 }
 
 function toCalendar(r) {
