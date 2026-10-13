@@ -1,6 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { nowPlaying } from '$lib/stores/player.js';
+	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 
 	// Corner player for a song picked in search. Deliberately small: play or
 	// pause, stop, mute, and how far along it is. No seeking and no queue.
@@ -31,14 +33,23 @@
 		try { sessionStorage.removeItem(SAVED_KEY); } catch { /* private mode */ }
 	}
 
+	// Only while that integration's Player switch is still on.
+	async function restore() {
+		let saved;
+		try { saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || 'null'); } catch { return; }
+		const id = /^\/api\/integrations\/([^/]+)\//.exec(saved?.track?.stream || '')?.[1];
+		if (!id) return forget();
+		await integrationsStore.load();
+		const it = get(integrationsStore).integrations.find((x) => x.id === id);
+		const on = it?.userState?.connected && it.userState.surfaces?.widgets === true && (it.availableSurfaces || []).includes('widgets');
+		if (!on) return forget();
+		if (get(nowPlaying)) return;
+		resumeAt = Number(saved.at) || 0;
+		nowPlaying.set(saved.track);
+	}
+
 	onMount(() => {
-		try {
-			const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || 'null');
-			if (saved?.track?.stream?.startsWith('/api/integrations/') && !$nowPlaying) {
-				resumeAt = Number(saved.at) || 0;
-				nowPlaying.set(saved.track);
-			}
-		} catch { /* nothing saved */ }
+		restore();
 		const onHide = () => { if (document.visibilityState === 'hidden') save(); };
 		window.addEventListener('pagehide', save);
 		document.addEventListener('visibilitychange', onHide);
@@ -94,7 +105,7 @@
 	bind:currentTime={current}
 	bind:duration={length}
 	onended={stop}
-	onerror={() => { if (track) failed = true; }}
+	onerror={() => { if (track) { failed = true; forget(); } }}
 	preload="none"
 ></audio>
 
