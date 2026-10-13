@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
 import { getAuth, getChangelogConfig } from '$lib/server/config.js';
-import { getSeenVersion, setSeenVersion, isKnownUser, isDatabaseEnabled } from '$lib/server/db.js';
+import { getChangelogSeen, setChangelogSeen, isKnownUser, isDatabaseEnabled } from '$lib/server/db.js';
 import { version, releases } from '$lib/server/changelog.js';
 import { changelogFor } from '$lib/changelog.js';
 
@@ -18,12 +18,12 @@ export async function GET({ cookies, url }) {
 
 	const local = !getAuth().enabled || !(await isDatabaseEnabled());
 	const seenParam = url.searchParams.get('seen');
-	const seen = local ? (seenParam && /^\d+\.\d+\.\d+$/.test(seenParam) ? seenParam : null) : await getSeenVersion(user.username);
+	const seen = local ? (seenParam && /^\d+\.\d+\.\d+$/.test(seenParam) ? seenParam : null) : await getChangelogSeen(user.username);
 	// A browser with nothing stored is new to it; with a database, ask whether
 	// this user has saved anything before.
 	const known = local ? false : await isKnownUser(user.username);
 	const result = changelogFor({ version, seen, known, enabled: getChangelogConfig().enabled, releases: all });
 	// Only a user who's new is recorded here; anyone else on Close.
-	if (result.record && !local) await setSeenVersion(user.username, version);
+	if (result.record && !local) await setChangelogSeen(user.username, version);
 	return json({ version, show: result.show, releases: result.releases, record: result.record, store: local ? 'local' : 'server' });
 }

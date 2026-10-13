@@ -86,9 +86,9 @@ async function ensureInit() {
 			    PRIMARY KEY (username, integration_id)
 			  );
 
-			  -- The last version whose "What's new" each user closed. Kept out of
+			  -- The last version whose changelog each user closed. Kept out of
 			  -- user_prefs, which the browser writes back whole.
-			  CREATE TABLE IF NOT EXISTS user_seen_version (
+			  CREATE TABLE IF NOT EXISTS user_changelog_seen (
 			    username     TEXT PRIMARY KEY,
 			    version      TEXT NOT NULL,
 			    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
@@ -223,20 +223,20 @@ export async function isDatabaseEnabled() {
 	return !!db;
 }
 
-// ── "What's new" ──────────────────────────────────────────────────
+// ── Changelog ──────────────────────────────────────────────────
 
-/** The last version this user closed "What's new" on, or null. */
-export async function getSeenVersion(username) {
+/** The last version this user closed the changelog on, or null. */
+export async function getChangelogSeen(username) {
 	await ensureInit();
 	if (!db) return null;
-	return queryOne('SELECT version FROM user_seen_version WHERE username = ?', [username])?.version || null;
+	return queryOne('SELECT version FROM user_changelog_seen WHERE username = ?', [username])?.version || null;
 }
 
-export async function setSeenVersion(username, version) {
+export async function setChangelogSeen(username, version) {
 	await ensureInit();
 	if (!db) return;
 	db.run(
-		`INSERT INTO user_seen_version (username, version, updated_at)
+		`INSERT INTO user_changelog_seen (username, version, updated_at)
 		 VALUES (?, ?, datetime('now'))
 		 ON CONFLICT(username) DO UPDATE SET version = excluded.version, updated_at = datetime('now')`,
 		[username, version]
