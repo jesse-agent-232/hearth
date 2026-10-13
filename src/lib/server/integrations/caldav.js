@@ -222,10 +222,23 @@ async function allEvents(config, fetch, from, to, opts) {
 	);
 	const ok = lists.filter((l) => l.status === 'fulfilled');
 	if (!ok.length) throw lists[0].reason;
+	// The others still show, so the one left out is only in the log.
+	const accounts = accountsOf(config);
+	lists.forEach((l, i) => {
+		if (l.status === 'rejected') console.error(`[caldav] ${hostOf(accounts[i].url)} left out:`, l.reason?.message || l.reason);
+	});
 	return ok.flatMap((l) => l.value);
 }
 
 // What details() needs to find the event again.
+function hostOf(url) {
+	try {
+		return new URL(url).host;
+	} catch {
+		return 'account';
+	}
+}
+
 function detailParams(e, timeZone) {
 	return { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone, account: e.account.id };
 }
