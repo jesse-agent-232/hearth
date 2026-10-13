@@ -1,4 +1,5 @@
 <script>
+	import { watchImage } from '$lib/imageLoad.js';
 	import { getWallpaperUrl } from '$lib/wallpaper.js';
 
 	let { wallpaperId = null } = $props();
@@ -12,6 +13,11 @@
 		loaded = false;
 		failed = false;
 	});
+
+	let img = $state(null);
+	$effect(() => {
+		if (img) return watchImage(img, { onload: () => loaded = true, onerror: () => failed = true });
+	});
 </script>
 
 <div class="dashboard-wallpaper fixed inset-0 -z-20 {failed ? 'bg-surface' : ''}">
@@ -22,8 +28,7 @@
 			alt=""
 			fetchpriority="high"
 			class="w-full h-full object-cover transition-opacity duration-700 {loaded ? 'opacity-100' : 'opacity-0'}"
-			onload={() => loaded = true}
-			onerror={() => failed = true}
+			bind:this={img}
 		/>
 		{/key}
 	{/if}

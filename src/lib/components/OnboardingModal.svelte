@@ -1,4 +1,5 @@
 <script>
+	import { watchImage } from '$lib/imageLoad.js';
 	import { dialog } from '$lib/actions/dialog.js';
 	import { browser } from '$app/environment';
 	import { getContext } from 'svelte';
@@ -34,6 +35,10 @@
 	let isStandalone = $state(false);
 	let wallpaperUrl = $state('');
 	let wallpaperLoaded = $state(false);
+	let wallpaperImg = $state(null);
+	$effect(() => {
+		if (wallpaperImg) return watchImage(wallpaperImg, { onload: () => wallpaperLoaded = true });
+	});
 	const showWallpaper = $derived(($prefs.theme || 'auto') === 'auto');
 
 	$effect(() => {
@@ -175,7 +180,7 @@
 		<!-- Wallpaper background -->
 		<div class="fixed inset-0 -z-20 bg-surface">
 			{#if wallpaperUrl}
-				<img src={wallpaperUrl} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover transition-opacity duration-700 {wallpaperLoaded ? 'opacity-100' : 'opacity-0'}" onload={() => wallpaperLoaded = true} />
+				<img src={wallpaperUrl} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover transition-opacity duration-700 {wallpaperLoaded ? 'opacity-100' : 'opacity-0'}" bind:this={wallpaperImg} />
 			{/if}
 		</div>
 		<div class="fixed inset-0 -z-10 pointer-events-none backdrop-blur-[6px] login-overlay"></div>
