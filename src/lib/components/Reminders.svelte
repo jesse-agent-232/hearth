@@ -48,10 +48,14 @@
 
 	let latest = [];
 
+	// A reminder's id is its event's, then `@` and the alarm time.
+	const eventOf = (id) => id.slice(0, id.lastIndexOf('@'));
+
+	// One card per event: a later alarm replaces the earlier one's card.
 	function show(r) {
 		if (closedUntil(r.id) > Date.now()) return;
 		if (toasts.some((t) => t.id === r.id)) return;
-		toasts = [...toasts, r].slice(-MAX_TOASTS);
+		toasts = [...toasts.filter((t) => eventOf(t.id) !== eventOf(r.id)), r].slice(-MAX_TOASTS);
 	}
 
 	function schedule(reminders) {

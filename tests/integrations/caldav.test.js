@@ -166,7 +166,7 @@ test('credentials only go to the configured origin, its https upgrade, or iCloud
 
 // ── The adapter against a fake server ─────────────────────────────
 
-function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false, holiday = false }) {
+function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false, holiday = false, hourAlarm = false }) {
 	const start = icsTime(now + 30 * MIN);
 	const event = [
 		'BEGIN:VCALENDAR',
@@ -181,6 +181,7 @@ function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false, ho
 		'ACTION:DISPLAY',
 		'TRIGGER:-PT15M',
 		'END:VALARM',
+		...(hourAlarm ? ['BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT1H', 'END:VALARM'] : []),
 		'END:VEVENT',
 		'END:VCALENDAR'
 	].join('\r\n');
@@ -311,6 +312,18 @@ test('reminders: the event’s own alarm, inside the window', async () => {
 
 	// Two days on, the alarm has long passed.
 	assert.deepEqual(await caldav.reminders({ config, fetch, timeZone: 'UTC', now: now + 2 * 24 * 60 * MIN }), []);
+});
+
+test('reminders: one per event, the latest alarm that is due', async () => {
+	const now = Date.now();
+	const { fetch } = fakeServer({ now, hourAlarm: true });
+	// 30 minutes before: the hour alarm is due, the 15-minute one still to come.
+	const before = await caldav.reminders({ config, fetch, timeZone: 'UTC', now });
+	const start = before[0].start;
+	assert.deepEqual(before.map((r) => r.at).sort(), [start - 60 * MIN, start - 15 * MIN]);
+	// Once both are due, only the later one is left.
+	const during = await caldav.reminders({ config, fetch, timeZone: 'UTC', now: start + MIN });
+	assert.deepEqual(during.map((r) => r.at), [start - 15 * MIN]);
 });
 
 test('reminders: alarms the server dropped while expanding come from the stored event', async () => {

@@ -168,12 +168,16 @@ const adapter = {
 	 * Alarms due in the next day, plus those already due whose event hasn't
 	 * ended (the page keeps them up until dismissed), for GET /api/reminders.
 	 * Alarms only come from the events themselves: no reminder set, no popup.
+	 * Of an event's alarms already due, only the latest is kept: one card
+	 * per event, as Apple's Calendar shows it.
 	 */
 	async reminders({ config, fetch, timeZone, now = Date.now() }) {
 		const events = await allEvents(config, fetch, now - DAY, now + 8 * DAY, { timeZone, alarms: true });
 		const out = [];
 		for (const e of events) {
+			const lastDue = Math.max(-Infinity, ...e.alarms.filter((at) => at <= now));
 			for (const at of e.alarms) {
+				if (at < lastDue) continue;
 				const over = e.end ?? e.start + (e.allDay ? DAY : 30 * 60 * 1000);
 				if (at > now + DAY || (at < now && (over <= now || at < now - DAY))) continue;
 				out.push({
