@@ -2046,7 +2046,8 @@ body.search-active .launcher-host { z-index: 40; }
 	font-size: 0.72rem;
 	color: var(--hero-search-text-dim);
 }
-.launcher-detail-facts > span { white-space: nowrap; }
+/* A fact stays whole; one wider than the panel (a long address) ends in an ellipsis. */
+.launcher-detail-facts > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .launcher-detail-facts > span + span::before { content: '·'; margin-right: 6px; }
 .launcher-detail-rating { display: inline-flex; align-items: center; gap: 3px; color: var(--hero-search-text-strong); }
 .launcher-detail-rating svg { width: 11px; height: 11px; color: var(--accent, #f5b942); }

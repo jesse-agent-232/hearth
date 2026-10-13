@@ -31,6 +31,8 @@
 	// `lift` is the px the bar is raised by.
 	let lift = $state(0);
 	// env(safe-area-inset-top) in px: the status bar in an installed app.
+	// Measured on mount and on resize (which covers rotation), not per scroll.
+	let safeTop = 0;
 	function safeAreaTop() {
 		const probe = document.createElement('div');
 		probe.style.cssText = 'position:absolute;visibility:hidden;padding-top:env(safe-area-inset-top, 0px)';
@@ -47,13 +49,13 @@
 		const shift = new DOMMatrixReadOnly(getComputedStyle(containerEl).transform).m42;
 		const restTop = rect.top - shift;
 		const restBottom = rect.bottom - shift;
+		// The visible part of the page: iOS covers it with the keyboard
+		// without resizing it, and may scroll it underneath.
+		const vv = window.visualViewport;
 		const desktop = window.matchMedia('(min-width: 768px)').matches;
-		const targetTop = desktop ? Math.max(48, window.innerHeight * 0.1) : safeAreaTop() + 12;
+		const targetTop = desktop ? Math.max(48, window.innerHeight * 0.1) : (vv?.offsetTop ?? 0) + safeTop + 12;
 		lift = inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
 		const gap = 24;
-		// The visible bottom: above the on-screen keyboard, which on iOS
-		// covers the page without resizing it.
-		const vv = window.visualViewport;
 		const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
 		const available = visibleBottom - (restBottom - lift) - gap;
 		resultsMaxHeight = Math.max(220, available);
@@ -752,8 +754,12 @@
 
 	onMount(() => {
 		ensureIntegrationsLoaded();
+		safeTop = safeAreaTop();
 		recomputeResultsMaxHeight();
-		const onResize = () => recomputeResultsMaxHeight();
+		const onResize = () => {
+			safeTop = safeAreaTop();
+			recomputeResultsMaxHeight();
+		};
 		window.addEventListener('resize', onResize);
 
 		// ?q= deep link (browser search engine / OpenSearch): open the
