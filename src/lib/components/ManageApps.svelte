@@ -3,8 +3,10 @@
 	import { portal } from '$lib/actions/portal.js';
 	import { getContext } from 'svelte';
 	import { prefs } from '$lib/stores/prefs.js';
-	import { buildAppsFromConfig } from '$lib/apps.js';
+	import { buildAppsFromConfig, resolveIcon } from '$lib/apps.js';
 	import IntegrationsPanel from '$lib/components/IntegrationsPanel.svelte';
+	import AppIcon from '$lib/components/AppIcon.svelte';
+	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { TOTAL_WALLPAPERS, getWallpaperThumbUrl } from '$lib/wallpaper.js';
 	import { browser } from '$app/environment';
 	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
@@ -110,6 +112,33 @@
 		else next.add(id);
 		enabledWidgets = next;
 		prefs.update(p => ({ ...p, enabledWidgets: [...next] }));
+	}
+
+	// Connected integrations that bring widgets (Calendar, Music) get a row
+	// here too, flipping the same switch as their card under Integrations.
+	const integrationWidgets = $derived(
+		integrationsEnabled
+			? $integrationsStore.integrations.filter(
+					(it) => it.userState?.connected && (it.availableSurfaces || []).includes('widgets') && it.widgets?.length > 0
+				)
+			: []
+	);
+	let widgetSaveError = $state('');
+
+	$effect(() => {
+		if (open && activeTab === 'widgets' && integrationsEnabled) integrationsStore.load();
+	});
+
+	async function toggleIntegrationWidgets(it) {
+		widgetSaveError = '';
+		try {
+			await integrationsStore.save(it.id, {
+				config: it.userState.config,
+				surfaces: { ...it.userState.surfaces, widgets: !it.userState.surfaces?.widgets }
+			});
+		} catch (err) {
+			widgetSaveError = err.message || 'Failed to update widgets';
+		}
 	}
 
 	function selectWallpaper(id) {
@@ -358,6 +387,29 @@
 						</div>
 					</button>
 				{/each}
+				{#each integrationWidgets as it (it.id)}
+					{@const on = it.userState.surfaces?.widgets === true}
+					<button
+						class="flex items-center gap-3 w-full px-2 py-3 bg-transparent border-none border-b border-border-card text-left font-mono cursor-pointer hover:bg-surface-card-hover"
+						role="switch"
+						aria-checked={on}
+						onclick={() => toggleIntegrationWidgets(it)}
+					>
+						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0">
+							<AppIcon icon={resolveIcon(it.icon)} name={it.name} size="w-4 h-4" {iconStyle} />
+						</span>
+						<div class="flex-1 min-w-0">
+							<div class="text-[0.8rem] text-content font-medium">{it.name}</div>
+							<div class="text-[0.7rem] text-content-dim">{it.widgets.map((w) => w.label).join(', ')}</div>
+						</div>
+						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {on ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
+							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {on ? 'translate-x-4' : 'translate-x-0.5'}"></div>
+						</div>
+					</button>
+				{/each}
+				{#if widgetSaveError}
+					<div class="px-2 pt-2 text-[0.7rem] text-red-400">{widgetSaveError}</div>
+				{/if}
 
 				{:else if activeTab === 'integrations'}
 				<!-- ═══ INTEGRATIONS TAB ═══ -->
