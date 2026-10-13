@@ -1,16 +1,18 @@
 <script>
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 
-	// The other accounts of an integration that holds several (the Calendar):
-	// listed under the first one's form, each added or edited with the same
-	// fields, tested before it's saved, and removed with a second click.
-	let { integration } = $props();
+	// The accounts of an integration that holds several (the Calendar), as a
+	// list: a row opens its form, the first account's being the card's own
+	// (`main`). The others are added and edited with the same fields, tested
+	// before they're saved, and removed with a second click.
+	let { integration, main } = $props();
 
 	const MAX = 5;
 	const fields = $derived(integration.configSchema.filter((f) => !f.hidden));
 	const accounts = $derived(integration.userState?.config?.accounts || []);
+	const first = $derived(integration.userState?.config || {});
 
-	// The account being edited: its id, or 'new'. Null when none is.
+	// The open account: 'main', another's id, or 'new'. Null when none is.
 	let editing = $state(null);
 	let form = $state({});
 	let testStatus = $state(null);
@@ -25,6 +27,16 @@
 		} catch {
 			return value || '';
 		}
+	}
+
+	function toggle(id, account) {
+		if (editing === id) return close();
+		if (id === 'main') {
+			close();
+			editing = 'main';
+			return;
+		}
+		open(account);
 	}
 
 	function open(account) {
@@ -94,6 +106,7 @@
 		error = '';
 		try {
 			await store(accounts.filter((a) => a.id !== account.id));
+			close();
 		} catch (err) {
 			error = err.message || 'Remove failed';
 		} finally {
@@ -102,27 +115,21 @@
 	}
 </script>
 
-<div class="space-y-2 pt-2 border-t border-border-card">
-	<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Other accounts</div>
+<div class="space-y-1.5">
+	<div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim">Accounts</div>
+	{@render row('main', first)}
+	{#if editing === 'main'}
+		<div class="pb-2">{@render main()}</div>
+	{/if}
 	{#each accounts as account (account.id)}
+		{@render row(account.id, account)}
 		{#if editing === account.id}
-			{@render editor('Save account')}
-		{:else}
-			<div class="flex items-center justify-between gap-2 py-1">
-				<span class="min-w-0">
-					<span class="block truncate text-[0.75rem] text-content-muted">{account.username}</span>
-					<span class="block truncate text-[0.7rem] text-content-dim font-mono">{hostOf(account.url)}</span>
-				</span>
-				<span class="flex gap-1.5 shrink-0">
-					<button class="account-btn" onclick={() => open(account)} disabled={editing !== null}>Edit</button>
-					<button class="account-btn {removing === account.id ? 'is-danger' : ''}" onclick={() => remove(account)} onblur={() => (removing = null)} disabled={editing !== null}>{removing === account.id ? 'Remove?' : 'Remove'}</button>
-				</span>
-			</div>
+			{@render editor('Save account', account)}
 		{/if}
 	{/each}
 	{#if editing === 'new'}
-		{@render editor('Add account')}
-	{:else if editing === null && accounts.length < MAX}
+		{@render editor('Add account', null)}
+	{:else if accounts.length < MAX}
 		<button class="account-btn" onclick={() => open(null)}>+ Add account</button>
 	{/if}
 	{#if error && editing === null}
@@ -130,7 +137,21 @@
 	{/if}
 </div>
 
-{#snippet editor(saveLabel)}
+{#snippet row(id, account)}
+	<button
+		class="account-row {editing === id ? 'is-open' : ''}"
+		aria-expanded={editing === id}
+		onclick={() => toggle(id, account)}
+	>
+		<span class="min-w-0 text-left">
+			<span class="block truncate text-[0.75rem] text-content-muted">{account.username || 'Account'}</span>
+			<span class="block truncate text-[0.7rem] text-content-dim font-mono">{hostOf(account.url)}</span>
+		</span>
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+	</button>
+{/snippet}
+
+{#snippet editor(saveLabel, account)}
 	<div class="space-y-2 rounded-lg border border-border-card p-2.5" data-form-type="other">
 		{#each fields as field}
 			{@const locked = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
@@ -160,6 +181,9 @@
 			<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">{error}</div>
 		{/if}
 		<div class="flex gap-2 pt-1 justify-end">
+			{#if account}
+				<button class="account-btn mr-auto {removing === account.id ? 'is-danger' : ''}" onclick={() => remove(account)} onblur={() => (removing = null)}>{removing === account.id ? 'Remove?' : 'Remove'}</button>
+			{/if}
 			<button class="account-btn" onclick={close}>Cancel</button>
 			<button class="account-btn" disabled={testing} onclick={test}>{testing ? 'Testing…' : 'Test'}</button>
 			<button class="account-btn is-primary" disabled={saving} onclick={save}>{saving ? 'Saving…' : saveLabel}</button>
@@ -168,6 +192,24 @@
 {/snippet}
 
 <style>
+	.account-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		width: 100%;
+		padding: 0.4rem 0.5rem;
+		border-radius: 0.5rem;
+		background: transparent;
+		border: 1px solid transparent;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+	.account-row:hover { background: var(--color-surface-card-hover); }
+	.account-row:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 1px; }
+	.account-row.is-open { border-color: var(--color-border-card); }
+	.chevron { width: 0.85rem; height: 0.85rem; flex-shrink: 0; color: var(--color-content-dim); transition: transform 0.15s ease; }
+	.account-row.is-open .chevron { transform: rotate(180deg); }
 	.account-btn {
 		padding: 0.3rem 0.65rem;
 		border-radius: 0.5rem;

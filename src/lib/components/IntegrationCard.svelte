@@ -378,114 +378,117 @@
 					{integration.tip}
 				</div>
 			{/if}
-			<div class="space-y-2">
-				{#each visibleFields as field}
-					{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
-					<label class="block">
-						<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
-						<input
-							type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
-							bind:value={formConfig[field.key]}
-							placeholder={field.placeholder}
-							oninput={markDirty}
-							readonly={!!lockedByOperator}
-							class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {lockedByOperator ? 'opacity-60 cursor-not-allowed' : ''}"
-							autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
-							spellcheck="false"
-							data-1p-ignore="true"
-							data-lpignore="true"
-							data-bwignore="true"
-						/>
-						{#if lockedByOperator}
-							<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
-						{:else}
-							{#if field.help}
-								<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">
-									{@html marked.parse(field.help)}
-								</div>
+			{#snippet mainForm()}
+				<div class="space-y-2">
+					{#each visibleFields as field}
+						{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
+						<label class="block">
+							<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
+							<input
+								type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
+								bind:value={formConfig[field.key]}
+								placeholder={field.placeholder}
+								oninput={markDirty}
+								readonly={!!lockedByOperator}
+								class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {lockedByOperator ? 'opacity-60 cursor-not-allowed' : ''}"
+								autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
+								spellcheck="false"
+								data-1p-ignore="true"
+								data-lpignore="true"
+								data-bwignore="true"
+							/>
+							{#if lockedByOperator}
+								<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
+							{:else}
+								{#if field.help}
+									<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">
+										{@html marked.parse(field.help)}
+									</div>
+								{/if}
+								{#if field.helpUrl && formConfig[field.helpUrl.baseKey]}
+									<a
+										href="{formConfig[field.helpUrl.baseKey]}{field.helpUrl.path}"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
+									>{field.helpUrl.label} ↗</a>
+								{/if}
 							{/if}
-							{#if field.helpUrl && formConfig[field.helpUrl.baseKey]}
-								<a
-									href="{formConfig[field.helpUrl.baseKey]}{field.helpUrl.path}"
-									target="_blank"
-									rel="noopener noreferrer"
-									class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
-								>{field.helpUrl.label} ↗</a>
-							{/if}
-						{/if}
-					</label>
-				{/each}
+						</label>
+					{/each}
 
-				{#if integration.signIn}
-					{#if signFlow}
-						<div class="rounded-lg border border-border-card bg-surface-card/40 px-3 py-3 text-center" role="status" aria-live="polite">
-							<div class="text-[0.7rem] text-content-dim mb-1.5">Your code</div>
-							<div class="signin-digits font-mono text-content" aria-label="Code {signFlow.code.split('').join(' ')}">{signFlow.code}</div>
-							{#if signFlow.help || integration.signIn.help}
-								<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(signFlow.help || integration.signIn.help)}</div>
-							{/if}
-							{#if signFlow.link}
-								<a
-									href={signFlow.link}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
-								>Open {integration.name} ↗</a>
-							{/if}
-							<div class="flex items-center justify-center gap-2 text-[0.7rem] text-content-dim mt-2.5">
-								<span class="signin-spinner" aria-hidden="true"></span>
-								Waiting for approval…
-							</div>
-						</div>
-					{/if}
-					{#if signError}
-						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
-							{signError}
-						</div>
-					{/if}
-					<div class="flex gap-2 pt-1 justify-end">
+					{#if integration.signIn}
 						{#if signFlow}
+							<div class="rounded-lg border border-border-card bg-surface-card/40 px-3 py-3 text-center" role="status" aria-live="polite">
+								<div class="text-[0.7rem] text-content-dim mb-1.5">Your code</div>
+								<div class="signin-digits font-mono text-content" aria-label="Code {signFlow.code.split('').join(' ')}">{signFlow.code}</div>
+								{#if signFlow.help || integration.signIn.help}
+									<div class="field-help text-[0.7rem] text-content-dim mt-2 leading-relaxed">{@html marked.parse(signFlow.help || integration.signIn.help)}</div>
+								{/if}
+								{#if signFlow.link}
+									<a
+										href={signFlow.link}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
+									>Open {integration.name} ↗</a>
+								{/if}
+								<div class="flex items-center justify-center gap-2 text-[0.7rem] text-content-dim mt-2.5">
+									<span class="signin-spinner" aria-hidden="true"></span>
+									Waiting for approval…
+								</div>
+							</div>
+						{/if}
+						{#if signError}
+							<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
+								{signError}
+							</div>
+						{/if}
+						<div class="flex gap-2 pt-1 justify-end">
+							{#if signFlow}
+								<button
+									class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors"
+									onclick={startSignIn}
+								>New code</button>
+							{:else}
+								<button
+									class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+									disabled={signStarting || !formConfig.url}
+									onclick={startSignIn}
+								>{signStarting ? 'Getting a code…' : connected ? 'Sign in again' : signLabel}</button>
+							{/if}
+						</div>
+					{:else}
+						{#if testStatus}
+							<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded {testStatus.ok ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
+								{testStatus.ok ? '✓' : '✗'} {testStatus.message}
+							</div>
+						{/if}
+						{#if saveError}
+							<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
+								{saveError}
+							</div>
+						{/if}
+
+						<div class="flex gap-2 pt-1 justify-end">
 							<button
-								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors"
-								onclick={startSignIn}
-							>New code</button>
-						{:else}
+								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+								disabled={testing}
+								onclick={runTest}
+							>{testing ? 'Testing…' : 'Test'}</button>
 							<button
 								class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-								disabled={signStarting || !formConfig.url}
-								onclick={startSignIn}
-							>{signStarting ? 'Getting a code…' : connected ? 'Sign in again' : signLabel}</button>
-						{/if}
-					</div>
-				{:else}
-					{#if testStatus}
-						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded {testStatus.ok ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
-							{testStatus.ok ? '✓' : '✗'} {testStatus.message}
+								disabled={saving || (!dirty && connected)}
+								onclick={runSave}
+							>{saving ? 'Saving…' : connected ? 'Save' : 'Connect'}</button>
 						</div>
 					{/if}
-					{#if saveError}
-						<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">
-							{saveError}
-						</div>
-					{/if}
-
-					<div class="flex gap-2 pt-1 justify-end">
-						<button
-							class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-transparent text-content-dim border border-border-card cursor-pointer hover:text-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-							disabled={testing}
-							onclick={runTest}
-						>{testing ? 'Testing…' : 'Test'}</button>
-						<button
-							class="py-1.5 px-3 rounded-lg text-[0.75rem] font-mono bg-surface-card-strong text-content border border-border-card cursor-pointer hover:bg-surface-card-strong transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-							disabled={saving || (!dirty && connected)}
-							onclick={runSave}
-						>{saving ? 'Saving…' : connected ? 'Save' : 'Connect'}</button>
-					</div>
-				{/if}
-			</div>
-
+				</div>
+			{/snippet}
 			{#if connected && integration.multiAccount}
-				<IntegrationAccounts {integration} />
+				<IntegrationAccounts {integration} main={mainForm} />
+			{:else}
+				{@render mainForm()}
 			{/if}
 
 			<!-- Surface toggles -->
