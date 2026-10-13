@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
-import { getWhatsNewConfig } from '$lib/server/config.js';
+import { getAuth, getWhatsNewConfig } from '$lib/server/config.js';
 import { getSeenVersion, setSeenVersion, isKnownUser, isDatabaseEnabled } from '$lib/server/db.js';
 import { version, releases } from '$lib/server/whatsNew.js';
 import { whatsNewFor } from '$lib/whatsNew.js';
@@ -21,7 +21,7 @@ export async function GET({ cookies, url }) {
 		return json({ version, show: true, releases: all.filter((r) => r.version === version), store: null });
 	}
 
-	const local = user.username === 'guest' || !(await isDatabaseEnabled());
+	const local = !getAuth().enabled || !(await isDatabaseEnabled());
 	const seenParam = url.searchParams.get('seen');
 	const seen = local ? (seenParam && /^\d+\.\d+\.\d+$/.test(seenParam) ? seenParam : null) : await getSeenVersion(user.username);
 	// A browser with nothing stored is new to it; with a database, ask whether
