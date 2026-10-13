@@ -802,11 +802,15 @@
 
 		// iOS has no interactive-widget support yet: lift the bottom-docked
 		// search above the on-screen keyboard by the part of the layout
-		// viewport the keyboard covers.
+		// viewport the keyboard covers. The results open upward, so they get
+		// the visible height: with the keyboard up iOS also scrolls the page
+		// (offsetTop), and anything sized from the layout viewport runs off
+		// the top of the screen by that much.
 		const vv = window.visualViewport;
 		const onViewport = () => {
 			const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
 			document.documentElement.style.setProperty('--kb-inset', `${covered}px`);
+			document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
 		};
 		vv?.addEventListener('resize', onViewport);
 		vv?.addEventListener('scroll', onViewport);

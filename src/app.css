@@ -2256,7 +2256,8 @@ body.search-active .hero-area {
 /* ── Phones: search docked at the bottom, in thumb reach ───────
    The bar sits above the home indicator (and above the keyboard: Android
    resizes the viewport via interactive-widget, iOS gets --kb-inset from
-   SearchBar). Results open upward as a separate card. The account button
+   SearchBar). Results open upward as a separate card, no taller than the
+   visible area above the bar (--vv-height, also from SearchBar). The account button
    sits at the right end of the same dock. */
 @media (max-width: 767px) {
 	.hero-area { margin-top: 0; margin-bottom: 0; }
@@ -2283,7 +2284,7 @@ body.search-active .hero-area {
 		margin-top: 0 !important;
 		border-radius: 16px !important;
 		border-top: 1px solid var(--hero-search-border) !important;
-		max-height: calc(100dvh - var(--kb-inset, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 96px);
+		max-height: calc(var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 96px);
 		animation-name: launcher-up;
 	}
 	.launcher-footer-hint { display: none; }
