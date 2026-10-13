@@ -1831,10 +1831,6 @@ body.search-active .launcher-host { z-index: 40; }
 	pointer-events: none;
 	animation: launcher-in 140ms var(--ease-standard, ease-out);
 }
-/* On phones the bar is docked at the bottom, so the note sits above it. */
-@media (max-width: 767px) {
-	.launcher-copied { top: auto; bottom: calc(100% + 10px); }
-}
 
 /* Photo grid and poster rows */
 .launcher-grid, .launcher-posters {
