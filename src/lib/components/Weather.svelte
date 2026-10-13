@@ -156,7 +156,7 @@
 	<div class="relative shrink-0" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
-			class="animate-fade-in flex items-center gap-1.5 text-[0.85rem] max-md:text-[0.75rem] tracking-[0.12em] uppercase text-content font-mono bg-transparent border-none p-0 cursor-pointer hover:opacity-80"
+			class="animate-fade-in flex items-center max-md:flex-wrap max-md:justify-end max-md:gap-y-1 gap-1.5 text-[0.85rem] max-md:text-[0.75rem] tracking-[0.12em] uppercase text-content font-mono bg-transparent border-none p-0 cursor-pointer hover:opacity-80"
 			aria-haspopup="dialog"
 			aria-expanded={open}
 			title="Weather and location"
@@ -170,6 +170,8 @@
 				{#if locationName}
 					<span class="text-content-muted hidden md:inline">·</span>
 					<span class="text-content-muted hidden md:inline">{locationName}</span>
+					<!-- Phones: the city on a line under the temperature. -->
+					<span class="md:hidden basis-full text-right truncate max-w-[9rem] text-[0.85em] text-content-muted">{locationName}</span>
 				{/if}
 			{:else}
 				<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>

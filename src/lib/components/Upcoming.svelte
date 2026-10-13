@@ -143,7 +143,9 @@
 		>
 			<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
-			<span class="shrink-0 tabular-nums text-content-muted">· {when(next)}</span>
+			<span class="pill-when shrink-0 tabular-nums text-content-muted">· {when(next)}</span>
+			<!-- Phones: the time and place get a line of their own, so the title keeps its room. -->
+			<span class="pill-meta truncate tabular-nums text-content-muted">{when(next)}{#if next.location}{' · '}{next.location}{/if}</span>
 		</button>
 		{#if next.call}
 			<a class="upcoming-call pill-call" href={next.call} target="_blank" rel="noopener noreferrer" title="Join call · {hostOf(next.call)}" aria-label="Join call on {hostOf(next.call)}">{@render camera()}</a>
@@ -204,6 +206,12 @@
 	/* A button drops the inherited text-shadow; keep the header's, which
 	   the wallpaper sets so the line reads over a bright photo. */
 	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
+	.pill-meta { display: none; }
+	@media (max-width: 767px) {
+		.upcoming-pill { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.375rem; row-gap: 4px; text-align: left; }
+		.pill-when { display: none; }
+		.pill-meta { display: block; grid-column: 2; }
+	}
 	.upcoming-pill:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 3px; border-radius: 4px; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	/* A row and, when the event has a video call, its camera on the right. */
