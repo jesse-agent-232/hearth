@@ -131,6 +131,7 @@ function finishEvent({ props, alarms }, zone) {
 		summary: props.SUMMARY ? unescapeText(props.SUMMARY.value) : '',
 		location: props.LOCATION ? unescapeText(props.LOCATION.value) : '',
 		description: props.DESCRIPTION ? unescapeText(props.DESCRIPTION.value) : '',
+		call: callLink(props),
 		start: start.t,
 		end: end ?? null,
 		allDay: start.allDay,
@@ -138,6 +139,42 @@ function finishEvent({ props, alarms }, zone) {
 		// As written, to place on other instances of the event: see alarmTimes.
 		alarmSpecs: alarms
 	};
+}
+
+// Hosts of the video call services whose links invites carry.
+const CALL_HOSTS = ['meet.google.com', 'zoom.us', 'zoom.com', 'teams.microsoft.com', 'teams.live.com', 'meet.jit.si', 'whereby.com', 'webex.com', 'meet.goto.com', 'facetime.apple.com'];
+const isCallHost = (host) => CALL_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+
+function httpsUrl(value) {
+	try {
+		const u = new URL(value.trim());
+		return u.protocol === 'https:' ? u : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * An event's video call link, or null. CONFERENCE (RFC 7986) and Google's
+ * X-GOOGLE-CONFERENCE say so outright; Zoom and Teams invites put the link
+ * in the location or the description, so a link there counts only when it
+ * is on a known call service. https only.
+ */
+export function callLink(props) {
+	for (const key of ['CONFERENCE', 'X-GOOGLE-CONFERENCE']) {
+		const u = props[key] && httpsUrl(props[key].value);
+		if (u) return u.href;
+	}
+	const url = props.URL && httpsUrl(props.URL.value);
+	if (url && isCallHost(url.hostname.toLowerCase())) return url.href;
+	for (const key of ['LOCATION', 'DESCRIPTION']) {
+		if (!props[key]) continue;
+		for (const m of unescapeText(props[key].value).matchAll(/https:\/\/[^\s<>"]+/g)) {
+			const u = httpsUrl(m[0].replace(/[).,;]+$/, ''));
+			if (u && isCallHost(u.hostname.toLowerCase())) return u.href;
+		}
+	}
+	return null;
 }
 
 /**

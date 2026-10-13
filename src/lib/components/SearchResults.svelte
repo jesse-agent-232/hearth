@@ -41,6 +41,21 @@
 		return true;
 	}
 
+	// Text with its https links split out, so a description's links can be
+	// clicked (a meeting's join link, an agenda).
+	function linkParts(text) {
+		const parts = [];
+		let last = 0;
+		for (const m of text.matchAll(/https:\/\/[^\s<>"]+/g)) {
+			const href = m[0].replace(/[).,;:!?]+$/, '');
+			if (m.index > last) parts.push({ text: text.slice(last, m.index) });
+			parts.push({ href });
+			last = m.index + href.length;
+		}
+		if (last < text.length) parts.push({ text: text.slice(last) });
+		return parts;
+	}
+
 	const KIND_ICONS = {
 		document: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>',
 		file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
@@ -135,8 +150,14 @@
 								{detail.request.busy ? `${detail.request.label}…` : detail.request.label}
 							</button>
 						{/if}
+						{#if detail.link}
+							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request} onmousedown={(e) => e.preventDefault()} onclick={detail.link.run}>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/></svg>
+								{detail.link.label}
+							</button>
+						{/if}
 						{#if detail.open}
-							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
+							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request && !detail.link} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
 								{#if detail.open.label.startsWith('Play')}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
 								{detail.open.label}
 							</button>
@@ -152,7 +173,7 @@
 			{:else if detail.data}
 				<div class="launcher-detail-text">
 					{#if detail.data.tagline}<p class="launcher-detail-tagline">{detail.data.tagline}</p>{/if}
-					{#if detail.data.overview}<p>{detail.data.overview}</p>{/if}
+					{#if detail.data.overview}<p>{#each linkParts(detail.data.overview) as part}{#if part.href}<a href={part.href} target="_blank" rel="noopener noreferrer">{part.href}</a>{:else}{part.text}{/if}{/each}</p>{/if}
 					{#if detail.data.cast?.length}
 						<p class="launcher-detail-cast"><span>Cast</span> {detail.data.cast.join(' · ')}</p>
 					{/if}

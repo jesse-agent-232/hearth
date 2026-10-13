@@ -408,6 +408,10 @@
 		request: resultAction(detailView.key, detailView.p, detailView.r),
 		open: detailView.r.href
 			? { label: openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
+			: null,
+		// A link the details bring (an event's video call).
+		link: detailView.data?.link?.href && /^https:\/\//.test(detailView.data.link.href)
+			? { label: detailView.data.link.label || 'Open', run: () => { openUrl(detailView.data.link.href, true); finish(); } }
 			: null
 	});
 

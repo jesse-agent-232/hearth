@@ -67,7 +67,7 @@
 
 /**
  * @typedef {Object} Reminder
- * @property {string} id                         Stable across polls: the page shows each id once
+ * @property {string} id                         Stable across polls: the page keeps each id up until it is dismissed
  * @property {string} title
  * @property {number} at                         When to show it, ms since the epoch
  * @property {number} start                      When the event starts, ms
@@ -75,6 +75,7 @@
  * @property {boolean} [allDay]
  * @property {string} [location]
  * @property {string} [href]                     Opened by the reminder's Open button
+ * @property {string|null} [call]               The event's video call link, for a Join button
  */
 
 /**
@@ -140,12 +141,12 @@
  * @property {(ctx: { config: object, linked: Record<string, object>, fetch: typeof fetch }) => Promise<object|{ error: string }|null>} [connectFromLinked]  Connects the user without asking, from a linked connection; returns the config to save, null to fall back to `signIn`, or `{ error }` when a code would fail the same way
  * @property {(ctx: { config: object, fetch: typeof fetch }) => Promise<string[]>} [linkedVia]  Which of `linkedTo` can sign in at the operator's URL (Seerr: the server it runs on), for the cards' wording
  * @property {Record<string, Action>} [actions]             Writes triggered from search results
- * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, cast?: string[], thumbnail?: string, backdrop?: string } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
+ * @property {(ctx: AdapterContext & { params: object }) => Promise<{ title: string, facts?: string[], rating?: number|null, genres?: string[], tagline?: string, overview?: string, cast?: string[], thumbnail?: string, backdrop?: string, link?: { label: string, href: string } | null } | null>} [details]  Detail view for a result's `detail` params; null when they're invalid
  * @property {(ctx: { config: object }) => object} [prepareConfig]  Rewrites the merged config just before it is saved, e.g. swapping a password for a derived token
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, { label: string, description?: string }>} [widgets]  Widgets behind the `widgets` surface, e.g. Navidrome's player; the user's switch is `surfaces.widgets`
- * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due from ten minutes ago to a day ahead, for GET /api/reminders; asked only while the user's widgets switch is on
+ * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due in the next day, or already due for an event not yet over, for GET /api/reminders; asked only while the user's widgets switch is on
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<UpcomingEvent[]>} [upcoming]  The next events, still on now to a week ahead, for GET /api/upcoming; asked only while the user's widgets switch is on
  */
 

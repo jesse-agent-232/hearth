@@ -258,6 +258,7 @@ test('search: matches the title, falls back when text-match fails', async () => 
 	assert.deepEqual(details.facts.slice(1), ['High St']);
 	assert.deepEqual(details.genres, []);
 	assert.equal(details.overview, 'Bring the forms\nand the card');
+	assert.equal(details.link, null);
 	assert.equal(await caldav.details({ config, fetch, params: { ...results[0].detail, href: 'https://elsewhere.example.org/x.ics' } }), null);
 
 	const withWeb = await caldav.searchProviders.events.query({ config: { ...config, webUrl: 'https://cal.example.net/web' }, fetch, query: 'dent', limit: 10, timeZone: 'UTC' });
@@ -278,6 +279,14 @@ test('reminders: the event’s own alarm, inside the window', async () => {
 	assert.equal(r.location, 'High St');
 	assert.equal(r.href, 'https://cal.example.net/web');
 	assert.equal(r.at, r.start - 15 * MIN);
+
+	assert.equal(r.call, null);
+
+	// Past due but the event is still on: kept, so the page can keep it up.
+	const during = await caldav.reminders({ config, fetch, timeZone: 'UTC', now: r.start + MIN });
+	assert.deepEqual(during.map((x) => x.id), [r.id]);
+	const over = (r.end ?? r.start + 30 * MIN) + MIN;
+	assert.deepEqual((await caldav.reminders({ config, fetch, timeZone: 'UTC', now: over })).filter((x) => x.id === r.id), []);
 
 	// Two days on, the alarm has long passed.
 	assert.deepEqual(await caldav.reminders({ config, fetch, timeZone: 'UTC', now: now + 2 * 24 * 60 * MIN }), []);
@@ -346,4 +355,16 @@ test('upcoming: events still on or ahead, soonest first', async () => {
 	assert.equal(events[0].href, null);
 	// Once both are over, nothing is left.
 	assert.deepEqual(await caldav.upcoming({ config, fetch, timeZone: 'UTC', now: now + 2 * 60 * MIN }), []);
+});
+
+test('parseEvents: finds the video call link', () => {
+	const ev = (lines) => parseEvents(['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:x', 'DTSTART:20261013T093000Z', ...lines, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n'))[0];
+	assert.equal(ev(['CONFERENCE;VALUE=URI;FEATURE=VIDEO:https://meet.jit.si/Room']).call, 'https://meet.jit.si/Room');
+	assert.equal(ev(['X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij']).call, 'https://meet.google.com/abc-defg-hij');
+	assert.equal(ev(['LOCATION:https://us02web.zoom.us/j/123?pwd=x']).call, 'https://us02web.zoom.us/j/123?pwd=x');
+	assert.equal(ev(['DESCRIPTION:Join:\\nhttps://teams.microsoft.com/l/meetup-join/abc).']).call, 'https://teams.microsoft.com/l/meetup-join/abc');
+	// Not a call service, not https, or a lookalike host: no link.
+	assert.equal(ev(['URL:https://example.com/agenda', 'DESCRIPTION:See https://zoom.us.evil.example/j/1']).call, null);
+	assert.equal(ev(['CONFERENCE;VALUE=URI:http://meet.jit.si/Room']).call, null);
+	assert.equal(ev(['CONFERENCE;VALUE=URI:javascript:alert(1)']).call, null);
 });

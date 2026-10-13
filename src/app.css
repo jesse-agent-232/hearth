@@ -2057,6 +2057,7 @@ body.search-active .hero-area {
 	color: var(--hero-search-text-strong);
 }
 .launcher-detail-text p { margin: 0 0 10px; white-space: pre-line; }
+.launcher-detail-text p a { color: inherit; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
 /* Lines standing in for the description while the details load. */
 .launcher-detail-placeholder { max-width: 56ch; }
 .launcher-detail-placeholder .launcher-skeleton-line { display: block; width: 100%; margin: 0 0 12px; }

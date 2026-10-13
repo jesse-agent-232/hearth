@@ -122,11 +122,13 @@ const adapter = {
 		const server = serverName(config);
 		return {
 			title: e.summary || 'Untitled event',
-			facts: [formatWhen(when, timeZone), e.location].filter(Boolean),
+			// A location that is only the call link shows as the button instead.
+			facts: [formatWhen(when, timeZone), e.call && e.location.trim() === e.call ? '' : e.location].filter(Boolean),
 			// Where the calendar lives, as a chip: a calendar's own name
 			// ("Stalwart Calendar (you@…)") says little.
 			genres: server ? [server] : [],
-			overview: e.description
+			overview: e.description,
+			link: e.call ? { label: 'Join call', href: e.call } : null
 		};
 	},
 
@@ -138,7 +140,8 @@ const adapter = {
 	},
 
 	/**
-	 * Alarms due from ten minutes ago to a day ahead, for GET /api/reminders.
+	 * Alarms due in the next day, plus those already due whose event hasn't
+	 * ended (the page keeps them up until dismissed), for GET /api/reminders.
 	 * Alarms only come from the events themselves: no reminder set, no popup.
 	 */
 	async reminders({ config, fetch, timeZone, now = Date.now() }) {
@@ -147,7 +150,8 @@ const adapter = {
 		const out = [];
 		for (const e of events) {
 			for (const at of e.alarms) {
-				if (at < now - 10 * 60 * 1000 || at > now + DAY) continue;
+				const over = e.end ?? e.start + (e.allDay ? DAY : 30 * 60 * 1000);
+				if (at > now + DAY || (at < now && (over <= now || at < now - DAY))) continue;
 				out.push({
 					id: `caldav:${e.calendar.href}#${e.id}@${at}`,
 					title: e.summary || 'Untitled event',
@@ -156,7 +160,8 @@ const adapter = {
 					end: e.end,
 					allDay: e.allDay,
 					at,
-					href
+					href,
+					call: e.call
 				});
 			}
 		}
