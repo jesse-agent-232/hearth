@@ -15,6 +15,17 @@ const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
 const MAX_REDIRECTS = 3;
 const UPCOMING_MAX = 8;
+// Each account's events carry its color, picked from the Mac's set.
+const COLORS = [
+	{ value: 'red', label: 'Red', hex: '#ff3b30' },
+	{ value: 'orange', label: 'Orange', hex: '#ff9500' },
+	{ value: 'yellow', label: 'Yellow', hex: '#ffcc00' },
+	{ value: 'green', label: 'Green', hex: '#34c759' },
+	{ value: 'blue', label: 'Blue', hex: '#0a84ff' },
+	{ value: 'purple', label: 'Purple', hex: '#af52de' },
+	{ value: 'brown', label: 'Brown', hex: '#a2845e' }
+];
+const DEFAULT_COLOR = 'blue';
 
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
@@ -50,6 +61,14 @@ const adapter = {
 			required: true,
 			trim: false,
 			help: 'Create an app password in your calendar server’s security settings rather than using your main password. Holm only reads your calendars.'
+		},
+		{
+			key: 'color',
+			type: 'color',
+			label: 'Color',
+			options: COLORS,
+			default: DEFAULT_COLOR,
+			help: 'Events from this account show in this color.'
 		},
 		{
 			key: 'webUrl',
@@ -97,7 +116,7 @@ const adapter = {
 							title: e.summary || 'Untitled event',
 							subtitle: [formatWhen(e, timeZone), e.location].filter(Boolean).join(' · '),
 							...(href ? { href } : { detail: detailParams(e, timeZone) }),
-							meta: { kind: 'event' }
+							meta: { kind: 'event', color: colorOf(e.account) }
 						};
 					})
 				};
@@ -167,7 +186,8 @@ const adapter = {
 					allDay: e.allDay,
 					at,
 					href: webAddress(e.account),
-					call: e.call
+					call: e.call,
+					color: colorOf(e.account)
 				});
 			}
 		}
@@ -194,7 +214,8 @@ const adapter = {
 				end: e.end,
 				allDay: e.allDay,
 				href: webAddress(e.account),
-				call: e.call
+				call: e.call,
+				color: colorOf(e.account)
 			}));
 	}
 };
@@ -230,6 +251,11 @@ async function allEvents(config, fetch, from, to, opts) {
 		if (l.status === 'rejected') console.error(`[caldav] ${hostOf(accounts[i].url)} left out:`, l.reason?.message || l.reason);
 	});
 	return ok.flatMap((l) => l.value);
+}
+
+// The account's color as a hex value, so only these ever reach a style.
+export function colorOf(account) {
+	return (COLORS.find((c) => c.value === account?.color) || COLORS.find((c) => c.value === DEFAULT_COLOR)).hex;
 }
 
 function hostOf(url) {

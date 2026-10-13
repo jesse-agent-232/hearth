@@ -111,7 +111,7 @@
 	// The search bar opens the event's details, with its title as the query.
 	function showDetails(e) {
 		close();
-		window.dispatchEvent(new CustomEvent('holm:show-details', { detail: { integrationId: e.integrationId, title: e.title, href: e.href, detail: e.detail } }));
+		window.dispatchEvent(new CustomEvent('holm:show-details', { detail: { integrationId: e.integrationId, title: e.title, href: e.href, detail: e.detail, color: e.color } }));
 	}
 
 	$effect(() => {
@@ -192,7 +192,7 @@
 		{#if e.allDay}All day{:else if e.start <= now}Now{:else}{clock(e.start)}{/if}
 	</span>
 	<span class="min-w-0">
-		<span class="block truncate">{e.title}</span>
+		<span class="block truncate">{#if e.color}<span class="event-dot" style:background={e.color} aria-hidden="true"></span>{/if}{e.title}</span>
 		{#if e.location}
 			<span class="block truncate text-[0.7rem] text-content-dim">{e.location}</span>
 		{/if}
@@ -209,6 +209,8 @@
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	/* A row and, when the event has a video call, its camera on the right. */
 	.upcoming-item { display: flex; align-items: center; }
+	/* The event's account color, the way the Mac marks each calendar. */
+	.event-dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-right: 0.45rem; border-radius: 999px; vertical-align: 0.05em; }
 	.upcoming-item:hover { background: var(--color-surface-card-hover); }
 	.upcoming-call {
 		display: flex;

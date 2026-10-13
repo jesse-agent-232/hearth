@@ -24,7 +24,7 @@
 		for (const f of integration.configSchema) {
 			const known = integration.userState?.config?.[f.key];
 			const opDefault = integration.operatorDefaults?.[f.key];
-			out[f.key] = known ?? opDefault ?? '';
+			out[f.key] = known ?? opDefault ?? f.default ?? '';
 		}
 		return out;
 	}
@@ -384,40 +384,61 @@
 			{#snippet mainForm()}
 				<div class="space-y-2">
 					{#snippet fieldRow(field)}
-						{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
-						<label class="block">
-							<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
-							<input
-								type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
-								bind:value={formConfig[field.key]}
-								placeholder={field.placeholder}
-								oninput={markDirty}
-								readonly={!!lockedByOperator}
-								class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {lockedByOperator ? 'opacity-60 cursor-not-allowed' : ''}"
-								autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
-								spellcheck="false"
-								data-1p-ignore="true"
-								data-lpignore="true"
-								data-bwignore="true"
-							/>
-							{#if lockedByOperator}
-								<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
-							{:else}
-								{#if field.help}
-									<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">
-										{@html marked.parse(field.help)}
-									</div>
+						{#if field.type === 'color'}
+							<div class="block">
+								<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}</span>
+								<div class="swatches" role="radiogroup" aria-label={field.label}>
+									{#each field.options as option}
+										<button
+											type="button"
+											role="radio"
+											class="swatch"
+											style="--swatch: {option.hex}"
+											aria-checked={(formConfig[field.key] || field.default) === option.value}
+											aria-label={option.label}
+											title={option.label}
+											onclick={() => { formConfig[field.key] = option.value; markDirty(); }}
+										></button>
+									{/each}
+								</div>
+								{#if field.help}<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">{field.help}</div>{/if}
+							</div>
+						{:else}
+							{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
+							<label class="block">
+								<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
+								<input
+									type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
+									bind:value={formConfig[field.key]}
+									placeholder={field.placeholder}
+									oninput={markDirty}
+									readonly={!!lockedByOperator}
+									class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {lockedByOperator ? 'opacity-60 cursor-not-allowed' : ''}"
+									autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
+									spellcheck="false"
+									data-1p-ignore="true"
+									data-lpignore="true"
+									data-bwignore="true"
+								/>
+								{#if lockedByOperator}
+									<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
+								{:else}
+									{#if field.help}
+										<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">
+											{@html marked.parse(field.help)}
+										</div>
+									{/if}
+									{#if field.helpUrl && formConfig[field.helpUrl.baseKey]}
+										<a
+											href="{formConfig[field.helpUrl.baseKey]}{field.helpUrl.path}"
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
+										>{field.helpUrl.label} ↗</a>
+									{/if}
 								{/if}
-								{#if field.helpUrl && formConfig[field.helpUrl.baseKey]}
-									<a
-										href="{formConfig[field.helpUrl.baseKey]}{field.helpUrl.path}"
-										target="_blank"
-										rel="noopener noreferrer"
-										class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"
-									>{field.helpUrl.label} ↗</a>
-								{/if}
-							{/if}
-						</label>
+							</label>
+						{/if}
 					{/snippet}
 					{#each visibleFields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
 					{#if visibleFields.some((f) => f.advanced)}
@@ -551,6 +572,21 @@
 	/* Fields most people never need, folded away under Advanced. */
 	.advanced > summary { cursor: pointer; width: fit-content; transition: color 0.15s ease; }
 	.advanced > summary:hover { color: var(--color-content); }
+	/* A color field's swatches, the Mac's way: a ring marks the one picked. */
+	.swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.15rem 0; }
+	.swatch {
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 999px;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		background: var(--swatch);
+		transition: transform 0.15s ease;
+	}
+	.swatch:hover { transform: scale(1.1); }
+	.swatch[aria-checked='true'] { outline: 2px solid var(--swatch); outline-offset: 2px; }
+	.swatch:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 2px; }
 	.signin-digits {
 		font-size: 1.75rem;
 		font-weight: 600;

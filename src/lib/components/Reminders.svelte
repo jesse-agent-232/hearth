@@ -150,7 +150,7 @@
 	<div class="reminders" role="region" aria-label="Reminders" aria-live="polite">
 		{#each toasts as r (r.id)}
 			<div class="reminder glass-card menu-surface animate-slide-up">
-				<div class="reminder-icon" aria-hidden="true">
+				<div class="reminder-icon" class:has-color={r.color} style:--event={r.color} aria-hidden="true">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 				</div>
 				<div class="reminder-text">
@@ -193,6 +193,8 @@
 		background: color-mix(in srgb, var(--color-content) 8%, transparent);
 		color: var(--color-content-dim);
 	}
+	/* Tinted with the account's color. */
+	.reminder-icon.has-color { background: color-mix(in srgb, var(--event) 18%, transparent); color: var(--event); }
 	.reminder-icon svg { width: 18px; height: 18px; }
 	.reminder-text { flex: 1; min-width: 0; }
 	.reminder-title,

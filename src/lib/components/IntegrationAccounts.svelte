@@ -15,6 +15,12 @@
 	const openIf = (node, open) => { node.open = !!open; };
 	const accounts = $derived(integration.userState?.config?.accounts || []);
 	const first = $derived(integration.userState?.config || {});
+	// Each account's color, as a dot on its row.
+	const colorField = $derived(fields.find((f) => f.type === 'color'));
+	const hexOf = (account) => {
+		const value = account[colorField.key] || colorField.default;
+		return colorField.options.find((o) => o.value === value)?.hex;
+	};
 
 	// The open account: 'main', another's id, or 'new'. Null when none is.
 	let editing = $state(null);
@@ -45,10 +51,21 @@
 
 	function open(account) {
 		editing = account ? account.id : 'new';
-		form = Object.fromEntries(fields.map((f) => [f.key, account?.[f.key] ?? integration.operatorDefaults?.[f.key] ?? '']));
+		form = Object.fromEntries(fields.map((f) => [f.key, seed(f, account)]));
 		testStatus = null;
 		error = '';
 		removing = null;
+	}
+
+	function seed(field, account) {
+		const known = account?.[field.key] ?? integration.operatorDefaults?.[field.key];
+		if (known != null) return known;
+		// A new account takes a color none of the others has yet.
+		if (!account && field.type === 'color') {
+			const used = new Set([first, ...accounts].map((a) => a[field.key] || field.default));
+			return field.options.find((o) => !used.has(o.value))?.value ?? field.default;
+		}
+		return field.default ?? '';
 	}
 
 	function close() {
@@ -147,9 +164,14 @@
 		aria-expanded={editing === id}
 		onclick={() => toggle(id, account)}
 	>
-		<span class="min-w-0 text-left">
-			<span class="block truncate text-[0.75rem] text-content-muted">{account.username || 'Account'}</span>
-			<span class="block truncate text-[0.7rem] text-content-dim font-mono">{hostOf(account.url)}</span>
+		<span class="flex items-center gap-2.5 min-w-0">
+			{#if colorField}
+				<span class="account-dot" style="--swatch: {hexOf(account)}" aria-hidden="true"></span>
+			{/if}
+			<span class="min-w-0 text-left">
+				<span class="block truncate text-[0.75rem] text-content-muted">{account.username || 'Account'}</span>
+				<span class="block truncate text-[0.7rem] text-content-dim font-mono">{hostOf(account.url)}</span>
+			</span>
 		</span>
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 	</button>
@@ -158,33 +180,54 @@
 {#snippet editor(saveLabel, account)}
 	<div class="space-y-2 rounded-lg border border-border-card p-2.5" data-form-type="other">
 		{#snippet fieldRow(field)}
-			{@const locked = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
-			<label class="block">
-				<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
-				<input
-					type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
-					bind:value={form[field.key]}
-					placeholder={field.placeholder}
-					oninput={edited}
-					readonly={!!locked}
-					class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {locked ? 'opacity-60 cursor-not-allowed' : ''}"
-					autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
-					spellcheck="false"
-					data-1p-ignore="true"
-					data-lpignore="true"
-					data-bwignore="true"
-				/>
-				{#if locked}
-					<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
-				{:else}
-					{#if field.help}
-						<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">{@html marked.parse(field.help)}</div>
+			{#if field.type === 'color'}
+				<div class="block">
+					<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}</span>
+					<div class="swatches" role="radiogroup" aria-label={field.label}>
+						{#each field.options as option}
+							<button
+								type="button"
+								role="radio"
+								class="swatch"
+								style="--swatch: {option.hex}"
+								aria-checked={(form[field.key] || field.default) === option.value}
+								aria-label={option.label}
+								title={option.label}
+								onclick={() => { form[field.key] = option.value; edited(); }}
+							></button>
+						{/each}
+					</div>
+					{#if field.help}<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">{field.help}</div>{/if}
+				</div>
+			{:else}
+				{@const locked = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
+				<label class="block">
+					<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
+					<input
+						type={field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'}
+						bind:value={form[field.key]}
+						placeholder={field.placeholder}
+						oninput={edited}
+						readonly={!!locked}
+						class="w-full bg-surface-input border border-border-input rounded-lg px-3 py-2 text-[0.8rem] text-content font-mono placeholder:text-content-dim outline-none focus:border-border-pill {locked ? 'opacity-60 cursor-not-allowed' : ''}"
+						autocomplete={field.type === 'secret' ? 'new-password' : 'off'}
+						spellcheck="false"
+						data-1p-ignore="true"
+						data-lpignore="true"
+						data-bwignore="true"
+					/>
+					{#if locked}
+						<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
+					{:else}
+						{#if field.help}
+							<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">{@html marked.parse(field.help)}</div>
+						{/if}
+						{#if field.helpUrl && form[field.helpUrl.baseKey]}
+							<a href="{form[field.helpUrl.baseKey]}{field.helpUrl.path}" target="_blank" rel="noopener noreferrer" class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline">{field.helpUrl.label} ↗</a>
+						{/if}
 					{/if}
-					{#if field.helpUrl && form[field.helpUrl.baseKey]}
-						<a href="{form[field.helpUrl.baseKey]}{field.helpUrl.path}" target="_blank" rel="noopener noreferrer" class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline">{field.helpUrl.label} ↗</a>
-					{/if}
-				{/if}
-			</label>
+				</label>
+			{/if}
 		{/snippet}
 		{#each fields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
 		{#if fields.some((f) => f.advanced)}
@@ -218,6 +261,22 @@
 	/* As on the first account's form (IntegrationCard). */
 	.advanced > summary { cursor: pointer; width: fit-content; transition: color 0.15s ease; }
 	.advanced > summary:hover { color: var(--color-content); }
+	/* A color field's swatches, the Mac's way: a ring marks the one picked. */
+	.swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.15rem 0; }
+	.swatch {
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 999px;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		background: var(--swatch);
+		transition: transform 0.15s ease;
+	}
+	.swatch:hover { transform: scale(1.1); }
+	.swatch[aria-checked='true'] { outline: 2px solid var(--swatch); outline-offset: 2px; }
+	.swatch:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 2px; }
+	.account-dot { width: 0.6rem; height: 0.6rem; border-radius: 999px; flex-shrink: 0; background: var(--swatch); }
 	.field-help :global(ol),
 	.field-help :global(ul) { margin: 0.25rem 0; padding-left: 0; list-style-position: inside; }
 	.field-help :global(li) { margin: 0.1rem 0; }

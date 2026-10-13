@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseEvents, parseTime, parseDuration, onlyLink } from '../../src/lib/server/integrations/ical.js';
-import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress, serverName } from '../../src/lib/server/integrations/caldav.js';
+import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress, serverName, colorOf } from '../../src/lib/server/integrations/caldav.js';
 
 const MIN = 60 * 1000;
 
@@ -463,4 +463,19 @@ test('several accounts: each searched with its own login, a failing one left out
 	assert.equal((await caldav.upcoming({ config: broken, fetch, timeZone: 'UTC', now: Date.now() })).length, 2);
 	// All of them failing is an error.
 	await assert.rejects(caldav.upcoming({ config: { ...config, password: 'wrong', accounts: [{ ...second, password: 'wrong' }] }, fetch, timeZone: 'UTC' }));
+});
+
+test('colors: each account\'s events carry its color, blue when none is picked', async () => {
+	const now = Date.now();
+	const { fetch } = fakeServer({ now });
+	const second = { id: 'a2', url: 'https://other.example.net/', username: 'alice', password: 's3cret ', color: 'green' };
+	const both = { ...config, accounts: [second] };
+	const upcoming = await caldav.upcoming({ config: both, fetch, timeZone: 'UTC', now });
+	assert.deepEqual([...new Set(upcoming.map((e) => `${e.detail.account}:${e.color}`))].sort(), ['a2:#34c759', 'main:#0a84ff']);
+	const { results } = await caldav.searchProviders.events.query({ config: both, fetch, query: 'dent', limit: 10, timeZone: 'UTC' });
+	assert.equal(results.find((r) => r.detail.account === 'a2').meta.color, '#34c759');
+	// Only the palette's hex values ever leave: anything else is the default.
+	assert.equal(colorOf({ color: 'red' }), '#ff3b30');
+	assert.equal(colorOf({ color: 'url(x)' }), '#0a84ff');
+	assert.equal(colorOf({}), '#0a84ff');
 });

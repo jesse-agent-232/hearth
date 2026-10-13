@@ -581,6 +581,7 @@
 						subtitle: r.subtitle,
 						thumbnail: r.thumbnail,
 						kind: r.meta?.kind,
+						color: r.meta?.color,
 						// A failed action reports here; success shows on the chip. The
 						// play mark already says "Available", so that badge is dropped.
 						badge: (actionState[key]?.ok === false && actionState[key].message)
@@ -748,7 +749,7 @@
 		// From a widget (the Calendar's upcoming events): search for the item
 		// and open its details, as if it had been picked from the results.
 		async function onShowDetails(e) {
-			const { integrationId, title, href, detail: params } = e.detail || {};
+			const { integrationId, title, href, detail: params, color } = e.detail || {};
 			const p = inlineProviders.find((x) => x.integrationId === integrationId);
 			if (!p || !params) return;
 			query = title || '';
@@ -756,7 +757,7 @@
 			inlineOpen = true;
 			inputEl?.focus();
 			await tick();
-			openDetail(`widget:${integrationId}:${title}`, p, { title, href: href || undefined, detail: params, meta: { kind: 'event' } });
+			openDetail(`widget:${integrationId}:${title}`, p, { title, href: href || undefined, detail: params, meta: { kind: 'event', color } });
 		}
 		window.addEventListener('holm:show-details', onShowDetails);
 

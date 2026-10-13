@@ -9,13 +9,15 @@
 /**
  * @typedef {Object} ConfigField
  * @property {string} key                       Stable id (used as the form name and the stored config key)
- * @property {'url'|'text'|'secret'} type       Renders as <input type="...">; 'secret' redacts to bullets in API responses
+ * @property {'url'|'text'|'secret'|'color'} type  Renders as <input type="...">; 'secret' redacts to bullets in API responses; 'color' is a row of swatches from `options`
  * @property {string} label                     Human-readable label
  * @property {boolean} [required]               Defaults to false
  * @property {string} [placeholder]
  * @property {string} [help]                    Small helper text shown under the field
  * @property {{ baseKey: string, path: string, label: string }} [helpUrl]  Clickable link built from config[baseKey] + path
  * @property {string} [fromOperatorDefault]     If set, the form pre-fills from `integrations.<id>.<value>` in config.yml
+ * @property {{ value: string, label: string, hex: string }[]} [options]  The swatches of a 'color' field; the value stored is `value`
+ * @property {string} [default]                 Shown, and saved, when the field has no value yet
  * @property {boolean} [advanced]               Shown folded away under Advanced on the form, for fields most users leave empty
  * @property {boolean} [hidden]                 Stored and redacted like any field, but never rendered — filled by `signIn`
  * @property {boolean} [trim]                   Defaults to true; set false where surrounding spaces matter (a password)
@@ -41,6 +43,7 @@
  * @property {Object} [meta]
  * @property {string} [meta.kind]               'photo' triggers the photo-grid variant in SearchResults
  * @property {string} [meta.takenAt]
+ * @property {string} [meta.color]              A hex color the result's icon is tinted with (a calendar event's account)
  * @property {string} [meta.status]             Short badge, e.g. 'Available'
  * @property {string} [meta.tmdb]               '<movie|tv>:<tmdb id>' — identifies the title across providers
  * @property {{ title: string, artist?: string, duration?: number, stream: string, cover?: string }} [meta.track]  A song Holm can play itself: `stream` is a proxy URL for the audio, `duration` in seconds

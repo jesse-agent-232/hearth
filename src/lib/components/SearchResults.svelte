@@ -7,7 +7,7 @@
 	// selected row is announced through aria-activedescendant.
 	//
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster'|'tracks', loading, error, items }]
-	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, badge?, play?,
+	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, color?, badge?, play?,
 	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }] }
 	let {
 		sections = [],
@@ -113,7 +113,7 @@
 			</div>
 			<!-- An event is compact: its icon, then title and facts, with the buttons on the right. -->
 			<div class="launcher-detail-body" class:is-compact={!detail.thumbnail && detail.r?.meta?.kind === 'event'}>
-				<div class="launcher-detail-poster launcher-thumb-wrap" class:is-icon={!detail.thumbnail && detail.r?.meta?.kind === 'event'}>
+				<div class="launcher-detail-poster launcher-thumb-wrap" class:is-icon={!detail.thumbnail && detail.r?.meta?.kind === 'event'} style:color={detail.r?.meta?.color}>
 					{#if detail.thumbnail}
 						<img class="is-loading" use:thumbLoading src={detail.thumbnail} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
 					{/if}
@@ -312,7 +312,7 @@
 												<img class="is-loading" use:thumbLoading src={item.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={thumbFailed} />
 											</span>
 										{:else}
-											<span class="launcher-icon-box">
+											<span class="launcher-icon-box" style:color={item.color}>
 												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{@html item.svg || KIND_ICONS[item.kind] || KIND_ICONS.file}</svg>
 											</span>
 										{/if}

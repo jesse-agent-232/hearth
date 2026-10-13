@@ -26,6 +26,8 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 			helpUrl: f.helpUrl || null,
 			fromOperatorDefault: f.fromOperatorDefault || null,
 			advanced: !!f.advanced,
+			options: f.options || null,
+			default: f.default ?? null,
 			hidden: !!f.hidden
 		})),
 		signIn: adapter.signIn ? { label: adapter.signIn.label, help: adapter.signIn.help || '' } : null,
