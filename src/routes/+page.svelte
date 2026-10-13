@@ -185,7 +185,7 @@
 		<WallpaperBackground wallpaperId={viewPrefs.wallpaperId || null} />
 	{/if}
 <DynamicFavicon />
-	<div class="w-full max-w-[1200px] min-h-dvh flex flex-col px-16 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] max-lg:px-12 max-md:px-5 max-md:pb-[calc(6rem+env(safe-area-inset-bottom,0px))] max-md:pt-[calc(1.5rem+env(safe-area-inset-top,0px))] max-md:max-w-full max-xs:px-4 max-xs:pt-[calc(1.25rem+env(safe-area-inset-top,0px))] {viewPrefs.iconStyle === 'grayed' ? 'grayed-widgets' : ''} {wallpapersEnabled && theme === 'auto' && viewPrefs.wallpaperEnabled !== false ? 'wallpaper-active' : ''}">
+	<div class="w-full max-w-[1200px] min-h-dvh flex flex-col px-16 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] max-lg:px-12 max-md:px-5 max-md:pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-md:pt-[calc(1.5rem+env(safe-area-inset-top,0px))] max-md:max-w-full max-xs:px-4 max-xs:pt-[calc(1.25rem+env(safe-area-inset-top,0px))] {viewPrefs.iconStyle === 'grayed' ? 'grayed-widgets' : ''} {wallpapersEnabled && theme === 'auto' && viewPrefs.wallpaperEnabled !== false ? 'wallpaper-active' : ''}">
 		<!-- Fixed top offset rather than vertical centring: centring would move
 		     the search bar whenever the content grows, e.g. entering edit mode.
 		     The flex-1 spacer below pushes the footer to the viewport bottom. -->
