@@ -147,6 +147,7 @@
  * @property {Record<string, SearchProvider>} [searchProviders]
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, { label: string, description?: string }>} [widgets]  Widgets behind the `widgets` surface, e.g. Navidrome's player; the user's switch is `surfaces.widgets`
+ * @property {boolean} [widgetsOnConnect]  Turn the widgets switch on when the user first connects (where the operator allows widgets); otherwise it starts off
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due in the next day, or already due for an event not yet over, for GET /api/reminders; asked only while the user's widgets switch is on
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<UpcomingEvent[]>} [upcoming]  The next events, still on now to a week ahead, for GET /api/upcoming; asked only while the user's widgets switch is on
  */

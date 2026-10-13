@@ -132,8 +132,9 @@ const adapter = {
 		};
 	},
 
-	// Off unless the operator sets `surfaces.widgets: true` and the user turns
-	// it on.
+	// Off unless the operator sets `surfaces.widgets: true`; then on for a
+	// new connection, since a calendar is mostly for the reminders.
+	widgetsOnConnect: true,
 	widgets: {
 		reminders: { label: 'Reminders', description: 'Show event reminders on this page, at the times set in your calendar' },
 		upcoming: { label: 'Upcoming events', description: 'Your next event under the clock, and the week ahead a click away' }

@@ -176,6 +176,10 @@
 				surfacesToSave.search = true;
 				formSurfaces = surfacesToSave;
 			}
+			if (willConnectFresh && hasWidgets && integration.widgetsOnConnect) {
+				surfacesToSave.widgets = true;
+				formSurfaces = surfacesToSave;
+			}
 			await integrationsStore.save(integration.id, { config: formConfig, surfaces: surfacesToSave });
 			dirty = false;
 			onCollapseRequest();

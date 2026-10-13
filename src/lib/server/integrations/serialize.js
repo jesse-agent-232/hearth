@@ -39,7 +39,8 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 			key,
 			label: w.label,
 			description: w.description || ''
-		}))
+		})),
+		widgetsOnConnect: !!adapter.widgetsOnConnect
 	};
 }
 
