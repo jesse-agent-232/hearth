@@ -74,7 +74,7 @@ volumes:
 2. Register Holm as an OIDC client with your provider. The redirect URI is `https://<your-holm-host>/auth/callback`. The example config reads `${OIDC_CLIENT_ID}` and `${OIDC_CLIENT_SECRET}`, so Holm won't start until both are set (or you set `auth.enabled: false`).
 3. Set `auth.oidc.issuer` and `redirect_base`, list your apps, and run `docker compose up -d`.
 
-`latest` and `stable` follow the newest release. To upgrade only when you choose, pin a version tag such as `holm:0.6.1` (see [Releases](https://github.com/man15h/holm/releases)). `alpha` is built from `dev` for arm64 only.
+`latest` and `stable` follow the newest release. To upgrade only when you choose, pin a version tag such as `holm:0.6.1`. From 0.6.2, each [release](https://github.com/man15h/holm/releases) lists its image by tag and by digest (`holm@sha256:…`); the digest pins the exact build. `alpha` is built from `dev` for arm64 only.
 
 Holm refuses to start, and logs why, when the config is missing or invalid, when it names an unset `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when it can't write the data directory (needed even with the database off, unless `HOLM_SECRET_KEY` is set). The container runs as the `node` user (uid 1000). A data directory bind-mounted from a release before 0.5.0 needs `chown -R 1000:1000` once.
 
