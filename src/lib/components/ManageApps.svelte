@@ -455,6 +455,7 @@
 <style>
 	.version-link {
 		padding: 0 0.75rem;
+		text-align: left;
 		background: transparent;
 		border: none;
 		cursor: pointer;
