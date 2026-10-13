@@ -308,3 +308,20 @@ test('web address: the one given, else the known calendar page of Nextcloud, iCl
 	assert.equal(webAddress({ url: 'https://mail.example.com/dav/cal' }), null);
 	assert.equal(webAddress({ url: 'https://notfastmail.com/' }), null);
 });
+
+test('details: a moved occurrence shows its own title, found by RECURRENCE-ID', async () => {
+	const ics = [
+		'BEGIN:VCALENDAR',
+		'BEGIN:VEVENT', 'UID:standup', 'SUMMARY:Standup', 'DTSTART:20261012T043000Z', 'RRULE:FREQ=DAILY', 'END:VEVENT',
+		'BEGIN:VEVENT', 'UID:standup', 'SUMMARY:Standup (moved)', 'RECURRENCE-ID:20261014T043000Z', 'DTSTART:20261014T080000Z', 'END:VEVENT',
+		'END:VCALENDAR'
+	].join('\r\n');
+	const { fetch: base } = fakeServer({ now: Date.now() });
+	const fetch = async (url, init) => (init.method === 'GET' ? new Response(ics, { status: 200 }) : base(url, init));
+	const href = 'https://cal.example.net/dav/alice/cals/home/standup.ics';
+	const moved = Date.UTC(2026, 9, 14, 8, 0);
+	const one = await caldav.details({ config, fetch, params: { href, start: moved, recurrenceId: Date.UTC(2026, 9, 14, 4, 30), timeZone: 'UTC' } });
+	assert.equal(one.title, 'Standup (moved)');
+	const series = await caldav.details({ config, fetch, params: { href, start: Date.UTC(2026, 9, 13, 4, 30), recurrenceId: Date.UTC(2026, 9, 13, 4, 30), timeZone: 'UTC' } });
+	assert.equal(series.title, 'Standup');
+});

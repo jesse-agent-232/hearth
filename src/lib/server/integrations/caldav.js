@@ -91,7 +91,7 @@ const adapter = {
 						subtitle: [formatWhen(e, timeZone), e.location, e.calendar.name].filter(Boolean).join(' · '),
 						...(href
 							? { href }
-							: { detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, timeZone } }),
+							: { detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone } }),
 						meta: { kind: 'event' }
 					}))
 				};
@@ -111,7 +111,9 @@ const adapter = {
 		const res = await dav(config, fetch, href, 'GET', undefined, 0);
 		if (res.status !== 200) throw new Error(`The calendar answered ${res.status}`);
 		const events = parseEvents(await res.text(), timeZone);
-		const e = events.find((x) => x.recurrenceId === start) || events.find((x) => x.recurrenceId == null) || events[0];
+		// A moved occurrence keeps its original time in RECURRENCE-ID.
+		const rid = Number.isFinite(params.recurrenceId) ? params.recurrenceId : start;
+		const e = events.find((x) => x.recurrenceId === rid) || events.find((x) => x.recurrenceId == null) || events[0];
 		if (!e) return null;
 		const calendars = await findCalendars(config, fetch);
 		const calendar = calendars.find((c) => href.startsWith(c.href));
