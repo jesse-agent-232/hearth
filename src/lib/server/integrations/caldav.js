@@ -55,6 +55,7 @@ const adapter = {
 			key: 'webUrl',
 			type: 'url',
 			link: true,
+			advanced: true,
 			label: 'Calendar web address',
 			placeholder: 'https://cloud.example.com/apps/calendar',
 			help: 'Optional. Where an event opens when you pick it in search. Filled in for Nextcloud, iCloud and Fastmail; without one, picking an event shows its details.'

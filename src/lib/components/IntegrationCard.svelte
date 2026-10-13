@@ -380,7 +380,7 @@
 			{/if}
 			{#snippet mainForm()}
 				<div class="space-y-2">
-					{#each visibleFields as field}
+					{#snippet fieldRow(field)}
 						{@const lockedByOperator = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
 						<label class="block">
 							<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
@@ -415,7 +415,16 @@
 								{/if}
 							{/if}
 						</label>
-					{/each}
+					{/snippet}
+					{#each visibleFields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
+					{#if visibleFields.some((f) => f.advanced)}
+						<details class="advanced">
+							<summary class="text-[0.7rem] text-content-dim">Advanced</summary>
+							<div class="space-y-2 pt-2">
+								{#each visibleFields.filter((f) => f.advanced) as field}{@render fieldRow(field)}{/each}
+							</div>
+						</details>
+					{/if}
 
 					{#if integration.signIn}
 						{#if signFlow}
@@ -536,6 +545,9 @@
 </div>
 
 <style>
+	/* Fields most people never need, folded away under Advanced. */
+	.advanced > summary { cursor: pointer; width: fit-content; transition: color 0.15s ease; }
+	.advanced > summary:hover { color: var(--color-content); }
 	.signin-digits {
 		font-size: 1.75rem;
 		font-weight: 600;

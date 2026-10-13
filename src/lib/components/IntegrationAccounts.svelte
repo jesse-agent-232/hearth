@@ -154,7 +154,7 @@
 
 {#snippet editor(saveLabel, account)}
 	<div class="space-y-2 rounded-lg border border-border-card p-2.5" data-form-type="other">
-		{#each fields as field}
+		{#snippet fieldRow(field)}
 			{@const locked = field.fromOperatorDefault && integration.operatorDefaults?.[field.key]}
 			<label class="block">
 				<span class="block text-[0.7rem] text-content-dim mb-1">{field.label}{#if field.required}<span class="text-[var(--accent,#f5b942)]" aria-hidden="true"> *</span>{/if}</span>
@@ -182,7 +182,16 @@
 					{/if}
 				{/if}
 			</label>
-		{/each}
+		{/snippet}
+		{#each fields.filter((f) => !f.advanced) as field}{@render fieldRow(field)}{/each}
+		{#if fields.some((f) => f.advanced)}
+			<details class="advanced">
+				<summary class="text-[0.7rem] text-content-dim">Advanced</summary>
+				<div class="space-y-2 pt-2">
+					{#each fields.filter((f) => f.advanced) as field}{@render fieldRow(field)}{/each}
+				</div>
+			</details>
+		{/if}
 		{#if testStatus}
 			<div class="text-[0.7rem] font-mono px-2 py-1.5 rounded {testStatus.ok ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
 				{testStatus.ok ? '✓' : '✗'} {testStatus.message}
@@ -204,6 +213,8 @@
 
 <style>
 	/* As on the first account's form (IntegrationCard). */
+	.advanced > summary { cursor: pointer; width: fit-content; transition: color 0.15s ease; }
+	.advanced > summary:hover { color: var(--color-content); }
 	.field-help :global(ol),
 	.field-help :global(ul) { margin: 0.25rem 0; padding-left: 0; list-style-position: inside; }
 	.field-help :global(li) { margin: 0.1rem 0; }
