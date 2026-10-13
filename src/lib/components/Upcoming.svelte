@@ -141,9 +141,9 @@
 			title="Upcoming events"
 			onclick={() => (open = !open)}
 		>
-			<svg class="header-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+			<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
-			<span class="shrink-0 tabular-nums">· {when(next)}</span>
+			<span class="shrink-0 tabular-nums text-content-muted">· {when(next)}</span>
 		</button>
 		{#if next.call}
 			<a class="upcoming-call pill-call" href={next.call} target="_blank" rel="noopener noreferrer" title="Join call · {hostOf(next.call)}" aria-label="Join call on {hostOf(next.call)}">{@render camera()}</a>
@@ -201,11 +201,10 @@
 
 <style>
 	/* A smaller line under the clock. */
-	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; }
-	/* On the children, so the fade-in animation on the pill doesn't fight it. */
-	.upcoming-pill > * { opacity: 0.6; transition: opacity 0.15s ease; }
-	.upcoming-pill:hover > *,
-	.upcoming-pill:focus-visible > * { opacity: 1; }
+	/* A button drops the inherited text-shadow; keep the header's, which
+	   the wallpaper sets so the line reads over a bright photo. */
+	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
+	.upcoming-pill:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 3px; border-radius: 4px; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	/* A row and, when the event has a video call, its camera on the right. */
 	.upcoming-item { display: flex; align-items: center; }
@@ -227,8 +226,7 @@
 	.upcoming-call:hover, .upcoming-call:focus-visible { color: var(--color-content); background: var(--color-surface-card-strong); }
 	.upcoming-call :global(svg) { width: 1rem; height: 1rem; }
 	/* Beside the pill, at the line's size. */
-	.pill-call { margin: 0; width: 1.5rem; height: 1.5rem; opacity: 0.75; }
-	.pill-call:hover, .pill-call:focus-visible { opacity: 1; }
+	.pill-call { margin: 0; width: 1.5rem; height: 1.5rem; }
 	.upcoming-row {
 		flex: 1;
 		min-width: 0;
