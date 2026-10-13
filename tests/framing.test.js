@@ -38,9 +38,16 @@ test('anything that is not an origin is rejected, so it cannot change the policy
 	assert.equal(invalid.length, bad.length);
 });
 
-test('a response with no CSP (an API route) only loses X-Frame-Options', () => {
+test('a response with no CSP (the JSON API) gets one holding only frame-ancestors', () => {
 	const headers = new Headers({ 'x-frame-options': 'DENY' });
 	allowFraming(headers, ['https://dash.example.com']);
 	assert.equal(headers.get('x-frame-options'), null);
-	assert.equal(headers.get('content-security-policy'), null);
+	assert.equal(headers.get('content-security-policy'), "frame-ancestors 'self' https://dash.example.com");
+});
+
+test("a route's own CSP without frame-ancestors (icons, the proxy) gets it added", () => {
+	const headers = new Headers({ 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'none'; sandbox;" });
+	allowFraming(headers, ['https://dash.example.com']);
+	assert.equal(headers.get('x-frame-options'), null);
+	assert.equal(headers.get('content-security-policy'), "default-src 'none'; sandbox; frame-ancestors 'self' https://dash.example.com");
 });

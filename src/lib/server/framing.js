@@ -22,15 +22,16 @@ export function parseFrameAncestors(value) {
 }
 
 // Rewrites a response's framing headers for the allowed origins. With none,
-// it leaves the default block in place.
+// it leaves the default block in place. With some, X-Frame-Options goes (it
+// can't name an origin), so every response needs the CSP directive instead:
+// replaced in the page CSP, added to a route's own CSP (icons, the
+// integration proxy), or the whole CSP when there is none (the JSON API).
 export function allowFraming(headers, allowed) {
 	if (!allowed.length) return;
 	headers.delete('x-frame-options');
+	const directive = `frame-ancestors 'self' ${allowed.join(' ')}`;
 	const csp = headers.get('content-security-policy');
-	if (csp) {
-		headers.set(
-			'content-security-policy',
-			csp.replace(/frame-ancestors[^;]*/, `frame-ancestors 'self' ${allowed.join(' ')}`)
-		);
-	}
+	if (!csp) headers.set('content-security-policy', directive);
+	else if (/frame-ancestors/.test(csp)) headers.set('content-security-policy', csp.replace(/frame-ancestors[^;]*/, directive));
+	else headers.set('content-security-policy', `${csp.replace(/;\s*$/, '')}; ${directive}`);
 }
