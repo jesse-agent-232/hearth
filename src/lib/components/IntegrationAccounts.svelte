@@ -1,4 +1,5 @@
 <script>
+	import { marked } from 'marked';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 
 	// The accounts of an integration that holds several (the Calendar), as a
@@ -170,6 +171,16 @@
 					data-lpignore="true"
 					data-bwignore="true"
 				/>
+				{#if locked}
+					<span class="block text-[0.7rem] text-content-dim mt-1">Set by your administrator</span>
+				{:else}
+					{#if field.help}
+						<div class="field-help text-[0.7rem] text-content-dim mt-1.5 leading-relaxed">{@html marked.parse(field.help)}</div>
+					{/if}
+					{#if field.helpUrl && form[field.helpUrl.baseKey]}
+						<a href="{form[field.helpUrl.baseKey]}{field.helpUrl.path}" target="_blank" rel="noopener noreferrer" class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline">{field.helpUrl.label} ↗</a>
+					{/if}
+				{/if}
 			</label>
 		{/each}
 		{#if testStatus}
@@ -192,6 +203,13 @@
 {/snippet}
 
 <style>
+	/* As on the first account's form (IntegrationCard). */
+	.field-help :global(ol),
+	.field-help :global(ul) { margin: 0.25rem 0; padding-left: 0; list-style-position: inside; }
+	.field-help :global(li) { margin: 0.1rem 0; }
+	.field-help :global(p) { margin: 0.2rem 0; }
+	.field-help :global(strong) { color: var(--content-muted, #aaa); font-weight: 600; }
+	.field-help :global(a) { color: var(--color-content); font-weight: 700; }
 	.account-row {
 		display: flex;
 		align-items: center;
