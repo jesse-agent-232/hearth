@@ -4,7 +4,8 @@ import yaml from 'js-yaml';
 import { marked } from 'marked';
 import { version as APP_VERSION } from '../../../package.json';
 import { getBrandColor } from './brandColors.js';
-import { canSeeApp, sectionsFor } from './appAccess.js';
+import { canSeeApp, canSeeSection, sectionsFor } from './appAccess.js';
+import { latestRelease, updateFor } from './updateCheck.js';
 import { substituteEnvVars } from './envVars.js';
 
 let _config = null;
@@ -194,6 +195,8 @@ export async function getClientConfig({ authenticated = true, user = null } = {}
 		tips: getTipsConfig(),
 		integrations: { enabled: config.database?.enabled !== false },
 		version: APP_VERSION,
-		changelog: getChangelogConfig(user)
+		changelog: getChangelogConfig(user),
+		// GitHub is only asked for someone update_check lets see the notice.
+		update: canSeeSection(config.update_check, user, true) ? updateFor(APP_VERSION, latestRelease()) : null
 	};
 }

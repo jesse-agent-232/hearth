@@ -14,6 +14,8 @@
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
 	// The version is Holm's whatever the branding says, and links to its repo.
+	// A newer release, when update_check found one and lets this user see it.
+	const update = siteConfig?.update || null;
 	const REPO_URL = 'https://github.com/man15h/holm';
 	// Off when database.enabled is false: credentials would have nowhere to live.
 	const integrationsEnabled = siteConfig?.integrations?.enabled !== false;
@@ -194,6 +196,13 @@
 	];
 </script>
 
+{#snippet versionLinks()}
+	<a class="version-link" href={REPO_URL} target="_blank" rel="noopener noreferrer" title="Holm on GitHub">Holm v{version}</a>
+	{#if update}
+		<a class="version-link update" href={update.url} target="_blank" rel="noopener noreferrer" title="What's in Holm v{update.latest}">v{update.latest} available</a>
+	{/if}
+{/snippet}
+
 {#if open}
 	<div
 		use:portal
@@ -259,7 +268,7 @@
 							>Reset defaults</button>
 						{/if}
 						{#if version}
-							<a class="version-link block mt-1.5" href={REPO_URL} target="_blank" rel="noopener noreferrer" title="Holm on GitHub">Holm v{version}</a>
+							<div class="version-line mt-1.5">{@render versionLinks()}</div>
 						{/if}
 					</div>
 				</div>
@@ -441,7 +450,7 @@
 						<button class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono p-0" onclick={resetDefaults}>Reset defaults</button>
 					{/if}
 					{#if version}
-						<a class="version-link flush" href={REPO_URL} target="_blank" rel="noopener noreferrer" title="Holm on GitHub">Holm v{version}</a>
+						<div class="version-line flush">{@render versionLinks()}</div>
 					{/if}
 				</div>
 				</div>
@@ -452,8 +461,15 @@
 {/if}
 
 <style>
-	.version-link {
+	.version-line {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
 		padding: 0 0.75rem;
+	}
+	.version-line.flush { padding: 0; }
+	.version-link {
 		text-align: left;
 		text-decoration: none;
 		background: transparent;
@@ -466,5 +482,5 @@
 		transition: opacity 0.15s ease;
 	}
 	.version-link:hover, .version-link:focus-visible { opacity: 1; color: var(--color-content); }
-	.version-link.flush { padding: 0; }
+	.version-link.update { color: var(--color-content); opacity: 0.9; }
 </style>

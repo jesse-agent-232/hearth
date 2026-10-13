@@ -132,6 +132,7 @@ Holm has no telemetry. These features do talk to public services:
 | Wallpapers | `wsrv.nl` (resizing) and `gitlab.com` (the wallpaper set) | Holm's server |
 | `di:` / `si:` / Lucide icons | `cdn.jsdelivr.net`, `cdn.simpleicons.org` | Holm's server, cached a day; visitors' IPs don't reach them |
 | Seerr posters | `image.tmdb.org` | Holm's server |
+| Update notice | `api.github.com` (Holm's latest release) | Holm's server, at most every 6 hours; `update_check: { enabled: false }` turns it off |
 | Weather | `api.open-meteo.com`; place search `geocoding-api.open-meteo.com`; "use my location" names the place with `nominatim.openstreetmap.org` | The visitor's browser, with the coordinates or the typed place |
 | Fallback search | Google by default (`search.url`) | The visitor's browser, only when they send a query there |
 | Custom font, icon URLs, logo | Whatever URL `config.yml` names | The visitor's browser |

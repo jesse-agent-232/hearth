@@ -250,6 +250,18 @@ The server decides. Someone outside the groups gets no slides, no privacy text a
 
 The sign-in screen asks visitors to agree to the Privacy & Terms only when they can open the privacy notice. Nobody is signed in there yet, so with `groups:` on `privacy` (or `privacy` off) that box doesn't show. Members open the notice from the footer once signed in.
 
+### Update notice
+
+At most every 6 hours, Holm's server asks GitHub for Holm's latest release (`api.github.com/repos/…/holm/releases/latest`); visitors' browsers never do. When it's newer than the running version, Configure shows `v0.7.0 available` under the version, linking to that release's notes. If GitHub can't be reached or answers with an error, there's no notice, just one line in the log, and Holm asks again 6 hours later. A page load never waits for the check.
+
+```yaml
+update_check:
+  enabled: true                # default; false = never ask GitHub
+  groups: ["admins"]           # optional: only these groups see the notice
+```
+
+`groups` works as in [Groups for onboarding, privacy and What's new](#groups-for-onboarding-privacy-and-whats-new). GitHub is asked only once someone who can see the notice opens Holm, so with auth off and `groups` set it never is.
+
 `tips` is accepted but has no effect: the first-week tips are switched off in this release.
 
 ## Integration credentials
@@ -306,3 +318,4 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `security.frame_ancestors` | list of origins | none | yes | Pages allowed to show Holm in a frame. See [Embedding](#embedding-holm-in-another-page) |
 | `tips.*` | | | | Accepted, no effect in this release |
 | `changelog.enabled` | bool | `true` | yes | The "What's new" dialog after an update |
+| `update_check.enabled` / `groups` | bool / list | `true` / everyone | yes | Asks GitHub every 6 hours for a newer release and shows it in Configure. See [Update notice](#update-notice) |

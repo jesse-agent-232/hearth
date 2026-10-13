@@ -11,6 +11,7 @@ using it. Headings are `## <version> — <date>`.
 - **Music picks up where you left off.** Reload the page and the song you were playing comes back, paused at the same spot.
 - **Answers in search.** Type a sum, a unit conversion (`5 km in miles`, `10 lb`) or a time in another city (`3pm london in tokyo`) and the answer shows right away, ready to copy.
 - **Onboarding, privacy and What's new per group.** Give each `groups:` in `config.yml`, like apps, to show it only to those groups.
+- **Update notice.** Configure says when a newer Holm is out, from a check of GitHub by Holm's server every 6 hours. `update_check` turns it off or limits it to some groups.
 - **What's new.** After an update, this dialog shows what changed, once. The version at the bottom of Configure links to Holm on GitHub.
 
 ## 0.5.0 — 2026-10-09
