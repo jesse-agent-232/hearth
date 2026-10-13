@@ -62,6 +62,13 @@
 	// A timed event before an all-day one: "Standup in 10 min" says more than
 	// "Holiday today".
 	const next = $derived(live.find((e) => !e.allDay) || live[0]);
+	// The pill brightens as the event nears: over an hour, within the hour,
+	// 30 minutes, 10 minutes (and once it has started).
+	const nearness = $derived.by(() => {
+		if (!next || next.allDay) return 0;
+		const mins = (next.start - now) / 60000;
+		return mins <= 10 ? 3 : mins <= 30 ? 2 : mins <= 60 ? 1 : 0;
+	});
 
 	// The header's clock is 24-hour; event times match it.
 	const clock = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -121,13 +128,14 @@
 	<div class="relative min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
-			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content hover:opacity-80"
+			data-near={nearness}
+			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content"
 			aria-haspopup="dialog"
 			aria-expanded={open}
 			title="Upcoming events"
 			onclick={() => (open = !open)}
 		>
-			<svg class="w-3 h-3 shrink-0 opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+			<svg class="header-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
 			<span class="shrink-0 text-content-muted tabular-nums">· {when(next)}</span>
 		</button>
@@ -172,6 +180,12 @@
 <style>
 	/* A smaller line under the clock. */
 	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; }
+	/* On the children, so the fade-in animation on the pill doesn't fight it. */
+	.upcoming-pill > * { opacity: 0.5; transition: opacity 0.6s ease; }
+	.upcoming-pill[data-near='1'] > * { opacity: 0.65; }
+	.upcoming-pill[data-near='2'] > * { opacity: 0.8; }
+	.upcoming-pill[data-near='3'] > *,
+	.upcoming-pill:hover > * { opacity: 1; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	.upcoming-row {
 		display: grid;

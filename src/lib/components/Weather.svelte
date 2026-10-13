@@ -163,7 +163,7 @@
 			onclick={toggle}
 		>
 			{#if weatherInfo}
-				<span class="w-3.5 h-3.5 shrink-0 opacity-85">{@html weatherInfo[0]}</span>
+				<span class="header-glyph opacity-85">{@html weatherInfo[0]}</span>
 				<span class="tabular-nums normal-case font-medium">
 					<AnimatedNumber value={weatherData.temp} />&deg;
 				</span>
@@ -172,7 +172,7 @@
 					<span class="text-content-muted hidden md:inline">{locationName}</span>
 				{/if}
 			{:else}
-				<svg class="w-3.5 h-3.5 shrink-0 opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+				<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
 				<span class="text-content-muted">{hasLocation ? locationName || 'Weather unavailable' : 'Set location'}</span>
 			{/if}
 		</button>
