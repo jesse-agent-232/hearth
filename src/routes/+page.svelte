@@ -193,6 +193,11 @@
 		     the search bar whenever the content grows, e.g. entering edit mode.
 		     The flex-1 spacer below pushes the footer to the viewport bottom. -->
 		<div class="shrink-0 h-[18vh] max-md:hidden"></div>
+		<!-- Phones: share the free height with the spacer above the footer, so
+		     the clock and search come down within a thumb's reach. Capped so the
+		     header starts no lower than a quarter of the screen; a full grid
+		     leaves no free height and this collapses to nothing. -->
+		<div class="hidden max-md:block flex-1 max-h-[calc(25dvh-1.5rem-env(safe-area-inset-top,0px))]"></div>
 		<!-- Fill mode backwards, not both: a filled opacity animation keeps the
 		     wrapper a backdrop root, and the weather menu's glass inside it
 		     would stop blurring the search bar below. -->
