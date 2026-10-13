@@ -1,4 +1,5 @@
 <script>
+	import { onMount } from 'svelte';
 	import { nowPlaying } from '$lib/stores/player.js';
 
 	// Corner player for a song picked in search. Deliberately small: play or
@@ -16,13 +17,53 @@
 	const total = $derived(track?.duration || (Number.isFinite(length) ? length : 0));
 	const progress = $derived(total ? Math.min(current / total, 1) : 0);
 
+	// A reload brings the song back where it was, paused: browsers don't let
+	// a page start sound on its own before it's been clicked. Kept per tab.
+	const SAVED_KEY = 'holm_player';
+	let resumeAt = null;
+
+	function save() {
+		if (!track || failed || !audio) return;
+		try { sessionStorage.setItem(SAVED_KEY, JSON.stringify({ track, at: audio.currentTime || 0 })); } catch { /* private mode */ }
+	}
+
+	function forget() {
+		try { sessionStorage.removeItem(SAVED_KEY); } catch { /* private mode */ }
+	}
+
+	onMount(() => {
+		try {
+			const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || 'null');
+			if (saved?.track?.stream?.startsWith('/api/integrations/') && !$nowPlaying) {
+				resumeAt = Number(saved.at) || 0;
+				nowPlaying.set(saved.track);
+			}
+		} catch { /* nothing saved */ }
+		const onHide = () => { if (document.visibilityState === 'hidden') save(); };
+		window.addEventListener('pagehide', save);
+		document.addEventListener('visibilitychange', onHide);
+		return () => {
+			window.removeEventListener('pagehide', save);
+			document.removeEventListener('visibilitychange', onHide);
+		};
+	});
+
 	// A new track (a fresh object each pick, even the same song) starts over.
 	$effect(() => {
 		if (!audio || !track) return;
 		failed = false;
 		current = 0;
 		audio.src = track.stream;
-		audio.play().catch(() => {});
+		if (resumeAt == null) {
+			audio.play().catch(() => {});
+			return;
+		}
+		// Restored: load just enough to show the time and seek, then wait.
+		const at = resumeAt;
+		resumeAt = null;
+		current = at;
+		audio.preload = 'metadata';
+		audio.addEventListener('loadedmetadata', () => { audio.currentTime = at; }, { once: true });
 	});
 
 	function toggle() {
@@ -35,6 +76,7 @@
 		audio?.pause();
 		audio?.removeAttribute('src');
 		audio?.load();
+		forget();
 		nowPlaying.set(null);
 	}
 
