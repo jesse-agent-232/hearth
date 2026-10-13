@@ -31,10 +31,19 @@ function rowToConnection(row) {
 		integrationId: row.integration_id,
 		connected: !!config,
 		// The operator's URL wins over one saved before it was pinned.
-		config: config ? applyOperatorUrls(getAdapter(row.integration_id), getOperatorDefaults(row.integration_id), config) : {},
+		config: config ? withOperatorUrls(row.integration_id, config) : {},
 		surfaces: parseSurfaces(row.surfaces_json),
 		updatedAt: row.updated_at
 	};
+}
+
+// On every account of a connection that holds several.
+function withOperatorUrls(id, config) {
+	const adapter = getAdapter(id);
+	const operator = getOperatorDefaults(id);
+	const out = applyOperatorUrls(adapter, operator, config);
+	if (Array.isArray(out.accounts)) out.accounts = out.accounts.map((a) => applyOperatorUrls(adapter, operator, a));
+	return out;
 }
 
 export async function getConnection(username, integrationId) {

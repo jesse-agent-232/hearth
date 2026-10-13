@@ -80,11 +80,12 @@ function createIntegrationsStore() {
 		load({ force: true });
 	}
 
-	async function test(integrationId, config) {
+	// `account` tests another account of a Calendar: its id, or 'new'.
+	async function test(integrationId, config, account) {
 		const res = await fetch(`/api/integrations/${encodeURIComponent(integrationId)}/test`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ config })
+			body: JSON.stringify(account ? { config, account } : { config })
 		});
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));

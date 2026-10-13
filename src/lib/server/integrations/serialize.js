@@ -40,7 +40,8 @@ export function adapterToClient(adapter, { icon, name, tip, shortcut } = {}) {
 			label: w.label,
 			description: w.description || ''
 		})),
-		widgetsOnConnect: !!adapter.widgetsOnConnect
+		widgetsOnConnect: !!adapter.widgetsOnConnect,
+		multiAccount: !!adapter.multiAccount
 	};
 }
 
@@ -50,6 +51,13 @@ export function redactConfig(adapter, config) {
 	const secretKeys = new Set(schema.filter((f) => f.type === 'secret').map((f) => f.key));
 	for (const [k, v] of Object.entries(config || {})) {
 		if (v == null || v === '') continue;
+		// The other accounts of a Calendar: each redacted the same way.
+		if (k === 'accounts') {
+			if (adapter.multiAccount && Array.isArray(v)) {
+				out.accounts = v.filter((a) => typeof a?.id === 'string').map((a) => ({ ...redactConfig(adapter, a), id: a.id }));
+			}
+			continue;
+		}
 		out[k] = secretKeys.has(k) ? REDACTED : v;
 	}
 	return out;

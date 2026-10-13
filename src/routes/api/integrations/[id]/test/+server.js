@@ -5,10 +5,11 @@ import { checkUrls, urlOriginChanged, withoutSecrets } from '$lib/server/integra
 import { getConnection } from '$lib/server/integrations/store.js';
 import { isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
+import { otherAccounts } from '$lib/server/integrations/accounts.js';
 
 const TEST_TIMEOUT_MS = 8000;
 
-// POST /api/integrations/:id/test   body: { config }
+// POST /api/integrations/:id/test   body: { config, account? }
 // Runs the adapter's test() against the submitted config WITHOUT persisting
 // it. Lets the user verify credentials before clicking Save. Secret fields
 // that come back as the redacted bullet string are merged from the stored
@@ -32,7 +33,11 @@ export async function POST({ cookies, url, request, params, fetch }) {
 
 	const submitted = body?.config || {};
 	const existing = await getConnection(user.username, adapter.id);
-	const stored = existing?.config || {};
+	// `account` names another account of a Calendar: test against its stored
+	// fields, or none for a new one. Without it, the first account.
+	const { accounts: _accounts, ...main } = existing?.config || {};
+	const account = typeof body?.account === 'string' ? body.account : null;
+	const stored = account ? otherAccounts(adapter, existing?.config).find((a) => a.id === account) || {} : main;
 	const operator = getOperatorDefaults(adapter.id);
 	let checked = checkUrls(adapter, operator, mergeForTest(adapter, stored, submitted));
 	if (!checked.ok) return json({ ok: false, message: checked.message });

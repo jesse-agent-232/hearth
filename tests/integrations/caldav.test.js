@@ -413,3 +413,25 @@ test('a timed event from one UTC midnight to the next stays timed', async () => 
 	assert.equal(shift.allDay, false);
 	assert.equal(shift.start, Date.UTC(2026, 9, 15));
 });
+
+test('several accounts: each searched with its own login, a failing one left out', async () => {
+	const { fetch } = fakeServer({ now: Date.now() });
+	const second = { id: 'a2', url: 'https://other.example.net/', username: 'alice', password: 's3cret ' };
+	const both = { ...config, accounts: [second] };
+	const { results } = await caldav.searchProviders.events.query({ config: both, fetch, query: 'dent', limit: 10, timeZone: 'UTC' });
+	assert.deepEqual(results.map((r) => r.detail.account).sort(), ['a2', 'main']);
+	const fromSecond = results.find((r) => r.detail.account === 'a2');
+	assert.match(fromSecond.detail.href, /^https:\/\/other\.example\.net\//);
+	// Details use that account: its server, and only hrefs on it.
+	assert.equal((await caldav.details({ config: both, fetch, params: fromSecond.detail }))?.title, 'Dentist');
+	const main = results.find((r) => r.detail.account === 'main');
+	assert.equal(await caldav.details({ config: both, fetch, params: { ...main.detail, account: 'a2' } }), null);
+	assert.equal(await caldav.details({ config: both, fetch, params: { ...main.detail, account: 'nope' } }), null);
+	// A wrong password on one account leaves the other's events.
+	const broken = { ...config, accounts: [{ ...second, password: 'wrong' }] };
+	const one = await caldav.searchProviders.events.query({ config: broken, fetch, query: 'dent', limit: 10, timeZone: 'UTC' });
+	assert.deepEqual(one.results.map((r) => r.detail.account), ['main']);
+	assert.equal((await caldav.upcoming({ config: broken, fetch, timeZone: 'UTC', now: Date.now() })).length, 2);
+	// All of them failing is an error.
+	await assert.rejects(caldav.upcoming({ config: { ...config, password: 'wrong', accounts: [{ ...second, password: 'wrong' }] }, fetch, timeZone: 'UTC' }));
+});

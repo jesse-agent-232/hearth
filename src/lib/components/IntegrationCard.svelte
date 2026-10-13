@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { marked } from 'marked';
 	import AppIcon from './AppIcon.svelte';
+	import IntegrationAccounts from './IntegrationAccounts.svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { resolveIcon } from '$lib/apps.js';
 
@@ -468,6 +469,10 @@
 					</div>
 				{/if}
 			</div>
+
+			{#if connected && integration.multiAccount}
+				<IntegrationAccounts {integration} />
+			{/if}
 
 			<!-- Surface toggles -->
 			{#if connected}

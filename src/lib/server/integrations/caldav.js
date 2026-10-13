@@ -23,6 +23,8 @@ const adapter = {
 	icon: '/api/icon/lucide/calendar',
 	shortcut: 'cal',
 	description: 'Events and reminders from any CalDAV calendar',
+	// More accounts under `config.accounts`, each with the fields below.
+	multiAccount: true,
 
 	configSchema: [
 		{
@@ -80,23 +82,23 @@ const adapter = {
 				const term = (query || '').trim();
 				if (!term || !config?.url) return { results: [] };
 				const now = Date.now();
-				const events = await eventsBetween(config, fetch, now - 30 * DAY, now + 365 * DAY, { timeZone, term });
+				const events = await allEvents(config, fetch, now - 30 * DAY, now + 365 * DAY, { timeZone, term });
 				const needle = term.toLocaleLowerCase();
 				const found = events.filter((e) => e.summary.toLocaleLowerCase().includes(needle));
 				// Coming up (or still on) soonest first, then the past, latest first.
 				const upcoming = found.filter((e) => (e.end ?? e.start) > now).sort((a, b) => a.start - b.start);
 				const past = found.filter((e) => (e.end ?? e.start) <= now).sort((a, b) => b.start - a.start);
-				const href = webAddress(config);
 				return {
-					results: [...upcoming, ...past].slice(0, limit || 20).map((e) => ({
-						id: `${e.calendar.href}#${e.id}`,
-						title: e.summary || 'Untitled event',
-						subtitle: [formatWhen(e, timeZone), e.location].filter(Boolean).join(' · '),
-						...(href
-							? { href }
-							: { detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone } }),
-						meta: { kind: 'event' }
-					}))
+					results: [...upcoming, ...past].slice(0, limit || 20).map((e) => {
+						const href = webAddress(e.account);
+						return {
+							id: `${e.calendar.href}#${e.id}`,
+							title: e.summary || 'Untitled event',
+							subtitle: [formatWhen(e, timeZone), e.location].filter(Boolean).join(' · '),
+							...(href ? { href } : { detail: detailParams(e, timeZone) }),
+							meta: { kind: 'event' }
+						};
+					})
 				};
 			}
 		}
@@ -107,9 +109,11 @@ const adapter = {
 	 * come from the result (an occurrence of a repeating event has its own);
 	 * everything else is read again from the server.
 	 */
-	async details({ config, params, fetch }) {
+	async details({ config: all, params, fetch }) {
 		const { href, start, end, allDay } = params;
-		if (typeof href !== 'string' || !Number.isFinite(start) || !allowedUrl(href, config.url)) return null;
+		// The account the event came from: its server, its password.
+		const config = accountsOf(all).find((a) => a.id === (params.account ?? MAIN));
+		if (!config || typeof href !== 'string' || !Number.isFinite(start) || !allowedUrl(href, config.url)) return null;
 		const timeZone = validZone(params.timeZone) ? params.timeZone : 'UTC';
 		const res = await dav(config, fetch, href, 'GET', undefined, 0);
 		if (res.status !== 200) throw new Error(`The calendar answered ${res.status}`);
@@ -146,8 +150,7 @@ const adapter = {
 	 * Alarms only come from the events themselves: no reminder set, no popup.
 	 */
 	async reminders({ config, fetch, timeZone, now = Date.now() }) {
-		const events = await eventsBetween(config, fetch, now - DAY, now + 8 * DAY, { timeZone, alarms: true });
-		const href = webAddress(config);
+		const events = await allEvents(config, fetch, now - DAY, now + 8 * DAY, { timeZone, alarms: true });
 		const out = [];
 		for (const e of events) {
 			for (const at of e.alarms) {
@@ -162,7 +165,7 @@ const adapter = {
 					end: e.end,
 					allDay: e.allDay,
 					at,
-					href,
+					href: webAddress(e.account),
 					call: e.call
 				});
 			}
@@ -175,8 +178,7 @@ const adapter = {
 	 * /api/upcoming.
 	 */
 	async upcoming({ config, fetch, timeZone, now = Date.now() }) {
-		const events = await eventsBetween(config, fetch, now - DAY, now + 7 * DAY, { timeZone });
-		const href = webAddress(config);
+		const events = await allEvents(config, fetch, now - DAY, now + 7 * DAY, { timeZone });
 		return events
 			.filter((e) => (e.end ?? e.start + (e.allDay ? DAY : 0)) > now)
 			.sort((a, b) => a.start - b.start)
@@ -186,14 +188,47 @@ const adapter = {
 				title: e.summary || 'Untitled event',
 				location: e.location,
 				// Opens its details in search, as a search result would.
-				detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone },
+				detail: detailParams(e, timeZone),
 				start: e.start,
 				end: e.end,
 				allDay: e.allDay,
-				href
+				href: webAddress(e.account)
 			}));
 	}
 };
+
+// ── Accounts ──────────────────────────────────────────────────────
+
+const MAIN = 'main';
+
+/**
+ * Every account in a connection: the config itself first, then the others
+ * under `config.accounts`, each with its own id.
+ */
+export function accountsOf(config) {
+	const { accounts, ...main } = config || {};
+	return [{ ...main, id: MAIN }, ...(Array.isArray(accounts) ? accounts : [])];
+}
+
+/**
+ * Events from every account, each marked with the account it came from. An
+ * account that fails is left out; only when all of them fail is it an error.
+ */
+async function allEvents(config, fetch, from, to, opts) {
+	const lists = await Promise.allSettled(
+		accountsOf(config).map(async (account) =>
+			(await eventsBetween(account, fetch, from, to, opts)).map((e) => ({ ...e, account }))
+		)
+	);
+	const ok = lists.filter((l) => l.status === 'fulfilled');
+	if (!ok.length) throw lists[0].reason;
+	return ok.flatMap((l) => l.value);
+}
+
+// What details() needs to find the event again.
+function detailParams(e, timeZone) {
+	return { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone, account: e.account.id };
+}
 
 // ── Events ────────────────────────────────────────────────────────
 
