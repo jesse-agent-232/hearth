@@ -34,20 +34,26 @@ export function compareVersions(a, b) {
 	return 0;
 }
 
+// The last release without this dialog: nobody has a version recorded from
+// before it.
+const BEFORE_CHANGELOG = '0.5.0';
+
 /**
  * Whether to show the dialog, and which releases it lists.
  * - `seen`: the last version this user closed the dialog on, or null.
  * - `known`: whether the user was here before (has saved anything). A new
  *   user sees nothing and has the current version recorded; someone who was
- *   here before this dialog existed sees the current release only.
+ *   here before this dialog existed came from BEFORE_CHANGELOG at the latest,
+ *   so they see every release since.
  * Returns { show, releases, record }: `record` says the current version should
  * be stored now without showing anything.
  */
 export function changelogFor({ version, seen, known, enabled, releases }) {
 	if (!seen && !known) return { show: false, releases: [], record: true };
+	seen ||= BEFORE_CHANGELOG;
 	if (seen && compareVersions(seen, version) >= 0) return { show: false, releases: [], record: false };
 	const since = (releases || []).filter(
-		(r) => compareVersions(r.version, version) <= 0 && (seen ? compareVersions(r.version, seen) > 0 : r.version === version)
+		(r) => compareVersions(r.version, version) <= 0 && compareVersions(r.version, seen) > 0
 	);
 	if (!enabled) return { show: false, releases: [], record: false };
 	// A version with no notes has nothing to show: count it as seen.

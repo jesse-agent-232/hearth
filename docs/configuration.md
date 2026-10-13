@@ -228,7 +228,7 @@ Set `default_url` for every integration you enable: it pins the server URL for e
 
 ### What's new
 
-After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
+After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on, and someone who used Holm before 0.6.0 (which added the dialog) sees every release since 0.5.0; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
 
 `changelog: { enabled: false }` turns the dialog off for everyone, and `changelog: { groups: ["admins"] }` shows it only to those groups. The version still shows at the bottom of Configure as "Holm vX.Y.Z", whatever `branding.name` is, and links to Holm on GitHub.
 

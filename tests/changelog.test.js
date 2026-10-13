@@ -68,8 +68,8 @@ test('releases newer than the running version are left out', () => {
 	assert.deepEqual(changelogFor({ ...base, version: '0.6.0', seen: '0.5.0', known: true }).releases.map((x) => x.version), ['0.6.0']);
 });
 
-test('a user from before the dialog existed sees the current release only', () => {
-	assert.deepEqual(changelogFor({ ...base, seen: null, known: true }).releases.map((x) => x.version), ['0.7.0']);
+test('a user from before the dialog existed sees every release since 0.5.0', () => {
+	assert.deepEqual(changelogFor({ ...base, seen: null, known: true }).releases.map((x) => x.version), ['0.7.0', '0.6.0']);
 });
 
 test('turned off by the operator: never shown', () => {
