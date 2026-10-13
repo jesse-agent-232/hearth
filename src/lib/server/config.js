@@ -2,6 +2,7 @@ import { readFileSync, statSync, watchFile } from 'fs';
 import { resolve, dirname } from 'path';
 import yaml from 'js-yaml';
 import { marked } from 'marked';
+import { version as APP_VERSION } from '../../../package.json';
 import { getBrandColor } from './brandColors.js';
 import { canSeeApp } from './appAccess.js';
 import { substituteEnvVars } from './envVars.js';
@@ -110,6 +111,10 @@ export function getPrivacyConfig() {
 	return getConfig().privacy || { enabled: false };
 }
 
+export function getWhatsNewConfig() {
+	return { enabled: getConfig().whats_new?.enabled !== false };
+}
+
 export function getTipsConfig() {
 	return getConfig().tips || { enabled: false };
 }
@@ -184,6 +189,8 @@ export async function getClientConfig({ authenticated = true, user = null } = {}
 		onboarding: getOnboardingConfig(),
 		privacy: { ...getPrivacyConfig(), html: await loadPrivacyHtml(config) },
 		tips: getTipsConfig(),
-		integrations: { enabled: config.database?.enabled !== false }
+		integrations: { enabled: config.database?.enabled !== false },
+		version: APP_VERSION,
+		whatsNew: getWhatsNewConfig()
 	};
 }

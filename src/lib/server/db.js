@@ -85,6 +85,14 @@ async function ensureInit() {
 			    updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
 			    PRIMARY KEY (username, integration_id)
 			  );
+
+			  -- The last version whose "What's new" each user closed. Kept out of
+			  -- user_prefs, which the browser writes back whole.
+			  CREATE TABLE IF NOT EXISTS user_seen_version (
+			    username     TEXT PRIMARY KEY,
+			    version      TEXT NOT NULL,
+			    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+			  );
 			`);
 
 			saveToDisk();
@@ -213,4 +221,35 @@ export async function deleteIntegrationRow(username, integrationId) {
 export async function isDatabaseEnabled() {
 	await ensureInit();
 	return !!db;
+}
+
+// ── "What's new" ──────────────────────────────────────────────────
+
+/** The last version this user closed "What's new" on, or null. */
+export async function getSeenVersion(username) {
+	await ensureInit();
+	if (!db) return null;
+	return queryOne('SELECT version FROM user_seen_version WHERE username = ?', [username])?.version || null;
+}
+
+export async function setSeenVersion(username, version) {
+	await ensureInit();
+	if (!db) return;
+	db.run(
+		`INSERT INTO user_seen_version (username, version, updated_at)
+		 VALUES (?, ?, datetime('now'))
+		 ON CONFLICT(username) DO UPDATE SET version = excluded.version, updated_at = datetime('now')`,
+		[username, version]
+	);
+	saveToDisk();
+}
+
+/** Whether this user has saved anything before: prefs or an integration. */
+export async function isKnownUser(username) {
+	await ensureInit();
+	if (!db) return false;
+	return !!(
+		queryOne('SELECT 1 AS x FROM user_prefs WHERE username = ?', [username]) ||
+		queryOne('SELECT 1 AS x FROM user_integrations WHERE username = ?', [username])
+	);
 }

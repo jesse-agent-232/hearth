@@ -5,3 +5,4 @@ build
 .gitignore
 *.md
 !privacy.md
+!CHANGELOG.md

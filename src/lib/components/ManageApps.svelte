@@ -12,6 +12,10 @@
 	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
 
 	const siteConfig = getContext('config');
+	const version = siteConfig?.version || '';
+	const brandName = siteConfig?.branding?.name || 'Holm';
+	// Opens "What's new" for the running version (WhatsNew.svelte).
+	const showWhatsNew = () => window.dispatchEvent(new CustomEvent('holm:whats-new'));
 	// Off when database.enabled is false: credentials would have nowhere to live.
 	const integrationsEnabled = siteConfig?.integrations?.enabled !== false;
 	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
@@ -255,6 +259,9 @@
 								onclick={resetDefaults}
 							>Reset defaults</button>
 						{/if}
+						{#if version}
+							<button class="version-link block mt-1.5" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
+						{/if}
 					</div>
 				</div>
 
@@ -426,6 +433,10 @@
 				<IntegrationsPanel {iconStyle} />
 
 				{/if}
+				{#if version}
+					<!-- On phones the sidebar is hidden: the version sits under the tab. -->
+					<button class="version-link hidden max-md:block mt-6" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
+				{/if}
 				</div>
 			</div>
 
@@ -433,3 +444,17 @@
 	</div>
 {/if}
 
+<style>
+	.version-link {
+		padding: 0 0.75rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 0.68rem;
+		color: var(--color-content-dim);
+		opacity: 0.7;
+		transition: opacity 0.15s ease;
+	}
+	.version-link:hover, .version-link:focus-visible { opacity: 1; color: var(--color-content); }
+</style>

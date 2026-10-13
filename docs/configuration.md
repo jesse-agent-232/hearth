@@ -223,6 +223,12 @@ privacy:
 
 Set `default_url` for every integration you enable: it pins the server URL for every user. Without it, users can point the integration at any http(s) host Holm can reach, and Holm logs a warning at startup.
 
+### What's new
+
+After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
+
+`whats_new: { enabled: false }` turns the dialog off for everyone. The version still shows at the bottom of Configure, where clicking it opens the current release's notes.
+
 `tips` is accepted but has no effect: the first-week tips are switched off in this release.
 
 ## Integration credentials
@@ -262,3 +268,4 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | See [Onboarding](#onboarding) |
 | `privacy.enabled` / `last_updated` / `file` / `sections` | | off | yes | `file` is relative to `config.yml` |
 | `tips.*` | | | | Accepted, no effect in this release |
+| `whats_new.enabled` | bool | `true` | yes | The "What's new" dialog after an update |

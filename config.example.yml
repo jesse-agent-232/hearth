@@ -353,6 +353,13 @@ privacy:
         - "View, export, or delete your data anytime"
         - "Contact the server operator for questions"
 
+# ── What's new ──────────────────────────────────────────────
+# After an update, each user gets a "What's new" dialog once, with the notes
+# from CHANGELOG.md for every release since they last closed it. A new user
+# doesn't get it. The version is shown in Configure either way.
+whats_new:
+  enabled: true                # false turns the dialog off for everyone
+
 # ── Tips ────────────────────────────────────────────────────
 # First-week tips are switched off in this release; a tips: block is accepted
 # and ignored.
