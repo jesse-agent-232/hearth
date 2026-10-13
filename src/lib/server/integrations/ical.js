@@ -130,6 +130,7 @@ function finishEvent({ props, alarms }, zone) {
 		recurrenceId: rid ? (parseTime(rid.value, rid.params, zone)?.t ?? null) : null,
 		summary: props.SUMMARY ? unescapeText(props.SUMMARY.value) : '',
 		location: props.LOCATION ? unescapeText(props.LOCATION.value) : '',
+		description: props.DESCRIPTION ? unescapeText(props.DESCRIPTION.value) : '',
 		start: start.t,
 		end: end ?? null,
 		allDay: start.allDay,

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseEvents, parseTime, parseDuration } from '../../src/lib/server/integrations/ical.js';
-import caldav, { parseMultistatus, allowedUrl, icsTime } from '../../src/lib/server/integrations/caldav.js';
+import caldav, { parseMultistatus, allowedUrl, icsTime, webAddress } from '../../src/lib/server/integrations/caldav.js';
 
 const MIN = 60 * 1000;
 
@@ -174,6 +174,7 @@ function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) 
 		'UID:dentist',
 		'SUMMARY:Dentist',
 		'LOCATION:High St',
+		'DESCRIPTION:Bring the forms\\nand the card',
 		`DTSTART:${start}`,
 		'DURATION:PT1H',
 		'BEGIN:VALARM',
@@ -195,6 +196,7 @@ function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) 
 		}
 		const path = new URL(url).pathname;
 		if (multigetThrows && init.body?.includes('calendar-multiget')) throw new TypeError('fetch failed');
+		if (path === '/dav/alice/cals/home/dentist.ics' && init.method === 'GET') return new Response(event, { status: 200 });
 		if (path === '/') return new Response('', { status: 301, headers: { location: '/dav/' } });
 		if (path === '/dav/' && init.method === 'PROPFIND') {
 			return ms(`<d:response><d:href>/dav/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype><d:current-user-principal><d:href>/dav/alice/</d:href></d:current-user-principal></d:prop>${ok}</d:propstat></d:response>`);
@@ -247,8 +249,19 @@ test('search: matches the title, falls back when text-match fails', async () => 
 	assert.equal(results.length, 1);
 	assert.equal(results[0].title, 'Dentist');
 	assert.match(results[0].subtitle, /· High St · Home$/);
-	assert.equal(results[0].href, config.url);
 	assert.equal(calls.filter((c) => c.method === 'REPORT').length, 2);
+	// No web address for this server: picking it shows the details instead.
+	assert.equal(results[0].href, undefined);
+	assert.equal(results[0].detail.href, 'https://cal.example.net/dav/alice/cals/home/dentist.ics');
+	const details = await caldav.details({ config, fetch, params: results[0].detail });
+	assert.equal(details.title, 'Dentist');
+	assert.deepEqual(details.facts.slice(1), ['High St', 'Home']);
+	assert.equal(details.overview, 'Bring the forms\nand the card');
+	assert.equal(await caldav.details({ config, fetch, params: { ...results[0].detail, href: 'https://elsewhere.example.org/x.ics' } }), null);
+
+	const withWeb = await caldav.searchProviders.events.query({ config: { ...config, webUrl: 'https://cal.example.net/web' }, fetch, query: 'dent', limit: 10, timeZone: 'UTC' });
+	assert.equal(withWeb.results[0].href, 'https://cal.example.net/web');
+	assert.equal(withWeb.results[0].detail, undefined);
 
 	const none = await caldav.searchProviders.events.query({ config, fetch, query: 'swim', limit: 10, timeZone: 'UTC' });
 	assert.deepEqual(none.results, []);
@@ -284,4 +297,14 @@ test('reminders: a failed lookup of the stored events keeps the alarms that came
 	const { fetch } = fakeServer({ now, multigetThrows: true });
 	const reminders = await caldav.reminders({ config, fetch, timeZone: 'UTC', now });
 	assert.deepEqual(reminders.map((r) => r.title), ['Dentist']);
+});
+
+test('web address: the one given, else the known calendar page of Nextcloud, iCloud or Fastmail', () => {
+	assert.equal(webAddress({ url: 'https://cloud.example.com/remote.php/dav', webUrl: 'https://cal.example.com/' }), 'https://cal.example.com/');
+	assert.equal(webAddress({ url: 'https://cloud.example.com/remote.php/dav' }), 'https://cloud.example.com/index.php/apps/calendar/');
+	assert.equal(webAddress({ url: 'https://example.com/nextcloud/remote.php/dav/calendars/alice/' }), 'https://example.com/nextcloud/index.php/apps/calendar/');
+	assert.equal(webAddress({ url: 'https://caldav.icloud.com/' }), 'https://www.icloud.com/calendar/');
+	assert.equal(webAddress({ url: 'https://caldav.fastmail.com/dav/' }), 'https://app.fastmail.com/calendar/');
+	assert.equal(webAddress({ url: 'https://mail.example.com/dav/cal' }), null);
+	assert.equal(webAddress({ url: 'https://notfastmail.com/' }), null);
 });

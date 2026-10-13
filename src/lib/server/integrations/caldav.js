@@ -7,7 +7,7 @@
 //                              page, through `reminders` and GET /api/reminders
 
 import { createHash } from 'node:crypto';
-import { alarmTimes, parseEvents } from './ical.js';
+import { alarmTimes, parseEvents, validZone } from './ical.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
@@ -52,7 +52,7 @@ const adapter = {
 			link: true,
 			label: 'Calendar web address',
 			placeholder: 'https://cloud.example.com/apps/calendar',
-			help: 'Optional. Where an event opens when you pick it in search.'
+			help: 'Optional. Where an event opens when you pick it in search. Filled in for Nextcloud, iCloud and Fastmail; without one, picking an event shows its details.'
 		}
 	],
 
@@ -83,18 +83,44 @@ const adapter = {
 				// Coming up (or still on) soonest first, then the past, latest first.
 				const upcoming = found.filter((e) => (e.end ?? e.start) > now).sort((a, b) => a.start - b.start);
 				const past = found.filter((e) => (e.end ?? e.start) <= now).sort((a, b) => b.start - a.start);
-				const href = config.webUrl || config.url;
+				const href = webAddress(config);
 				return {
 					results: [...upcoming, ...past].slice(0, limit || 20).map((e) => ({
 						id: `${e.calendar.href}#${e.id}`,
 						title: e.summary || 'Untitled event',
 						subtitle: [formatWhen(e, timeZone), e.location, e.calendar.name].filter(Boolean).join(' · '),
-						href,
+						...(href
+							? { href }
+							: { detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, timeZone } }),
 						meta: { kind: 'event' }
 					}))
 				};
 			}
 		}
+	},
+
+	/**
+	 * An event's details, for a calendar with no web address to open. Times
+	 * come from the result (an occurrence of a repeating event has its own);
+	 * everything else is read again from the server.
+	 */
+	async details({ config, params, fetch }) {
+		const { href, start, end, allDay } = params;
+		if (typeof href !== 'string' || !Number.isFinite(start) || !allowedUrl(href, config.url)) return null;
+		const timeZone = validZone(params.timeZone) ? params.timeZone : 'UTC';
+		const res = await dav(config, fetch, href, 'GET', undefined, 0);
+		if (res.status !== 200) throw new Error(`The calendar answered ${res.status}`);
+		const events = parseEvents(await res.text(), timeZone);
+		const e = events.find((x) => x.recurrenceId === start) || events.find((x) => x.recurrenceId == null) || events[0];
+		if (!e) return null;
+		const calendars = await findCalendars(config, fetch);
+		const calendar = calendars.find((c) => href.startsWith(c.href));
+		const when = { start, end: Number.isFinite(end) ? end : null, allDay: allDay === true };
+		return {
+			title: e.summary || 'Untitled event',
+			facts: [formatWhen(when, timeZone), e.location, calendar?.name].filter(Boolean),
+			overview: e.description
+		};
 	},
 
 	// Off unless the operator sets `surfaces.widgets: true` and the user turns
@@ -109,7 +135,7 @@ const adapter = {
 	 */
 	async reminders({ config, fetch, timeZone, now = Date.now() }) {
 		const events = await eventsBetween(config, fetch, now - DAY, now + 8 * DAY, { timeZone, alarms: true });
-		const href = config.webUrl || config.url;
+		const href = webAddress(config);
 		const out = [];
 		for (const e of events) {
 			for (const at of e.alarms) {
@@ -148,7 +174,7 @@ async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term =
 				if (!data) continue;
 				for (const event of parseEvents(data, timeZone)) {
 					if ((event.end ?? event.start) < from || event.start > to) continue;
-					out.push({ ...event, calendar });
+					out.push({ ...event, calendar, resource: r.href });
 					if (!event.alarms.length) silent.add(r.href);
 				}
 			}
@@ -206,6 +232,26 @@ function calendarQuery(from, to, term) {
   <d:prop><c:calendar-data><c:expand ${range}/></c:calendar-data></d:prop>
   <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT"><c:time-range ${range}/>${match}</c:comp-filter></c:comp-filter></c:filter>
 </c:calendar-query>`;
+}
+
+/**
+ * Where an event opens: the address the user gave, or for a server whose
+ * calendar page is known, that page. Null when there is none.
+ */
+export function webAddress(config) {
+	if (config.webUrl) return config.webUrl;
+	let u;
+	try {
+		u = new URL(config.url);
+	} catch {
+		return null;
+	}
+	const host = u.hostname.toLowerCase();
+	const nextcloud = u.pathname.indexOf('/remote.php/');
+	if (nextcloud !== -1) return `${u.origin}${u.pathname.slice(0, nextcloud)}/index.php/apps/calendar/`;
+	if (host === 'icloud.com' || host.endsWith('.icloud.com')) return 'https://www.icloud.com/calendar/';
+	if (host === 'fastmail.com' || host.endsWith('.fastmail.com')) return 'https://app.fastmail.com/calendar/';
+	return null;
 }
 
 export function icsTime(t) {

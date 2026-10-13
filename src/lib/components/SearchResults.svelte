@@ -95,11 +95,11 @@
 				</button>
 			</div>
 			<div class="launcher-detail-body">
-				<div class="launcher-detail-poster launcher-thumb-wrap">
+				<div class="launcher-detail-poster launcher-thumb-wrap" class:is-icon={!detail.thumbnail && detail.r?.meta?.kind === 'event'}>
 					{#if detail.thumbnail}
 						<img class="is-loading" use:thumbLoading src={detail.thumbnail} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
 					{/if}
-					<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS.media}</svg>
+					<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[detail.r?.meta?.kind] || KIND_ICONS.media}</svg>
 				</div>
 				<div class="launcher-detail-info">
 					<h3 class="launcher-detail-title">{detail.title}</h3>

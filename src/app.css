@@ -1989,6 +1989,8 @@ body.search-active .hero-area {
 	aspect-ratio: 2 / 3;
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
+/* An event has no poster, only its icon. */
+.launcher-detail-poster.is-icon { width: 72px; aspect-ratio: 1; }
 .launcher-detail-info {
 	min-width: 0;
 	display: flex;
@@ -2054,7 +2056,7 @@ body.search-active .hero-area {
 	line-height: 1.7;
 	color: var(--hero-search-text-strong);
 }
-.launcher-detail-text p { margin: 0 0 10px; }
+.launcher-detail-text p { margin: 0 0 10px; white-space: pre-line; }
 .launcher-detail-tagline { font-style: italic; color: var(--hero-search-text-dim); }
 .launcher-detail-cast { color: var(--hero-search-text-dim); }
 .launcher-detail-cast span { color: var(--hero-search-text-strong); font-weight: 600; margin-right: 4px; }
