@@ -41,6 +41,8 @@
 	let formSurfaces = $state(seedSurfaces());
 	let contextOpen = $state(false);
 	let menuEl = $state(null);
+	// Opens upward when the list it scrolls in has no room below it.
+	let menuUp = $state(false);
 	let testStatus = $state(null);
 	let testing = $state(false);
 	let saving = $state(false);
@@ -248,7 +250,19 @@
 
 	function openContext(e) {
 		e.stopPropagation();
+		if (!contextOpen && menuEl) menuUp = roomBelow(menuEl) < 96;
 		contextOpen = !contextOpen;
+	}
+
+	function roomBelow(el) {
+		let bottom = window.innerHeight;
+		for (let p = el.parentElement; p; p = p.parentElement) {
+			if (/(auto|scroll|hidden)/.test(getComputedStyle(p).overflowY)) {
+				bottom = Math.min(bottom, p.getBoundingClientRect().bottom);
+				break;
+			}
+		}
+		return bottom - el.getBoundingClientRect().bottom;
 	}
 
 	function editConnection() {
@@ -335,7 +349,7 @@
 						</svg>
 					</button>
 					{#if contextOpen}
-						<div class="absolute right-0 top-full mt-1 bg-surface-modal border border-border-card rounded-lg shadow-theme z-50 min-w-[140px] py-1">
+						<div class="absolute right-0 {menuUp ? 'bottom-full mb-1' : 'top-full mt-1'} bg-surface-modal border border-border-card rounded-lg shadow-theme z-50 min-w-[140px] py-1">
 							<button
 								class="w-full px-3 py-1.5 text-left text-[0.75rem] text-content-muted bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors"
 								onclick={editConnection}
