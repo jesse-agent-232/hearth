@@ -19,12 +19,14 @@
 	const registrationConfig = siteConfig?.auth?.registration;
 	const privacyConfig = siteConfig?.privacy || {};
 	const privacyHtml = privacyConfig.html || null;
+	// Only someone who can open the privacy notice is asked to agree to it.
+	const termsGate = !!privacyConfig.enabled;
 
 	let { oncomplete, authName = null, authUsername = null, devMode = false } = $props();
 
 	let step = $state(authName ? 'onboarding' : 'welcome');
 	let slide = $state(0);
-	let acceptedTerms = $state(false);
+	let acceptedTerms = $state(!termsGate);
 	let showTerms = $state(false);
 	let deferredPrompt = $state(null);
 	let isMobile = $state(false);
@@ -189,22 +191,24 @@
 			<span class="text-[0.65rem] text-content-muted uppercase tracking-[0.2em] mb-3 block">{brandName}</span>
 			<h2 class="text-[1.2rem] font-semibold mb-2">Welcome</h2>
 			<p class="text-content-muted text-[0.85rem] mb-6">Sign in to continue.</p>
-			<label class="inline-flex items-center gap-2.5 text-xs text-content-muted mb-5 cursor-pointer">
-				<input type="checkbox" bind:checked={acceptedTerms} class="glass-check shrink-0 cursor-pointer">
-				<span>I agree to the <button type="button" class="bg-transparent border-none text-content font-mono text-xs cursor-pointer underline underline-offset-2 p-0 hover:text-content-dim" onclick={() => showTerms = !showTerms}>Privacy & Terms</button></span>
-			</label>
-			{#if showTerms}
-				<div class="bg-surface-input border border-border-card rounded-[10px] p-4 mb-5 text-left max-h-[200px] overflow-y-auto">
-					{#if privacyHtml}
-						<div class="onboarding-privacy-md text-[0.7rem] text-content-muted leading-relaxed">{@html privacyHtml}</div>
-					{:else if privacyConfig.sections?.length}
-						{#each privacyConfig.sections as section, i}
-							<p class="text-[0.7rem] text-content-muted leading-relaxed {i < privacyConfig.sections.length - 1 ? 'mb-2' : 'mb-0'}"><strong class="text-content">{section.title}:</strong> {section.items.join('. ')}.</p>
-						{/each}
-					{:else}
-						<p class="text-[0.7rem] text-content-muted mb-0 leading-relaxed">Your data stays on our hardware. No tracking, no ads, no data selling.</p>
-					{/if}
-				</div>
+			{#if termsGate}
+				<label class="inline-flex items-center gap-2.5 text-xs text-content-muted mb-5 cursor-pointer">
+					<input type="checkbox" bind:checked={acceptedTerms} class="glass-check shrink-0 cursor-pointer">
+					<span>I agree to the <button type="button" class="bg-transparent border-none text-content font-mono text-xs cursor-pointer underline underline-offset-2 p-0 hover:text-content-dim" onclick={() => showTerms = !showTerms}>Privacy & Terms</button></span>
+				</label>
+				{#if showTerms}
+					<div class="bg-surface-input border border-border-card rounded-[10px] p-4 mb-5 text-left max-h-[200px] overflow-y-auto">
+						{#if privacyHtml}
+							<div class="onboarding-privacy-md text-[0.7rem] text-content-muted leading-relaxed">{@html privacyHtml}</div>
+						{:else if privacyConfig.sections?.length}
+							{#each privacyConfig.sections as section, i}
+								<p class="text-[0.7rem] text-content-muted leading-relaxed {i < privacyConfig.sections.length - 1 ? 'mb-2' : 'mb-0'}"><strong class="text-content">{section.title}:</strong> {section.items.join('. ')}.</p>
+							{/each}
+						{:else}
+							<p class="text-[0.7rem] text-content-muted mb-0 leading-relaxed">Your data stays on our hardware. No tracking, no ads, no data selling.</p>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 			<button
 				class="w-full py-3 px-4 border-none rounded-[10px] text-[0.9rem] font-medium font-mono cursor-pointer transition-[opacity,background] duration-200 login-btn mb-2 disabled:opacity-30 disabled:cursor-not-allowed"

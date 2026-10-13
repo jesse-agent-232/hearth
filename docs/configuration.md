@@ -183,6 +183,8 @@ All list-based types (`privacy`, `security`, `list`) support: `icon`, `title`, `
 
 **Icons:** Use any [Lucide](https://lucide.dev/icons) icon by name (e.g., `shield-check`, `lock`, `info`). Direct URLs also work. Browse 1400+ icons at [lucide.dev/icons](https://lucide.dev/icons).
 
+Add `groups:` to show onboarding only to some users; see [Groups for onboarding, privacy and What's new](#groups-for-onboarding-privacy-and-whats-new).
+
 ## Optional Features
 
 ```yaml
@@ -219,6 +221,7 @@ privacy:
   enabled: true
   last_updated: "April 2026"
   file: "privacy.md"
+  groups: ["family"]           # optional: only these groups see it
 ```
 
 Set `default_url` for every integration you enable: it pins the server URL for every user. Without it, users can point the integration at any http(s) host Holm can reach, and Holm logs a warning at startup.
@@ -227,7 +230,25 @@ Set `default_url` for every integration you enable: it pins the server URL for e
 
 After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
 
-`changelog: { enabled: false }` turns the dialog off for everyone. The version still shows at the bottom of Configure as "Holm vX.Y.Z", whatever `branding.name` is, and links to Holm on GitHub.
+`changelog: { enabled: false }` turns the dialog off for everyone, and `changelog: { groups: ["admins"] }` shows it only to those groups. The version still shows at the bottom of Configure as "Holm vX.Y.Z", whatever `branding.name` is, and links to Holm on GitHub.
+
+### Groups for onboarding, privacy and What's new
+
+`onboarding`, `privacy` and `changelog` each take `groups:`, matched the same way as `groups:` on [apps](#apps):
+
+```yaml
+changelog:  { enabled: true, groups: ["admins"] }
+onboarding: { enabled: true, groups: ["family"], slides: [...] }
+privacy:    { enabled: true, groups: ["family"], file: "privacy.md" }
+```
+
+- `enabled: false` hides it from everyone.
+- `enabled` without `groups` shows it to everyone.
+- `enabled` with `groups` shows it only to users in at least one of them.
+
+The server decides. Someone outside the groups gets no slides, no privacy text and no release notes in the page or from `/api/changelog`. With auth off, everyone is a guest with no groups, so a section with `groups:` is hidden from everyone.
+
+The sign-in screen asks visitors to agree to the Privacy & Terms only when they can open the privacy notice. Nobody is signed in there yet, so with `groups:` on `privacy` (or `privacy` off) that box doesn't show. Members open the notice from the footer once signed in.
 
 `tips` is accepted but has no effect: the first-week tips are switched off in this release.
 
@@ -280,6 +301,7 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `wallpapers.enabled` | bool | `false` | yes | Wallpaper picker and daily rotation |
 | `weather.enabled` | bool | `false` | yes | Users set their own location |
 | `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | See [Onboarding](#onboarding) |
+| `onboarding.groups` / `privacy.groups` / `changelog.groups` | list | everyone | yes | Only these OIDC groups see it. See [Groups](#groups-for-onboarding-privacy-and-whats-new) |
 | `privacy.enabled` / `last_updated` / `file` / `sections` | | off | yes | `file` is relative to `config.yml` |
 | `security.frame_ancestors` | list of origins | none | yes | Pages allowed to show Holm in a frame. See [Embedding](#embedding-holm-in-another-page) |
 | `tips.*` | | | | Accepted, no effect in this release |

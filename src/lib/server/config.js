@@ -4,7 +4,7 @@ import yaml from 'js-yaml';
 import { marked } from 'marked';
 import { version as APP_VERSION } from '../../../package.json';
 import { getBrandColor } from './brandColors.js';
-import { canSeeApp } from './appAccess.js';
+import { canSeeApp, sectionsFor } from './appAccess.js';
 import { substituteEnvVars } from './envVars.js';
 
 let _config = null;
@@ -103,16 +103,18 @@ export function getWeatherConfig() {
 	return getConfig().weather || { enabled: true, default_lat: 40.7128, default_lon: -74.0060 };
 }
 
-export function getOnboardingConfig() {
-	return getConfig().onboarding || { enabled: false };
+// Onboarding, the privacy notice and "What's new" for one user: off for
+// anyone outside the section's `groups` (with auth off, the guest has none).
+export function getOnboardingConfig(user) {
+	return sectionsFor(getConfig(), user).onboarding;
 }
 
-export function getPrivacyConfig() {
-	return getConfig().privacy || { enabled: false };
+export function getPrivacyConfig(user) {
+	return sectionsFor(getConfig(), user).privacy;
 }
 
-export function getChangelogConfig() {
-	return { enabled: getConfig().changelog?.enabled !== false };
+export function getChangelogConfig(user) {
+	return sectionsFor(getConfig(), user).changelog;
 }
 
 export function getTipsConfig() {
@@ -139,8 +141,8 @@ export function getIntegrationsConfig() {
 // leaks ~110 KB per sanitize call, and this runs on every layout load.
 let _privacyCache = { key: null, html: null };
 
-async function loadPrivacyHtml(config) {
-	const file = config.privacy?.file;
+async function loadPrivacyHtml(privacy) {
+	const file = privacy.enabled && privacy.file;
 	if (!file) return null;
 	try {
 		const configPath = process.env.CONFIG_PATH || 'config.yml';
@@ -169,11 +171,12 @@ export async function getClientConfig({ authenticated = true, user = null } = {}
 		registration: config.auth?.registration || { enabled: false, url: null }
 	};
 
+	const privacy = getPrivacyConfig(user);
 	if (!authenticated) {
 		return {
 			branding: getBranding(),
 			auth,
-			privacy: { ...getPrivacyConfig(), html: await loadPrivacyHtml(config) },
+			privacy: { ...privacy, html: await loadPrivacyHtml(privacy) },
 			wallpapers: { enabled: config.wallpapers?.enabled ?? false }
 		};
 	}
@@ -186,11 +189,11 @@ export async function getClientConfig({ authenticated = true, user = null } = {}
 		search: getSearchConfig(),
 		wallpapers: { enabled: config.wallpapers?.enabled ?? false },
 		weather: { enabled: config.weather?.enabled ?? false },
-		onboarding: getOnboardingConfig(),
-		privacy: { ...getPrivacyConfig(), html: await loadPrivacyHtml(config) },
+		onboarding: getOnboardingConfig(user),
+		privacy: { ...privacy, html: await loadPrivacyHtml(privacy) },
 		tips: getTipsConfig(),
 		integrations: { enabled: config.database?.enabled !== false },
 		version: APP_VERSION,
-		changelog: getChangelogConfig()
+		changelog: getChangelogConfig(user)
 	};
 }

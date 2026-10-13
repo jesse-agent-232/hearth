@@ -10,6 +10,7 @@ using it. Headings are `## <version> — <date>`.
 - **Calendar search.** `!cal` finds events by title; picking one opens it in your calendar, or shows its time, place, notes and a Join call button.
 - **Music picks up where you left off.** Reload the page and the song you were playing comes back, paused at the same spot.
 - **Answers in search.** Type a sum, a unit conversion (`5 km in miles`, `10 lb`) or a time in another city (`3pm london in tokyo`) and the answer shows right away, ready to copy.
+- **Onboarding, privacy and What's new per group.** Give each `groups:` in `config.yml`, like apps, to show it only to those groups.
 - **What's new.** After an update, this dialog shows what changed, once. The version at the bottom of Configure links to Holm on GitHub.
 
 ## 0.5.0 — 2026-10-09

@@ -22,7 +22,7 @@ export async function GET({ cookies, url }) {
 	// A browser with nothing stored is new to it; with a database, ask whether
 	// this user has saved anything before.
 	const known = local ? false : await isKnownUser(user.username);
-	const result = changelogFor({ version, seen, known, enabled: getChangelogConfig().enabled, releases: all });
+	const result = changelogFor({ version, seen, known, enabled: getChangelogConfig(user).enabled, releases: all });
 	// Only a user who's new is recorded here; anyone else on Close.
 	if (result.record && !local) await setChangelogSeen(user.username, version);
 	return json({ version, show: result.show, releases: result.releases, record: result.record, store: local ? 'local' : 'server' });
