@@ -71,6 +71,8 @@ With **Reminders** on, Holm shows each event's own reminders on the page, at the
 
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 
+An integration's widgets switch is also in **Configure → Widgets**. Once an integration is connected, it appears there next to Weather and Search, and both places flip the same switch.
+
 After connecting, results from the app appear in the search bar. Typing `!<shortcut>` searches only that app.
 
 ## Security
