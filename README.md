@@ -115,7 +115,7 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 | Seerr | Movies and shows: play or request (signs in through Jellyfin or Plex) |
 | Planka | Cards, by name |
 | Karakeep | Bookmarks |
-| Calendar (CalDAV) | Events, with optional reminders on the page |
+| Calendar (CalDAV) | Events, with optional reminders and upcoming events on the page |
 
 Adding an integration is one adapter file and one import line. [docs/integrations.md](docs/integrations.md) covers enabling, connecting, the security model and writing a new adapter.
 

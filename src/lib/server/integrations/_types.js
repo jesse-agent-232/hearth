@@ -78,6 +78,18 @@
  */
 
 /**
+ * @typedef {Object} UpcomingEvent
+ * @property {string} id
+ * @property {string} title
+ * @property {number} start                      ms since the epoch
+ * @property {number|null} [end]
+ * @property {boolean} [allDay]
+ * @property {string} [location]
+ * @property {string} [calendar]                 The calendar's name
+ * @property {string|null} [href]                Where the event opens, if anywhere
+ */
+
+/**
  * @typedef {Object} Action
  * A write the user triggers from a search result (`SearchResultItem.action`),
  * run by POST /api/integrations/:id/action/:key. `params` come from the
@@ -135,6 +147,7 @@
  * @property {Record<string, ProxyHandler>} [proxy]            Optional proxy handlers keyed by name (e.g. 'thumbnail')
  * @property {Record<string, { label: string, description?: string }>} [widgets]  Widgets behind the `widgets` surface, e.g. Navidrome's player; the user's switch is `surfaces.widgets`
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due from ten minutes ago to a day ahead, for GET /api/reminders; asked only while the user's widgets switch is on
+ * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<UpcomingEvent[]>} [upcoming]  The next events, still on now to a week ahead, for GET /api/upcoming; asked only while the user's widgets switch is on
  */
 
 export {};

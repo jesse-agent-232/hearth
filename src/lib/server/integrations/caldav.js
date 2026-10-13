@@ -5,6 +5,8 @@
 //   - searchProviders.events — finds events by title, from a month back to a year ahead
 //   - widgets.reminders      — pops up the event's own reminders (VALARM) on the
 //                              page, through `reminders` and GET /api/reminders
+//   - widgets.upcoming       — the next event beside the clock, the week ahead in
+//                              its menu, through `upcoming` and GET /api/upcoming
 
 import { createHash } from 'node:crypto';
 import { alarmTimes, parseEvents, validZone } from './ical.js';
@@ -12,6 +14,7 @@ import { alarmTimes, parseEvents, validZone } from './ical.js';
 const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
 const MAX_REDIRECTS = 3;
+const UPCOMING_MAX = 8;
 
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
@@ -128,7 +131,8 @@ const adapter = {
 	// Off unless the operator sets `surfaces.widgets: true` and the user turns
 	// it on.
 	widgets: {
-		reminders: { label: 'Reminders', description: 'Show event reminders on this page, at the times set in your calendar' }
+		reminders: { label: 'Reminders', description: 'Show event reminders on this page, at the times set in your calendar' },
+		upcoming: { label: 'Upcoming events', description: 'Your next event next to the clock, and the week ahead a click away' }
 	},
 
 	/**
@@ -155,6 +159,29 @@ const adapter = {
 			}
 		}
 		return out;
+	},
+
+	/**
+	 * The next events, from any still on now to a week ahead, for GET
+	 * /api/upcoming.
+	 */
+	async upcoming({ config, fetch, timeZone, now = Date.now() }) {
+		const events = await eventsBetween(config, fetch, now - DAY, now + 7 * DAY, { timeZone });
+		const href = webAddress(config);
+		return events
+			.filter((e) => (e.end ?? e.start + (e.allDay ? DAY : 0)) > now)
+			.sort((a, b) => a.start - b.start)
+			.slice(0, UPCOMING_MAX)
+			.map((e) => ({
+				id: `caldav:${e.calendar.href}#${e.id}`,
+				title: e.summary || 'Untitled event',
+				location: e.location,
+				calendar: e.calendar.name,
+				start: e.start,
+				end: e.end,
+				allDay: e.allDay,
+				href
+			}));
 	}
 };
 

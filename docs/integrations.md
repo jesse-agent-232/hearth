@@ -20,9 +20,9 @@ Holm has two kinds of app support.
 | Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
 | Mealie | Recipes | URL + API token | `!r` |
 | Seerr | Movies and shows: play what's there, request what isn't | Automatic through Jellyfin or Plex; otherwise a Quick Connect code | `!sr` |
-| Calendar (CalDAV) | Events, by title, a month back to a year ahead; optional reminders on the page | URL + username + app password | `!cal` |
+| Calendar (CalDAV) | Events, by title, a month back to a year ahead; optional reminders and upcoming events on the page | URL + username + app password | `!cal` |
 
-Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders.
+Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders and upcoming events.
 
 ## Enabling an integration (operator)
 
@@ -38,7 +38,7 @@ integrations:
     tip: "Find the API key under Account settings"  # optional hint on the connect card
     surfaces:
       search: true
-      widgets: false                          # Navidrome's player, the Calendar's reminders
+      widgets: false                          # Navidrome's player, the Calendar's reminders and upcoming events
 ```
 
 The key (`immich`) must match the adapter id. If an app in `apps:` has the same `id`, the integration uses that app's icon. A block without `enabled` counts as enabled.
@@ -63,7 +63,11 @@ Navidrome has the first widget, a **Player**. The operator allows it with `surfa
 
 The Calendar works with any CalDAV server: Nextcloud, Radicale, Baïkal, Stalwart, Fastmail, iCloud and others. The user gives the address their calendar app uses (for Nextcloud, `https://<host>/remote.php/dav`; a server root or a single calendar's URL works too), a username and an app password. Holm finds every calendar that holds events and skips task lists. Search matches event titles from 30 days back to a year ahead, upcoming events first, with recurring events listed once per occurrence; picking one opens the **Calendar web address**. That is optional: for Nextcloud, iCloud and Fastmail Holm knows the calendar page, and anywhere else without one (Stalwart has no web calendar) picking an event shows its details: time, place, calendar and notes. Google Calendar has no app passwords for CalDAV, so it needs a sign-in of its own and isn't supported yet. The app password is stored encrypted like any other key. Holm follows the server's redirects only to the same origin or the same host over https, plus, for iCloud, to the account's own `pNN-caldav.icloud.com`, so the password never goes anywhere else. Changing the web address keeps the app password; changing the CalDAV URL to another server asks for it again. Recurring events rely on the server expanding them (CalDAV's `expand`), as Nextcloud, Radicale, Baïkal, Stalwart and Fastmail do (iCloud is untested); on a server that doesn't, a series shows up nowhere rather than only its first occurrence. Stalwart leaves the reminders out of the occurrences it expands, so for events that come back without one, Holm reads the stored event and gives each occurrence its reminders.
 
-The Calendar's widget is **Reminders**. The operator allows it with `surfaces: { widgets: true }` under `caldav`, and each user turns it on with the **Reminders** switch on their Calendar card; it starts off. With it on, Holm shows each event's own reminders on the page, at the times set in the calendar app (15 minutes before, a day before, and so on); an event with no reminder set gets none. The page asks Holm for what's due in the next day every 5 minutes and when the tab comes back into view, so a reminder added in the calendar shows up within about 5 minutes. Each one appears once per browser in the top-right corner (the top on a phone) with the title, how soon it starts, the place, **Open** and **Dismiss**, and stays until dismissed. One that fell due in the last 10 minutes while the page was closed still shows when it opens. **Alert me in other tabs** asks the browser for permission to notify, after which reminders that fall due while Holm is in a background tab also show as system notifications. Reminders that only send email are left to the calendar server.
+The Calendar's widgets are **Reminders** and **Upcoming events**. The operator allows them with `surfaces: { widgets: true }` under `caldav`, and each user turns both on with the one widgets switch on their Calendar card; it starts off.
+
+**Upcoming events** puts the next event beside the clock, the way a phone's "at a glance" does: its title and when ("in 20 min", "14:30", "tomorrow 10:00"), preferring a timed event over an all-day one. Clicking it opens the week ahead, grouped by day, with each event's time, place and calendar; an event opens its calendar web address if there is one. It refreshes every 5 minutes and when the tab comes back into view.
+
+With **Reminders** on, Holm shows each event's own reminders on the page, at the times set in the calendar app (15 minutes before, a day before, and so on); an event with no reminder set gets none. The page asks Holm for what's due in the next day every 5 minutes and when the tab comes back into view, so a reminder added in the calendar shows up within about 5 minutes. Each one appears once per browser in the top-right corner (the top on a phone) with the title, how soon it starts, the place, **Open** and **Dismiss**, and stays until dismissed. One that fell due in the last 10 minutes while the page was closed still shows when it opens. **Alert me in other tabs** asks the browser for permission to notify, after which reminders that fall due while Holm is in a background tab also show as system notifications. Reminders that only send email are left to the calendar server.
 
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 

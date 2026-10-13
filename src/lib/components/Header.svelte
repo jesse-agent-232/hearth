@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import Weather from './Weather.svelte';
+	import Upcoming from './Upcoming.svelte';
 	import { DAYS, MONTHS } from '$lib/constants.js';
 	import { fetchWeather, reverseGeocode } from '$lib/weather.js';
 	// lat/lon are the user's chosen location (device or a searched place);
@@ -62,6 +63,7 @@
 	<div class="flex items-baseline gap-3 min-w-0 flex-wrap">
 		<span class="text-[1.35rem] max-md:text-[1.1rem] font-semibold text-content tabular-nums tracking-tight normal-case">{formatTime()}</span>
 		<span class="text-content-muted">{formatDate()}</span>
+		<Upcoming />
 	</div>
 	<div class="flex items-center gap-3 shrink-0">
 		{#if showWeather}<Weather {weatherData} {weatherLoaded} {locationName} hasLocation={!!(lat && lon)} source={locationSource === 'manual' ? 'manual' : 'device'} />{/if}

@@ -325,3 +325,15 @@ test('details: a moved occurrence shows its own title, found by RECURRENCE-ID', 
 	const series = await caldav.details({ config, fetch, params: { href, start: Date.UTC(2026, 9, 13, 4, 30), recurrenceId: Date.UTC(2026, 9, 13, 4, 30), timeZone: 'UTC' } });
 	assert.equal(series.title, 'Standup');
 });
+
+test('upcoming: events still on or ahead, soonest first', async () => {
+	const now = Date.now();
+	const { fetch } = fakeServer({ now });
+	const events = await caldav.upcoming({ config, fetch, timeZone: 'UTC', now });
+	assert.deepEqual(events.map((e) => e.title), ['Dentist', 'Gym']);
+	assert.equal(events[0].calendar, 'Home');
+	assert.equal(events[0].location, 'High St');
+	assert.equal(events[0].href, null);
+	// Once both are over, nothing is left.
+	assert.deepEqual(await caldav.upcoming({ config, fetch, timeZone: 'UTC', now: now + 2 * 60 * MIN }), []);
+});
