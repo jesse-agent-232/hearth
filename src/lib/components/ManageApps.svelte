@@ -433,10 +433,18 @@
 				<IntegrationsPanel {iconStyle} />
 
 				{/if}
-				{#if version}
-					<!-- On phones the sidebar is hidden: the version sits under the tab. -->
-					<button class="version-link hidden max-md:block mt-6" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
-				{/if}
+				<!-- On phones the sidebar is hidden: Reset defaults and the version sit
+				     under the tab, flush with its content. -->
+				<div class="hidden max-md:flex flex-col items-start gap-1.5 mt-6">
+					{#if resetUndo}
+						<button class="text-[0.7rem] text-content bg-transparent border-none cursor-pointer underline underline-offset-2 font-mono p-0" onclick={undoResetDefaults}>Undo reset</button>
+					{:else}
+						<button class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono p-0" onclick={resetDefaults}>Reset defaults</button>
+					{/if}
+					{#if version}
+						<button class="version-link flush" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
+					{/if}
+				</div>
 				</div>
 			</div>
 
@@ -457,4 +465,5 @@
 		transition: opacity 0.15s ease;
 	}
 	.version-link:hover, .version-link:focus-visible { opacity: 1; color: var(--color-content); }
+	.version-link.flush { padding: 0; }
 </style>
