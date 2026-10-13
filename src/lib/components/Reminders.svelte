@@ -1,22 +1,22 @@
 <script>
 	import { onMount } from 'svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
+	import { nowPlaying } from '$lib/stores/player.js';
 
 	// Calendar reminders, shown on the page at the times the events' own
 	// reminders say. Only runs while some connected integration has its
-	// Reminders widget switched on. A reminder stays up, through reloads,
-	// until it is dismissed or put off with Later.
+	// Reminders widget switched on. A reminder stays up in every open tab,
+	// through reloads, until it is dismissed or put off with Later in any one.
 	const POLL_MS = 5 * 60 * 1000;
-	// Reminder id → hidden until (ms): far ahead once dismissed, ten minutes
-	// on for Later. Kept per browser.
+	// Reminder id → hidden until (ms): far ahead once dismissed, a while on
+	// for Later. Kept per browser; other tabs follow it through storage events.
 	const CLOSED_KEY = 'holm_reminders_closed';
 	const DISMISSED_MS = 2 * 24 * 60 * 60 * 1000;
-	const LATER_MS = 10 * 60 * 1000;
+	const MIN = 60 * 1000;
 	const MAX_TOASTS = 3;
 
 	let toasts = $state([]);
 	let now = $state(Date.now());
-	let permission = $state('unsupported');
 	const timers = new Map();
 
 	const enabled = $derived(
@@ -47,29 +47,12 @@
 
 	const closedUntil = (id) => readClosed()[id] || 0;
 
-	// Asked once per reminder per page, so a reload doesn't notify again.
-	const notified = new Set();
 	let latest = [];
-
-	// Due while this tab is hidden and can't notify: wait until it's seen, so
-	// a tab the user is looking at gets the reminder first.
-	const waiting = new Map();
 
 	function show(r) {
 		if (closedUntil(r.id) > Date.now()) return;
-		if (document.hidden && permission !== 'granted') {
-			waiting.set(r.id, r);
-			return;
-		}
-		waiting.delete(r.id);
 		if (toasts.some((t) => t.id === r.id)) return;
 		toasts = [...toasts, r].slice(-MAX_TOASTS);
-		if (document.hidden && permission === 'granted' && !notified.has(r.id)) {
-			notified.add(r.id);
-			try {
-				new Notification(r.title, { body: [when(r, Date.now()), r.location].filter(Boolean).join(' · '), tag: r.id });
-			} catch { /* some mobile browsers only notify from a service worker */ }
-		}
 	}
 
 	function schedule(reminders) {
@@ -102,37 +85,49 @@
 		const onVisible = () => {
 			if (document.visibilityState === 'visible') {
 				now = Date.now();
-				for (const r of [...waiting.values()]) show(r);
 				refresh();
 			}
 		};
+		// Dismissed or put off in another tab: clear it here too, and come
+		// back when that tab's Later runs out.
+		const onStorage = (e) => {
+			if (e.key !== CLOSED_KEY && e.key !== null) return;
+			toasts = toasts.filter((t) => closedUntil(t.id) <= Date.now());
+			schedule(latest);
+		};
 		document.addEventListener('visibilitychange', onVisible);
+		window.addEventListener('storage', onStorage);
 		return () => {
 			clearInterval(poll);
 			clearInterval(tick);
 			document.removeEventListener('visibilitychange', onVisible);
+			window.removeEventListener('storage', onStorage);
 			for (const t of timers.values()) clearTimeout(t);
 			timers.clear();
 		};
 	});
 
-	onMount(() => {
-		integrationsStore.load();
-		if ('Notification' in window) permission = Notification.permission;
-	});
-
-	async function askPermission() {
-		try { permission = await Notification.requestPermission(); } catch { permission = 'denied'; }
-	}
+	onMount(() => integrationsStore.load());
 
 	function dismiss(id) {
 		close(id, DISMISSED_MS);
 		toasts = toasts.filter((t) => t.id !== id);
 	}
 
-	function later(id) {
-		close(id, LATER_MS);
-		toasts = toasts.filter((t) => t.id !== id);
+	// Back in 10 minutes once the event is half an hour off, every 30 in the
+	// two hours before that, and two hours before it starts if it's further.
+	// All-day events come back every 30.
+	function laterFor(r, at) {
+		const left = r.start - at;
+		if (r.allDay) return 30 * MIN;
+		if (left <= 30 * MIN) return 10 * MIN;
+		if (left <= 2 * 60 * MIN) return Math.min(30 * MIN, left - 30 * MIN);
+		return left - 2 * 60 * MIN;
+	}
+
+	function later(r) {
+		close(r.id, laterFor(r, Date.now()));
+		toasts = toasts.filter((t) => t.id !== r.id);
 		schedule(latest);
 	}
 
@@ -156,7 +151,7 @@
 </script>
 
 {#if toasts.length}
-	<div class="reminders" role="region" aria-label="Reminders" aria-live="polite">
+	<div class="reminders" class:above-player={$nowPlaying} role="region" aria-label="Reminders" aria-live="polite">
 		{#each toasts as r (r.id)}
 			<div class="reminder glass-card menu-surface animate-slide-up">
 				<div class="reminder-icon" aria-hidden="true">
@@ -165,7 +160,7 @@
 				<div class="reminder-text">
 					<div class="reminder-title" title={r.title}>{r.title}</div>
 					<div class="reminder-sub">{when(r, now)}</div>
-					{#if r.location}<div class="reminder-sub" title={r.location}>{r.location}</div>{/if}
+					{#if r.location && r.location !== r.call}<div class="reminder-sub" title={r.location}>{r.location}</div>{/if}
 					<div class="reminder-actions">
 						{#if r.call}
 							<a class="reminder-btn" href={r.call} target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Join call</a>
@@ -173,11 +168,8 @@
 						{#if r.href}
 							<a class="reminder-btn" href={r.href} target="_blank" rel="noopener noreferrer" onclick={() => dismiss(r.id)}>Open</a>
 						{/if}
-						<button type="button" class="reminder-btn" onclick={() => later(r.id)}>Later</button>
+						<button type="button" class="reminder-btn" onclick={() => later(r)}>Later</button>
 						<button type="button" class="reminder-btn" onclick={() => dismiss(r.id)}>Dismiss</button>
-						{#if permission === 'default'}
-							<button type="button" class="reminder-btn is-quiet" onclick={askPermission}>Alert me in other tabs</button>
-						{/if}
 					</div>
 				</div>
 			</div>
@@ -186,18 +178,23 @@
 {/if}
 
 <style>
+	/* Bottom right, clear of the profile button; stacked above the corner
+	   player when a song is playing (70px tall, 8px apart). */
 	.reminders {
+		--reminders-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 		position: fixed;
 		z-index: 60;
-		top: calc(env(safe-area-inset-top, 0px) + 16px);
+		bottom: var(--reminders-bottom);
 		right: 16px;
 		width: min(340px, calc(100vw - 24px));
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
+	.reminders.above-player { bottom: calc(var(--reminders-bottom) + 78px); }
+	/* Phones: the search is docked at the bottom, so sit just above it. */
 	@media (max-width: 767px) {
-		.reminders { right: 12px; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+		.reminders { right: 12px; --reminders-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + 50px + 10px); }
 	}
 	.reminder {
 		display: flex;
@@ -239,6 +236,4 @@
 	}
 	.reminder-btn:hover { background: color-mix(in srgb, var(--color-content) 16%, transparent); }
 	.reminder-btn:focus-visible { outline: 2px solid var(--color-content-muted); outline-offset: 1px; }
-	.reminder-btn.is-quiet { background: transparent; color: var(--color-content-dim); }
-	.reminder-btn.is-quiet:hover { color: var(--color-content); }
 </style>
