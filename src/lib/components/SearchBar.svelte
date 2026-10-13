@@ -1,5 +1,5 @@
 <script>
-	import { onMount, getContext, untrack } from 'svelte';
+	import { onMount, getContext, untrack, tick } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
 	import { nowPlaying } from '$lib/stores/player.js';
@@ -744,6 +744,21 @@
 		document.addEventListener('keydown', onKeydown);
 		document.addEventListener('mousedown', onClickOutside);
 
+		// From a widget (the Calendar's upcoming events): search for the item
+		// and open its details, as if it had been picked from the results.
+		async function onShowDetails(e) {
+			const { integrationId, title, href, detail: params } = e.detail || {};
+			const p = inlineProviders.find((x) => x.integrationId === integrationId);
+			if (!p || !params) return;
+			query = title || '';
+			activeScope = null;
+			inlineOpen = true;
+			inputEl?.focus();
+			await tick();
+			openDetail(`widget:${integrationId}:${title}`, p, { title, href: href || undefined, detail: params, meta: { kind: 'event' } });
+		}
+		window.addEventListener('holm:show-details', onShowDetails);
+
 		// iOS has no interactive-widget support yet: lift the bottom-docked
 		// search above the on-screen keyboard by the part of the layout
 		// viewport the keyboard covers.
@@ -758,6 +773,7 @@
 		return () => {
 			document.removeEventListener('keydown', onKeydown);
 			document.removeEventListener('mousedown', onClickOutside);
+			window.removeEventListener('holm:show-details', onShowDetails);
 			window.removeEventListener('resize', onResize);
 			vv?.removeEventListener('resize', onViewport);
 			vv?.removeEventListener('scroll', onViewport);

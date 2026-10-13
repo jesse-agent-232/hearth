@@ -38,10 +38,13 @@ export async function widgetFeed(hook, { cookies, url, fetch }, sortKey) {
 
 	const lists = await Promise.all(
 		sources.map(({ adapter, conn }) =>
-			adapter[hook]({ config: conn.config, fetch: withDeadline(fetch, UPSTREAM_TIMEOUT_MS), timeZone }).catch((err) => {
-				console.error(`[${hook}] ${adapter.id}:`, err?.message || err);
-				return [];
-			})
+			adapter[hook]({ config: conn.config, fetch: withDeadline(fetch, UPSTREAM_TIMEOUT_MS), timeZone })
+				// Which integration each came from, for its details.
+				.then((list) => list.map((item) => ({ ...item, integrationId: adapter.id })))
+				.catch((err) => {
+					console.error(`[${hook}] ${adapter.id}:`, err?.message || err);
+					return [];
+				})
 		)
 	);
 	const items = lists.flat().sort((a, b) => a[sortKey] - b[sortKey]);

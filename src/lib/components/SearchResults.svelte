@@ -111,7 +111,8 @@
 					Results
 				</button>
 			</div>
-			<div class="launcher-detail-body">
+			<!-- An event is compact: its icon, then title and facts, with the buttons on the right. -->
+			<div class="launcher-detail-body" class:is-compact={!detail.thumbnail && detail.r?.meta?.kind === 'event'}>
 				<div class="launcher-detail-poster launcher-thumb-wrap" class:is-icon={!detail.thumbnail && detail.r?.meta?.kind === 'event'}>
 					{#if detail.thumbnail}
 						<img class="is-loading" use:thumbLoading src={detail.thumbnail} alt="" referrerpolicy="no-referrer" onerror={thumbFailed} />
@@ -119,23 +120,26 @@
 					<svg class="launcher-thumb-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{@html KIND_ICONS[detail.r?.meta?.kind] || KIND_ICONS.media}</svg>
 				</div>
 				<div class="launcher-detail-info">
-					<h3 class="launcher-detail-title">{detail.title}</h3>
-					{#if detail.data}
-						<div class="launcher-detail-facts">
-							{#each detail.data.facts || [] as fact}<span>{fact}</span>{/each}
-							{#if detail.data.rating}
-								<span class="launcher-detail-rating">
-									<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>
-									{detail.data.rating}
-								</span>
+					<div class="launcher-detail-head">
+						<h3 class="launcher-detail-title">{detail.title}</h3>
+						{#if detail.data}
+							<div class="launcher-detail-facts">
+								{#each detail.data.facts || [] as fact}<span>{fact}</span>{/each}
+								{#if detail.data.rating}
+									<span class="launcher-detail-rating">
+										<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>
+										{detail.data.rating}
+									</span>
+								{/if}
+							</div>
+							{#if detail.data.genres?.length}
+								<div class="launcher-tags">{#each detail.data.genres as g}<span class="launcher-tag">{g}</span>{/each}</div>
 							{/if}
-						</div>
-						{#if detail.data.genres?.length}
-							<div class="launcher-tags">{#each detail.data.genres as g}<span class="launcher-tag">{g}</span>{/each}</div>
+						{:else if detail.r?.subtitle}
+							<div class="launcher-detail-facts"><span>{detail.r.subtitle}</span></div>
 						{/if}
-					{:else if detail.r?.subtitle}
-						<div class="launcher-detail-facts"><span>{detail.r.subtitle}</span></div>
-					{/if}
+						{#if detail.badge}<div class="launcher-error launcher-detail-error">{detail.badge}</div>{/if}
+					</div>
 					<div class="launcher-detail-buttons">
 						{#if detail.request}
 							<button
@@ -163,7 +167,6 @@
 							</button>
 						{/if}
 					</div>
-					{#if detail.badge}<div class="launcher-error launcher-detail-error">{detail.badge}</div>{/if}
 				</div>
 			</div>
 			{#if detail.loading}

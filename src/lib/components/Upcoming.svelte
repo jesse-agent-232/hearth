@@ -107,6 +107,12 @@
 		open = false;
 	}
 
+	// The search bar opens the event's details, with its title as the query.
+	function showDetails(e) {
+		close();
+		window.dispatchEvent(new CustomEvent('holm:show-details', { detail: { integrationId: e.integrationId, title: e.title, href: e.href, detail: e.detail } }));
+	}
+
 	$effect(() => {
 		if (!open) return;
 		const onDown = (e) => { if (!rootEl?.contains(e.target)) close(); };
@@ -150,7 +156,11 @@
 					{#each groups as g, gi (g.label)}
 						<div class="px-4 pt-2.5 pb-1 text-[0.68rem] uppercase tracking-[0.12em] text-content-dim {gi ? 'border-t border-border-card mt-1' : ''}">{g.label}</div>
 						{#each g.events as e (e.id)}
-							{#if e.href}
+							{#if e.detail && e.integrationId}
+								<button type="button" class="upcoming-row hover:bg-surface-card-hover" onclick={() => showDetails(e)}>
+									{@render row(e)}
+								</button>
+							{:else if e.href}
 								<a class="upcoming-row hover:bg-surface-card-hover" href={e.href} target="_blank" rel="noopener noreferrer" onclick={close}>
 									{@render row(e)}
 								</a>
@@ -193,7 +203,13 @@
 		grid-template-columns: 3.75rem minmax(0, 1fr);
 		gap: 10px;
 		align-items: baseline;
+		width: 100%;
 		padding: 7px 16px;
+		border: none;
+		background: transparent;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
 		color: inherit;
 		text-decoration: none;
 	}

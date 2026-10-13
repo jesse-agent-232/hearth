@@ -183,6 +183,8 @@ const adapter = {
 				id: `caldav:${e.calendar.href}#${e.id}`,
 				title: e.summary || 'Untitled event',
 				location: e.location,
+				// Opens its details in search, as a search result would.
+				detail: { href: e.resource, start: e.start, end: e.end, allDay: e.allDay, recurrenceId: e.recurrenceId, timeZone },
 				start: e.start,
 				end: e.end,
 				allDay: e.allDay,

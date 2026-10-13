@@ -2019,6 +2019,15 @@ body.search-active .hero-area {
 .launcher-detail-rating svg { width: 11px; height: 11px; color: var(--accent, #f5b942); }
 .launcher-detail-info .launcher-tags { flex-wrap: wrap; }
 .launcher-detail-buttons { display: flex; gap: 8px; margin-top: 6px; }
+.launcher-detail-head { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* Compact (an event): buttons to the right of the title and facts. */
+.launcher-detail-body.is-compact { align-items: center; }
+.launcher-detail-body.is-compact .launcher-detail-info { flex: 1; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+.launcher-detail-body.is-compact .launcher-detail-buttons { margin-top: 0; flex-shrink: 0; }
+.launcher-detail-body.is-compact .launcher-detail-buttons:empty { display: none; }
+@media (max-width: 640px) {
+	.launcher-detail-body.is-compact .launcher-detail-info { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
 .launcher-detail-btn {
 	display: inline-flex;
 	align-items: center;

@@ -87,6 +87,7 @@
  * @property {boolean} [allDay]
  * @property {string} [location]
  * @property {string|null} [href]                Where the event opens, if anywhere
+ * @property {object} [detail]                    Params for the integration's `details`, as on a search result
  */
 
 /**
