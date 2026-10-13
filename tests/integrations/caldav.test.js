@@ -166,7 +166,7 @@ test('credentials only go to the configured origin, its https upgrade, or iCloud
 
 // ── The adapter against a fake server ─────────────────────────────
 
-function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) {
+function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false, holiday = false }) {
 	const start = icsTime(now + 30 * MIN);
 	const event = [
 		'BEGIN:VCALENDAR',
@@ -186,6 +186,13 @@ function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) 
 	].join('\r\n');
 	// No alarm, so reminders always look it up in the stored copies.
 	const gym = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:gym', 'SUMMARY:Gym', `DTSTART:${start}`, 'DURATION:PT1H', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+	// An all-day holiday two days on. Stalwart expands its dates into UTC
+	// times and drops the alarm; the stored copy keeps both.
+	const day = icsTime(now + 2 * 24 * 60 * MIN).slice(0, 8);
+	const next = icsTime(now + 3 * 24 * 60 * MIN).slice(0, 8);
+	const holidayIcs = (stored) => ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:holiday', 'SUMMARY:Dussehra',
+		...(stored ? [`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`, 'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT15H', 'END:VALARM'] : [`DTSTART:${day}T000000Z`, `DTEND:${next}T000000Z`]),
+		'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
 	const ms = (body) => new Response(`<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${body}</d:multistatus>`, { status: 207 });
 	const ok = '<d:status>HTTP/1.1 200 OK</d:status>';
 	const calls = [];
@@ -218,7 +225,7 @@ function fakeServer({ now, expandDropsAlarms = false, multigetThrows = false }) 
 			const expanded = !init.body.includes('calendar-multiget');
 			const data = expandDropsAlarms && expanded ? event.replace(/BEGIN:VALARM[\s\S]*END:VALARM\r\n/, '') : event;
 			const response = (name, ics) => `<d:response><d:href>/dav/alice/cals/home/${name}.ics</d:href><d:propstat><d:prop><c:calendar-data>${ics.replace(/&/g, '&amp;')}</c:calendar-data></d:prop>${ok}</d:propstat></d:response>`;
-			return ms(response('dentist', data) + response('gym', gym));
+			return ms(response('dentist', data) + response('gym', gym) + (holiday ? response('holiday', holidayIcs(!expanded)) : ''));
 		}
 		return new Response('', { status: 404 });
 	};
@@ -376,4 +383,33 @@ test('onlyLink: a location that is just the call link', () => {
 	assert.equal(onlyLink('Room 4, https://meet.jit.si/Room', 'https://meet.jit.si/Room'), false);
 	assert.equal(onlyLink('https://meet.jit.si/Room', null), false);
 	assert.equal(onlyLink('', 'https://meet.jit.si/Room'), false);
+});
+
+test('all-day events the server expanded into UTC get their dates back', async () => {
+	const now = Date.UTC(2026, 9, 13, 8, 0);
+	const { fetch } = fakeServer({ now, holiday: true });
+	const [holiday] = (await caldav.upcoming({ config, fetch, timeZone: 'Asia/Kolkata', now })).filter((e) => e.title === 'Dussehra');
+	assert.equal(holiday.allDay, true);
+	// Midnight to midnight on 15 Oct in Kolkata, not 05:30 to 05:30.
+	assert.equal(holiday.start, Date.UTC(2026, 9, 14, 18, 30));
+	assert.equal(holiday.end, Date.UTC(2026, 9, 15, 18, 30));
+	// The stored alarm, from the right start: 09:00 the day before.
+	const reminder = (await caldav.reminders({ config, fetch, timeZone: 'Asia/Kolkata', now: Date.UTC(2026, 9, 14, 3, 0) })).find((r) => r.title === 'Dussehra');
+	assert.equal(reminder.at, Date.UTC(2026, 9, 14, 3, 30));
+	assert.equal(reminder.allDay, true);
+});
+
+test('a timed event from one UTC midnight to the next stays timed', async () => {
+	const now = Date.UTC(2026, 9, 13, 8, 0);
+	const { fetch } = fakeServer({ now });
+	const ics = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:shift', 'SUMMARY:Shift', 'DTSTART:20261015T000000Z', 'DTEND:20261016T000000Z', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+	const wrapped = async (url, init) => {
+		const res = await fetch(url, init);
+		if (res.status !== 207) return res;
+		const body = (await res.text()).replace('</d:multistatus>', `<d:response><d:href>/dav/alice/cals/home/shift.ics</d:href><d:propstat><d:prop><c:calendar-data>${ics}</c:calendar-data></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>`);
+		return new Response(body, { status: 207 });
+	};
+	const shift = (await caldav.upcoming({ config, fetch: wrapped, timeZone: 'Asia/Kolkata', now })).find((e) => e.title === 'Shift');
+	assert.equal(shift.allDay, false);
+	assert.equal(shift.start, Date.UTC(2026, 9, 15));
 });

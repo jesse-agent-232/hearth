@@ -9,7 +9,7 @@
 //                              its menu, through `upcoming` and GET /api/upcoming
 
 import { createHash } from 'node:crypto';
-import { alarmTimes, onlyLink, parseEvents, validZone } from './ical.js';
+import { alarmTimes, onlyLink, parseEvents, parseTime, validZone } from './ical.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const CALENDARS_TTL_MS = 30 * 60 * 1000;
@@ -206,20 +206,20 @@ async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term =
 			if (term && res.status !== 207) res = await dav(config, fetch, calendar.href, 'REPORT', calendarQuery(from, to, ''), 1);
 			if (res.status !== 207) throw new Error(`Calendar “${calendar.name}” answered ${res.status}`);
 			const out = [];
-			const silent = new Set();
+			const recheck = new Set();
 			for (const r of parseMultistatus(await res.text(), res.url)) {
 				const data = r.props['calendar-data'];
 				if (!data) continue;
 				for (const event of parseEvents(data, timeZone)) {
 					if ((event.end ?? event.start) < from || event.start > to) continue;
 					out.push({ ...event, calendar, resource: r.href });
-					if (!event.alarms.length) silent.add(r.href);
+					if ((alarms && !event.alarms.length) || wholeUtcDays(event)) recheck.add(r.href);
 				}
 			}
-			if (alarms && silent.size) {
-				// A failed lookup only loses the borrowed alarms, not the rest.
+			if (recheck.size) {
+				// A failed lookup leaves the events as the server expanded them.
 				try {
-					await borrowAlarms(config, fetch, calendar, [...silent], out, timeZone);
+					await fromStored(config, fetch, calendar, [...recheck], out, timeZone, { alarms });
 				} catch {}
 			}
 			return out;
@@ -228,12 +228,25 @@ async function eventsBetween(config, fetch, from, to, { timeZone = 'UTC', term =
 	return lists.flat();
 }
 
+// Timed, from one UTC midnight to another: what an all-day event looks like
+// after a server expands it into UTC (Stalwart does).
+function wholeUtcDays(e) {
+	return !e.allDay && e.start % DAY === 0 && (e.end == null || (e.end > e.start && (e.end - e.start) % DAY === 0));
+}
+
+// The same calendar date as UTC instant `t`, as midnight in `zone`.
+function localDate(t, zone) {
+	return parseTime(new Date(t).toISOString().slice(0, 10).replaceAll('-', ''), {}, zone).t;
+}
+
 /**
- * Some servers (Stalwart) drop VALARMs from the instances they expand, so a
- * reminder never shows. Fetch the stored copies of the events that came back
- * without alarms and give each instance the alarms of the event it came from.
+ * Some servers change what they expand. Stalwart drops VALARMs, so a
+ * reminder never shows, and turns all-day dates into UTC times. Fetch the
+ * stored copies of the events that may be affected: an all-day event gets
+ * its dates back, in the viewer's zone, and an instance without alarms gets
+ * those of the event it came from.
  */
-async function borrowAlarms(config, fetch, calendar, hrefs, events, timeZone) {
+async function fromStored(config, fetch, calendar, hrefs, events, timeZone, { alarms }) {
 	const res = await dav(config, fetch, calendar.href, 'REPORT', calendarMultiget(hrefs), 1);
 	if (res.status !== 207) return;
 	const stored = new Map();
@@ -244,10 +257,16 @@ async function borrowAlarms(config, fetch, calendar, hrefs, events, timeZone) {
 		}
 	}
 	for (const e of events) {
-		if (e.alarms.length) continue;
 		const own = e.recurrenceId != null ? stored.get(`${e.uid}@${e.recurrenceId}`) : null;
 		const from = own || stored.get(e.uid);
-		if (!from?.alarmSpecs.length) continue;
+		if (!from) continue;
+		const dated = from.allDay && wholeUtcDays(e);
+		if (dated) {
+			e.allDay = true;
+			e.start = localDate(e.start, timeZone);
+			e.end = e.end == null ? null : localDate(e.end, timeZone);
+		}
+		if (!alarms || !from.alarmSpecs.length || (e.alarms.length && !dated)) continue;
 		e.alarms = alarmTimes(from.alarmSpecs, e.start, e.end, timeZone, { relativeOnly: from.start !== e.start });
 	}
 }
