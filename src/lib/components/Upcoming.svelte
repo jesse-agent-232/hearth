@@ -118,7 +118,7 @@
 </script>
 
 {#if next}
-	<div class="relative min-w-0" bind:this={rootEl}>
+	<div class="relative min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
 			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content hover:opacity-80"
@@ -127,7 +127,7 @@
 			title="Upcoming events"
 			onclick={() => (open = !open)}
 		>
-			<svg class="w-3.5 h-3.5 shrink-0 opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+			<svg class="w-3 h-3 shrink-0 opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
 			<span class="shrink-0 text-content-muted tabular-nums">· {when(next)}</span>
 		</button>
@@ -170,7 +170,8 @@
 {/snippet}
 
 <style>
-	.upcoming-pill { font-size: inherit; letter-spacing: inherit; }
+	/* A smaller line under the clock. */
+	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; }
 	.upcoming-list { max-height: min(24rem, 60vh); overflow-y: auto; }
 	.upcoming-row {
 		display: grid;

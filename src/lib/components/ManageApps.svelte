@@ -406,7 +406,7 @@
 						onclick={() => toggleIntegrationWidgets(it)}
 					>
 						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0">
-							<AppIcon icon={resolveIcon(it.icon)} name={it.name} size="w-4 h-4" {iconStyle} />
+							<AppIcon icon={resolveIcon(it.icon)} name={it.name} size="w-4 h-4" iconStyle="white" />
 						</span>
 						<div class="flex-1 min-w-0">
 							<div class="text-[0.8rem] text-content font-medium">{it.name}</div>
