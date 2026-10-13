@@ -124,20 +124,29 @@
 			: []
 	);
 	let widgetSaveError = $state('');
+	// Integration id → the value being saved: the row flips at once, like the
+	// card, and ignores clicks until the save lands.
+	let widgetPending = $state({});
 
 	$effect(() => {
 		if (open && activeTab === 'widgets' && integrationsEnabled) integrationsStore.load();
 	});
 
 	async function toggleIntegrationWidgets(it) {
+		if (it.id in widgetPending) return;
+		const widgets = it.userState.surfaces?.widgets !== true;
+		widgetPending = { ...widgetPending, [it.id]: widgets };
 		widgetSaveError = '';
 		try {
 			await integrationsStore.save(it.id, {
 				config: it.userState.config,
-				surfaces: { ...it.userState.surfaces, widgets: !it.userState.surfaces?.widgets }
+				surfaces: { ...it.userState.surfaces, widgets }
 			});
 		} catch (err) {
 			widgetSaveError = err.message || 'Failed to update widgets';
+		} finally {
+			const { [it.id]: _, ...rest } = widgetPending;
+			widgetPending = rest;
 		}
 	}
 
@@ -388,11 +397,12 @@
 					</button>
 				{/each}
 				{#each integrationWidgets as it (it.id)}
-					{@const on = it.userState.surfaces?.widgets === true}
+					{@const on = widgetPending[it.id] ?? it.userState.surfaces?.widgets === true}
 					<button
 						class="flex items-center gap-3 w-full px-2 py-3 bg-transparent border-none border-b border-border-card text-left font-mono cursor-pointer hover:bg-surface-card-hover"
 						role="switch"
 						aria-checked={on}
+						aria-busy={it.id in widgetPending}
 						onclick={() => toggleIntegrationWidgets(it)}
 					>
 						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0">
