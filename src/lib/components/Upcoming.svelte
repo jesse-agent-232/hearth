@@ -132,7 +132,7 @@
 </script>
 
 {#if next}
-	<div class="relative flex items-center gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
+	<div class="relative flex items-center max-md:items-start gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
 			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content"
@@ -144,8 +144,9 @@
 			<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
 			<span class="pill-when shrink-0 tabular-nums text-content-muted">· {when(next)}</span>
-			<!-- Phones: the time and place get a line of their own, so the title keeps its room. -->
-			<span class="pill-meta truncate tabular-nums text-content-muted">{when(next)}{#if next.location}{' · '}{next.location}{/if}</span>
+			<!-- Phones: the time gets a line of its own, so the title keeps its room.
+			     The place is one tap away, in the menu. -->
+			<span class="pill-meta truncate tabular-nums text-content-muted">{when(next)}</span>
 		</button>
 		{#if next.call}
 			<a class="upcoming-call pill-call" href={next.call} target="_blank" rel="noopener noreferrer" title="Join call · {hostOf(next.call)}" aria-label="Join call on {hostOf(next.call)}">{@render camera()}</a>
@@ -208,7 +209,8 @@
 	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
 	.pill-meta { display: none; }
 	@media (max-width: 767px) {
-		.upcoming-pill { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.375rem; row-gap: 4px; text-align: left; }
+		/* Rows of a fixed 1rem, so they line up with the weather's city. */
+		.upcoming-pill { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 0.375rem; row-gap: 4px; line-height: 1rem; text-align: left; }
 		.pill-when { display: none; }
 		.pill-meta { display: block; grid-column: 2; }
 	}
@@ -235,6 +237,8 @@
 	.upcoming-call :global(svg) { width: 1rem; height: 1rem; }
 	/* Beside the pill, at the line's size. */
 	.pill-call { margin: 0; width: 1.5rem; height: 1.5rem; }
+	/* Phones: on the title's line, not between it and the time. */
+	@media (max-width: 767px) { .pill-call { height: 1rem; } }
 	.upcoming-row {
 		flex: 1;
 		min-width: 0;

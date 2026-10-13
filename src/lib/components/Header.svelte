@@ -59,9 +59,9 @@
 <!-- Compact status-bar header: a single mono row with time · date on the
      left and weather/location on the right. Clock is the anchor but no
      longer the visual hero — the search palette below is. -->
-<div bind:this={headerEl} class="dashboard-header mb-8 max-md:mb-6 flex justify-between items-center gap-3 text-[0.85rem] max-md:text-[0.75rem] font-mono tracking-[0.12em] uppercase">
+<div bind:this={headerEl} class="dashboard-header mb-8 max-md:mb-6 flex justify-between items-center max-md:items-start gap-3 text-[0.85rem] max-md:text-[0.75rem] font-mono tracking-[0.12em] uppercase">
 	<div class="flex flex-col gap-1 min-w-0">
-		<div class="flex items-baseline gap-3 min-w-0 flex-wrap">
+		<div class="flex items-baseline gap-3 min-w-0 flex-wrap max-md:h-7 max-md:leading-7">
 			<span class="text-[1.35rem] max-md:text-[1.1rem] font-semibold text-content tabular-nums tracking-tight normal-case">{formatTime()}</span>
 			<span class="text-content-muted">{formatDate()}</span>
 		</div>
