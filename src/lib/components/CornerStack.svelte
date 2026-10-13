@@ -22,7 +22,7 @@
 		pointer-events: none;
 	}
 	.corner-stack > :global(*) { pointer-events: auto; }
-	/* Phones: the search is docked at the bottom, so sit just above it. */
+	/* Phones: the account button is in the bottom-right corner, so sit just above it. */
 	@media (max-width: 767px) {
 		.corner-stack { right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + 50px + 10px); }
 	}

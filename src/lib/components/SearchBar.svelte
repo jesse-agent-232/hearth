@@ -26,8 +26,8 @@
 	let resultsMaxHeight = $state(420);
 	// On desktop the open palette slides up toward the top of the viewport,
 	// Spotlight-style, so short screens (a 14" laptop) give the results most
-	// of the height instead of the strip under a mid-page bar. Phones keep
-	// the bottom dock. `lift` is the px the bar is raised by.
+	// of the height instead of the strip under a mid-page bar. Phones leave
+	// the bar where it is. `lift` is the px the bar is raised by.
 	let lift = $state(0);
 	function recomputeResultsMaxHeight() {
 		if (!containerEl || typeof window === 'undefined') return;
@@ -41,7 +41,11 @@
 		const targetTop = Math.max(48, window.innerHeight * 0.1);
 		lift = desktop && inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
 		const gap = 24;
-		const available = window.innerHeight - (restBottom - lift) - gap;
+		// The visible bottom: above the on-screen keyboard, which on iOS
+		// covers the page without resizing it.
+		const vv = window.visualViewport;
+		const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+		const available = visibleBottom - (restBottom - lift) - gap;
 		resultsMaxHeight = Math.max(220, available);
 	}
 
@@ -800,14 +804,10 @@
 		}
 		window.addEventListener('holm:show-details', onShowDetails);
 
-		// iOS has no interactive-widget support yet: lift the bottom-docked
-		// search above the on-screen keyboard by the part of the layout
-		// viewport the keyboard covers.
+		// The keyboard opening or closing changes how much room the results
+		// have below the bar.
 		const vv = window.visualViewport;
-		const onViewport = () => {
-			const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-			document.documentElement.style.setProperty('--kb-inset', `${covered}px`);
-		};
+		const onViewport = () => recomputeResultsMaxHeight();
 		vv?.addEventListener('resize', onViewport);
 		vv?.addEventListener('scroll', onViewport);
 

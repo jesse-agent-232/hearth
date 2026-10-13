@@ -717,12 +717,8 @@ body.search-active .dashboard-wallpaper {
 	filter: blur(8px);
 }
 
-/* Dashboard header. On desktop it sits in normal flow at the top of the
-   page; on mobile it's pinned via position:fixed so the time/date/
-   weather row stays glued to the viewport top regardless of scroll
-   position (no sticky-containing-block gymnastics). The page wrapper
-   reserves space for the fixed header via its top padding so the first
-   tile row doesn't slide under it. */
+/* Dashboard header: in normal flow at the top of the page, under the
+   status bar on phones (the page's top padding clears the safe area). */
 .dashboard-header {
 	min-height: 36px;
 }
@@ -732,39 +728,7 @@ body.search-active .dashboard-wallpaper {
 	z-index: 30;
 }
 @media (max-width: 767px) {
-	.dashboard-header-wrap {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 30;
-		padding: env(safe-area-inset-top, 0px) 1.25rem 0.5rem;
-		background: linear-gradient(
-			to bottom,
-			rgba(15, 15, 17, 0.7) 0%,
-			rgba(15, 15, 17, 0.45) 70%,
-			transparent 100%
-		);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-	}
-	.dashboard-header {
-		padding-right: 0;
-		margin-bottom: 0;
-	}
-}
-@media (max-width: 767px) {
-	.theme-light .dashboard-header-wrap {
-		background: linear-gradient(
-			to bottom,
-			rgba(255, 255, 255, 0.8) 0%,
-			rgba(255, 255, 255, 0.55) 70%,
-			transparent 100%
-		);
-	}
-	/* fade-in-up's filled end state is an identity transform, which would
-	   make this wrapper the containing block for the fixed search dock. */
-	.launcher-host { animation-name: fade-in; }
+	.dashboard-header { padding-right: 0; }
 }
 .dashboard-header::before {
 	content: '';
@@ -2253,20 +2217,12 @@ body.search-active .hero-area {
 	.hero-search.is-open { transition: none; }
 }
 
-/* ── Phones: search docked at the bottom, in thumb reach ───────
-   The bar sits above the home indicator (and above the keyboard: Android
-   resizes the viewport via interactive-widget, iOS gets --kb-inset from
-   SearchBar). Results open upward as a separate card. The account button
-   sits at the right end of the same dock. */
+/* ── Phones: search above the apps ─────────────────────────────
+   The bar sits in the page under the clock and weather, and its results
+   open downward as a separate card, clear of the on-screen keyboard. The
+   account button floats in the bottom-right corner. */
 @media (max-width: 767px) {
-	.hero-area { margin-top: 0; margin-bottom: 0; }
-	.hero-slot {
-		position: fixed;
-		left: 12px;
-		right: 68px;
-		bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + var(--kb-inset, 0px));
-		z-index: 40;
-	}
+	.hero-area { margin-top: 0; margin-bottom: 1.5rem; }
 	.hero-search-form {
 		border-radius: 16px;
 		box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.55);
@@ -2277,26 +2233,17 @@ body.search-active .hero-area {
 	}
 	.hero-search .launcher-panel,
 	.hero-search.is-open .launcher-panel {
-		top: auto;
-		bottom: calc(100% + 8px);
-		right: -56px;
-		margin-top: 0 !important;
+		margin-top: 8px !important;
 		border-radius: 16px !important;
 		border-top: 1px solid var(--hero-search-border) !important;
-		max-height: calc(100dvh - var(--kb-inset, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 96px);
-		animation-name: launcher-up;
 	}
 	.launcher-footer-hint { display: none; }
 }
-@keyframes launcher-up {
-	from { opacity: 0; transform: translateY(6px); }
-	to { opacity: 1; transform: none; }
-}
 @keyframes launcher-spin { to { transform: rotate(360deg); } }
-/* Mobile account button: the right end of the bottom search dock. */
+/* Mobile account button: bottom-right, above the home indicator. */
 .dock-account {
 	right: 12px;
-	bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + var(--kb-inset, 0px));
+	bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
 }
 
 /* SVG key glyphs (Keys.svelte) — sized to the kbd's text. */
