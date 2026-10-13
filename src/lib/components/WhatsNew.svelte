@@ -5,11 +5,9 @@
 	import { browser } from '$app/environment';
 
 	// "What's new in vX.Y.Z": opens once after the version changes, with every
-	// release since the one the user last closed it on, and again from the
-	// version link in Configure (the `holm:whats-new` event).
+	// release since the one the user last closed it on.
 	const SEEN_KEY = 'holm_whats_new_seen';
 	const siteConfig = getContext('config');
-	const brandName = siteConfig?.branding?.name || 'Holm';
 
 	// Waits until onboarding and the password gate are out of the way.
 	let { ready = true } = $props();
@@ -17,8 +15,8 @@
 	let releases = $state([]);
 	let version = $state('');
 	let open = $state(false);
-	// Where Close records the version: 'server', 'local' (guest, or no
-	// database), or null when opened from Configure.
+	// Where Close records the version: 'server' or 'local' (guest, or no
+	// database).
 	let store = $state(null);
 	let checked = false;
 
@@ -49,15 +47,6 @@
 		open = true;
 	}
 
-	async function showCurrent() {
-		const res = await fetch('/api/whats-new?all=1').catch(() => null);
-		if (!res?.ok) return;
-		const data = await res.json();
-		({ version, releases } = data);
-		store = null;
-		open = true;
-	}
-
 	function close() {
 		open = false;
 		if (store === 'server') fetch('/api/whats-new/seen', { method: 'POST' }).catch(() => {});
@@ -69,13 +58,6 @@
 		if (!browser || !ready || checked || siteConfig?.whatsNew?.enabled === false) return;
 		checked = true;
 		check().catch(() => {});
-	});
-
-	$effect(() => {
-		if (!browser) return;
-		const onOpen = () => showCurrent();
-		window.addEventListener('holm:whats-new', onOpen);
-		return () => window.removeEventListener('holm:whats-new', onOpen);
 	});
 
 	$effect(() => {
@@ -93,12 +75,12 @@
 {#if open}
 	<div
 		use:portal
-		use:dialog={{ label: `What's new in ${brandName} ${version}`, onclose: close }}
+		use:dialog={{ label: `What's new in Holm ${version}`, onclose: close }}
 		class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4"
 	>
 		<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[80vh] overflow-hidden shadow-theme animate-modal-enter flex flex-col relative">
 			<div class="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border-card">
-				<span class="text-[0.8rem] font-semibold text-content">What's new in {brandName} <span class="font-mono">v{version}</span></span>
+				<span class="text-[0.8rem] font-semibold text-content">What's new in Holm <span class="font-mono">v{version}</span></span>
 				<button
 					class="bg-transparent border-none text-content-dim text-2xl cursor-pointer leading-none hover:text-content w-6 h-6 flex items-center justify-center"
 					onclick={close}

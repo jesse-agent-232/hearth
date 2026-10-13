@@ -10,16 +10,11 @@ import { whatsNewFor } from '$lib/whatsNew.js';
 // version they last closed it on. Signed-in users' last version is kept on
 // the server; the shared guest (auth off) and a Holm without a database keep
 // it in the browser and send it as `seen` (store: 'local').
-// ?all=1 returns the current release whatever was seen, for Configure's link.
 
 export async function GET({ cookies, url }) {
 	const user = getSessionUser(cookies, url);
 	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
 	const all = await releases();
-
-	if (url.searchParams.get('all') === '1') {
-		return json({ version, show: true, releases: all.filter((r) => r.version === version), store: null });
-	}
 
 	const local = !getAuth().enabled || !(await isDatabaseEnabled());
 	const seenParam = url.searchParams.get('seen');

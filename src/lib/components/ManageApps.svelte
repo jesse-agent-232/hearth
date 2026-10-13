@@ -13,9 +13,9 @@
 
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
-	const brandName = siteConfig?.branding?.name || 'Holm';
 	// Opens "What's new" for the running version (WhatsNew.svelte).
-	const showWhatsNew = () => window.dispatchEvent(new CustomEvent('holm:whats-new'));
+	// The version is Holm's whatever the branding says, and links to its repo.
+	const REPO_URL = 'https://github.com/man15h/holm';
 	// Off when database.enabled is false: credentials would have nowhere to live.
 	const integrationsEnabled = siteConfig?.integrations?.enabled !== false;
 	const { apps: catalogApps } = buildAppsFromConfig(siteConfig?.apps);
@@ -260,7 +260,7 @@
 							>Reset defaults</button>
 						{/if}
 						{#if version}
-							<button class="version-link block mt-1.5" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
+							<a class="version-link block mt-1.5" href={REPO_URL} target="_blank" rel="noopener noreferrer" title="Holm on GitHub">Holm v{version}</a>
 						{/if}
 					</div>
 				</div>
@@ -442,7 +442,7 @@
 						<button class="text-[0.7rem] text-content-dim bg-transparent border-none cursor-pointer hover:text-content transition-colors font-mono p-0" onclick={resetDefaults}>Reset defaults</button>
 					{/if}
 					{#if version}
-						<button class="version-link flush" onclick={showWhatsNew} title="What's new">{brandName} v{version}</button>
+						<a class="version-link flush" href={REPO_URL} target="_blank" rel="noopener noreferrer" title="Holm on GitHub">Holm v{version}</a>
 					{/if}
 				</div>
 				</div>
@@ -456,6 +456,7 @@
 	.version-link {
 		padding: 0 0.75rem;
 		text-align: left;
+		text-decoration: none;
 		background: transparent;
 		border: none;
 		cursor: pointer;
