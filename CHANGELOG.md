@@ -8,7 +8,6 @@ label, then at most about twelve words.
 ## 0.6.1 — 2026-10-13
 
 - **Fixed:** wallpaper missing after a reload.
-- **Fixed:** broken app icons now show their fallback.
 
 ## 0.6.0 — 2026-10-13
 
