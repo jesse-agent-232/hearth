@@ -11,7 +11,8 @@
 <style>
 	.corner-stack {
 		position: fixed;
-		z-index: 60;
+		/* Under the account menu (60), whose phone sheet covers the corner. */
+		z-index: 59;
 		right: 16px;
 		bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 		width: min(340px, calc(100vw - 24px));

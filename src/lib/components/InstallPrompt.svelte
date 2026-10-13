@@ -96,7 +96,8 @@
 <style>
 	.install-prompt {
 		position: fixed;
-		z-index: 60;
+		/* Under the account menu (60), whose phone sheet covers the bottom of the screen. */
+		z-index: 59;
 		/* Centred with margins, not a transform: slide-up animates transform. */
 		left: 0;
 		right: 0;
