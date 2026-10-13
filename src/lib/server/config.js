@@ -112,7 +112,7 @@ export function getPrivacyConfig() {
 }
 
 export function getWhatsNewConfig() {
-	return { enabled: getConfig().whats_new?.enabled !== false };
+	return { enabled: getConfig().changelog?.enabled !== false };
 }
 
 export function getTipsConfig() {
