@@ -1,4 +1,5 @@
 <script>
+	import { watchImage } from '$lib/imageLoad.js';
 	import { getIconSrc, getIconClass, handleIconError, getBrandIconClass, getBrandBgStyle } from '$lib/iconHelpers.js';
 
 	let {
@@ -12,6 +13,7 @@
 	} = $props();
 
 	let failed = $state(false);
+	let imgEl = $state(null);
 	let letterEl = $state(null);
 	let fontSize = $state('0.6rem');
 
@@ -28,15 +30,20 @@
 		}
 	});
 
+	// Not onerror=: on a server-rendered <img> that becomes an inline handler,
+	// which the CSP blocks (see imageLoad.js).
+	$effect(() => {
+		if (imgEl) return watchImage(imgEl, { onerror: onError });
+	});
+
 	function onError(e) {
 		const before = e.target.getAttribute('src');
 		if (icon) handleIconError(e, icon);
 		// No fallback to swap to (the failing URL already was the fallback):
-		// show the letter now rather than a blank tile.
+		// show the letter now rather than a blank tile. If the fallback fails
+		// too, this runs again and lands here.
 		if (e.target.getAttribute('src') === before || !e.target.src || e.target.src === window.location.href) {
 			failed = true;
-		} else {
-			e.target.onerror = () => { failed = true; };
 		}
 	}
 </script>
@@ -44,7 +51,7 @@
 {#if wrap}
 	<div class="app-icon-wrap {wrapSize} rounded-[22%] flex items-center justify-center relative overflow-hidden shrink-0 bg-surface-card-strong {className}" class:is-brand={src && !failed && iconStyle === 'colored' && icon?.brandExplicit && icon?.brandColor} style={src && !failed ? wrapBg : ''}>
 		{#if src && !failed}
-			<img {src} alt={name} class="{size} {imgClass}" onerror={onError} />
+			<img {src} alt={name} class="{size} {imgClass}" bind:this={imgEl} />
 		{:else}
 			<span
 				bind:this={letterEl}
@@ -55,7 +62,7 @@
 	</div>
 {:else}
 	{#if src && !failed}
-		<img {src} alt={name} class="{size} shrink-0 {imgClass} {className}" onerror={onError} />
+		<img {src} alt={name} class="{size} shrink-0 {imgClass} {className}" bind:this={imgEl} />
 	{:else}
 		<span
 			bind:this={letterEl}

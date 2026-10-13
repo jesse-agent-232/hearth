@@ -3,13 +3,14 @@
 // event before hydration isn't lost, and the CSP blocks inline handlers: an
 // image already cached when the page loaded never reported in and stayed
 // hidden. Use with `bind:this` in an $effect instead: this listens from then
-// on, and reports an image that had already finished. Returns the cleanup.
+// on, and reports an image that had already finished. Handlers get the
+// event, or `{ target: img }` for one that finished first. Returns the cleanup.
 export function watchImage(img, { onload, onerror } = {}) {
-	const load = () => onload?.();
-	const error = () => onerror?.();
+	const load = (e) => onload?.(e);
+	const error = (e) => onerror?.(e);
 	img.addEventListener('load', load);
 	img.addEventListener('error', error);
-	if (img.complete) (img.naturalWidth ? load : error)();
+	if (img.complete) (img.naturalWidth ? load : error)({ target: img });
 	return () => {
 		img.removeEventListener('load', load);
 		img.removeEventListener('error', error);
