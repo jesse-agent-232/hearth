@@ -43,7 +43,7 @@ export function compareVersions(a, b) {
  * Returns { show, releases, record }: `record` says the current version should
  * be stored now without showing anything.
  */
-export function whatsNewFor({ version, seen, known, enabled, releases }) {
+export function changelogFor({ version, seen, known, enabled, releases }) {
 	if (!seen && !known) return { show: false, releases: [], record: true };
 	if (seen && compareVersions(seen, version) >= 0) return { show: false, releases: [], record: false };
 	const since = (releases || []).filter(

@@ -6,7 +6,7 @@
 
 	// "What's new in vX.Y.Z": opens once after the version changes, with every
 	// release since the one the user last closed it on.
-	const SEEN_KEY = 'holm_whats_new_seen';
+	const SEEN_KEY = 'holm_changelog_seen';
 	const siteConfig = getContext('config');
 
 	// Waits until onboarding and the password gate are out of the way.
@@ -38,7 +38,7 @@
 
 	async function check() {
 		const seen = readSeen();
-		const res = await fetch(`/api/whats-new${seen ? `?seen=${encodeURIComponent(seen)}` : ''}`);
+		const res = await fetch(`/api/changelog${seen ? `?seen=${encodeURIComponent(seen)}` : ''}`);
 		if (!res.ok) return;
 		const data = await res.json();
 		if (data.store === 'local' && data.record) writeSeen(data.version);
@@ -49,13 +49,13 @@
 
 	function close() {
 		open = false;
-		if (store === 'server') fetch('/api/whats-new/seen', { method: 'POST' }).catch(() => {});
+		if (store === 'server') fetch('/api/changelog/seen', { method: 'POST' }).catch(() => {});
 		else if (store === 'local') writeSeen(version);
 		store = null;
 	}
 
 	$effect(() => {
-		if (!browser || !ready || checked || siteConfig?.whatsNew?.enabled === false) return;
+		if (!browser || !ready || checked || siteConfig?.changelog?.enabled === false) return;
 		checked = true;
 		check().catch(() => {});
 	});

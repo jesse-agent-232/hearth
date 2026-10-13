@@ -111,7 +111,7 @@ export function getPrivacyConfig() {
 	return getConfig().privacy || { enabled: false };
 }
 
-export function getWhatsNewConfig() {
+export function getChangelogConfig() {
 	return { enabled: getConfig().changelog?.enabled !== false };
 }
 
@@ -191,6 +191,6 @@ export async function getClientConfig({ authenticated = true, user = null } = {}
 		tips: getTipsConfig(),
 		integrations: { enabled: config.database?.enabled !== false },
 		version: APP_VERSION,
-		whatsNew: getWhatsNewConfig()
+		changelog: getChangelogConfig()
 	};
 }

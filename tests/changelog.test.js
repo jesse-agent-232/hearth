@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseChangelog, compareVersions, whatsNewFor } from '../src/lib/whatsNew.js';
+import { parseChangelog, compareVersions, changelogFor } from '../src/lib/changelog.js';
 
 const md = `# Changelog
 
@@ -44,41 +44,41 @@ test('compareVersions: numeric, not by text', () => {
 });
 
 test('a new user sees nothing, and the version is recorded', () => {
-	assert.deepEqual(whatsNewFor({ ...base, seen: null, known: false }), { show: false, releases: [], record: true });
+	assert.deepEqual(changelogFor({ ...base, seen: null, known: false }), { show: false, releases: [], record: true });
 });
 
 test('nothing new since the version last seen', () => {
-	assert.equal(whatsNewFor({ ...base, seen: '0.7.0', known: true }).show, false);
+	assert.equal(changelogFor({ ...base, seen: '0.7.0', known: true }).show, false);
 	// Running an older version than the one seen (a rollback) shows nothing.
-	assert.equal(whatsNewFor({ ...base, seen: '0.8.0', known: true }).show, false);
+	assert.equal(changelogFor({ ...base, seen: '0.8.0', known: true }).show, false);
 });
 
 test('one version on: that release', () => {
-	const r = whatsNewFor({ ...base, seen: '0.6.0', known: true });
+	const r = changelogFor({ ...base, seen: '0.6.0', known: true });
 	assert.equal(r.show, true);
 	assert.deepEqual(r.releases.map((x) => x.version), ['0.7.0']);
 	assert.equal(r.record, false);
 });
 
 test('skipped versions: every release since the last one seen', () => {
-	assert.deepEqual(whatsNewFor({ ...base, seen: '0.5.0', known: true }).releases.map((x) => x.version), ['0.7.0', '0.6.0']);
+	assert.deepEqual(changelogFor({ ...base, seen: '0.5.0', known: true }).releases.map((x) => x.version), ['0.7.0', '0.6.0']);
 });
 
 test('releases newer than the running version are left out', () => {
-	assert.deepEqual(whatsNewFor({ ...base, version: '0.6.0', seen: '0.5.0', known: true }).releases.map((x) => x.version), ['0.6.0']);
+	assert.deepEqual(changelogFor({ ...base, version: '0.6.0', seen: '0.5.0', known: true }).releases.map((x) => x.version), ['0.6.0']);
 });
 
 test('a user from before the dialog existed sees the current release only', () => {
-	assert.deepEqual(whatsNewFor({ ...base, seen: null, known: true }).releases.map((x) => x.version), ['0.7.0']);
+	assert.deepEqual(changelogFor({ ...base, seen: null, known: true }).releases.map((x) => x.version), ['0.7.0']);
 });
 
 test('turned off by the operator: never shown', () => {
-	const r = whatsNewFor({ ...base, enabled: false, seen: '0.5.0', known: true });
+	const r = changelogFor({ ...base, enabled: false, seen: '0.5.0', known: true });
 	assert.equal(r.show, false);
 	// Not recorded either, so turning it back on shows what was missed.
 	assert.equal(r.record, false);
 });
 
 test('a version with no notes: nothing shown, counted as seen', () => {
-	assert.deepEqual(whatsNewFor({ ...base, version: '0.7.1', seen: '0.7.0', known: true }), { show: false, releases: [], record: true });
+	assert.deepEqual(changelogFor({ ...base, version: '0.7.1', seen: '0.7.0', known: true }), { show: false, releases: [], record: true });
 });

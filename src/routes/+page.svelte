@@ -11,7 +11,7 @@
 	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
 	import Reminders from '$lib/components/Reminders.svelte';
 	import CornerStack from '$lib/components/CornerStack.svelte';
-	import WhatsNew from '$lib/components/WhatsNew.svelte';
+	import Changelog from '$lib/components/Changelog.svelte';
 	import WallpaperBackground from '$lib/components/WallpaperBackground.svelte';
 
 	import DynamicFavicon from '$lib/components/DynamicFavicon.svelte';
@@ -230,7 +230,7 @@
 		<Reminders />
 		<MiniPlayer />
 	</CornerStack>
-	<WhatsNew ready={onboarded && !passwordGate} />
+	<Changelog ready={onboarded && !passwordGate} />
 
 	<!-- Post-login onboarding (only when auth + onboarding enabled) -->
 	{#if authEnabled && onboardingEnabled && !onboarded && !passwordGate}

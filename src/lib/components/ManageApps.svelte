@@ -13,7 +13,6 @@
 
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
-	// Opens "What's new" for the running version (WhatsNew.svelte).
 	// The version is Holm's whatever the branding says, and links to its repo.
 	const REPO_URL = 'https://github.com/man15h/holm';
 	// Off when database.enabled is false: credentials would have nowhere to live.

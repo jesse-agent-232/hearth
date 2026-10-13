@@ -1,7 +1,7 @@
 import { marked } from 'marked';
 import { version as APP_VERSION } from '../../../package.json';
 import changelog from '../../../CHANGELOG.md?raw';
-import { parseChangelog } from '$lib/whatsNew.js';
+import { parseChangelog } from '$lib/changelog.js';
 
 // CHANGELOG.md is bundled at build time, so an instance never asks GitHub.
 // Its notes are rendered once, the first time they're asked for.
