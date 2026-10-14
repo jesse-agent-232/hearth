@@ -58,11 +58,11 @@ test.describe('Widget surface', () => {
 		}
 	});
 
-	test('edit mode swaps in the app tray', async ({ page }) => {
+	test('edit mode toggles between Edit and Done', async ({ page }) => {
 		await page.locator('button', { hasText: /^edit$/i }).click();
-		await expect(page.locator('.app-tray')).toBeVisible({ timeout: 4000 });
+		await expect(page.locator('button', { hasText: 'Done' })).toBeVisible({ timeout: 4000 });
 		await page.locator('button', { hasText: 'Done' }).click();
-		await expect(page.locator('.app-tray')).not.toBeVisible();
+		await expect(page.locator('button', { hasText: /^edit$/i })).toBeVisible();
 	});
 });
 
