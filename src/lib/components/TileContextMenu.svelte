@@ -44,14 +44,23 @@
 		});
 	});
 
-	// Dismiss on outside click.
+	// Dismiss on outside click, or on Escape (focus goes back to the tile).
 	$effect(() => {
 		if (!browser) return;
 		function dismiss(e) {
 			if (menuEl && !menuEl.contains(e.target)) onclose();
 		}
+		function onkey(e) {
+			if (e.key !== 'Escape') return;
+			onclose();
+			anchor?.focus();
+		}
 		window.addEventListener('click', dismiss);
-		return () => window.removeEventListener('click', dismiss);
+		window.addEventListener('keydown', onkey);
+		return () => {
+			window.removeEventListener('click', dismiss);
+			window.removeEventListener('keydown', onkey);
+		};
 	});
 </script>
 
