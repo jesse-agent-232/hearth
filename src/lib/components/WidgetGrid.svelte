@@ -299,19 +299,18 @@
 
 	function openGuide(app) {
 		contextApp = null;
-		guideFromClick = false;
 		guideApp = app;
 	}
 
 	// Apps whose guide opens on a plain click (onboarding.guides_on_click, or
 	// setup_guide.open_on_click per app), until this user opts out from the
 	// guide itself.
-	let guideFromClick = $state(false);
-	function guideOnClick(app) {
+	function guideClickable(app) {
 		const guide = setupGuides[app.name];
-		if (!guide) return false;
-		const on = guide.openOnClick ?? siteConfig?.onboarding?.guides_on_click === true;
-		return on && !($prefs.guidesDismissed || []).includes(app.id);
+		return !!guide && (guide.openOnClick ?? siteConfig?.onboarding?.guides_on_click === true);
+	}
+	function guideOnClick(app) {
+		return guideClickable(app) && !($prefs.guidesDismissed || []).includes(app.id);
 	}
 
 	function dismissGuide(app, dismissed) {
@@ -321,7 +320,6 @@
 
 	function closeGuide() {
 		guideApp = null;
-		guideFromClick = false;
 	}
 
 	let searchInput = $state('');
@@ -646,7 +644,6 @@
 							// Ctrl/⌘-click still opens a new tab.
 							if (!e.metaKey && !e.ctrlKey && guideOnClick(app)) {
 								e.preventDefault();
-								guideFromClick = true;
 								guideApp = app;
 								return;
 							}
@@ -741,7 +738,7 @@
 		app={guideApp}
 		guide={setupGuides[guideApp.name]}
 		{iconStyle}
-		fromClick={guideFromClick}
+		dismissible={guideClickable(guideApp)}
 		{openInNewTab}
 		dismissed={($prefs.guidesDismissed || []).includes(guideApp.id)}
 		ondismiss={(d) => dismissGuide(guideApp, d)}
