@@ -75,8 +75,8 @@ customization:
 #   app_store       Optional: { ios, android } links for onboarding.
 #   browser_extension  Optional URL for onboarding.
 #   setup_guide     Optional Getting started card (browser or mobile app), from the tile's right-click menu.
-#                   open_on_click: true / false overrides onboarding.guides_on_click
-#                   for this app.
+#                   on_click: true opens it on a plain click, until the user
+#                   ticks "Don't show again".
 apps:
   - id: photos
     name: "Photos"
@@ -90,6 +90,7 @@ apps:
       android: "https://play.google.com/store/apps/details?id=app.alextran.immich"
     setup_guide:
       subtitle: "Immich - Auto backup your photos & videos"
+      on_click: true
       steps:
         - label: "Download the app"
           desc: "Get Immich from the App Store or Play Store."
@@ -321,7 +322,6 @@ weather:
 # ── Onboarding ──────────────────────────────────────────────
 onboarding:
   enabled: true
-  guides_on_click: true                       # A plain click on an app with a setup_guide opens its Getting started card, until the user ticks "Don't show again"
   welcome_text: "A self-hosted server for your household. Your data stays on your hardware — no third-party clouds, no tracking, no ads."
   # services:                                 # Optional: pick specific apps by ID with custom descriptions
   #   - id: photos                            # References app ID from apps config (icon auto-resolved)

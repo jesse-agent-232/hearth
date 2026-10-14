@@ -302,12 +302,12 @@
 		guideApp = app;
 	}
 
-	// Apps whose guide opens on a plain click (onboarding.guides_on_click, or
-	// setup_guide.open_on_click per app), until this user opts out from the
+	// Apps whose guide opens on a plain click (setup_guide.on_click), until
+	// this user opts out from the
 	// guide itself.
 	function guideClickable(app) {
 		const guide = setupGuides[app.name];
-		return !!guide && (guide.openOnClick ?? siteConfig?.onboarding?.guides_on_click === true);
+		return !!guide?.onClick;
 	}
 	function guideOnClick(app) {
 		return guideClickable(app) && !($prefs.guidesDismissed || []).includes(app.id);

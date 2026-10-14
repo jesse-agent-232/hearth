@@ -47,9 +47,8 @@ export function buildAppsFromConfig(appsConfig) {
 				title: `${item.name} setup`,
 				subtitle: item.setup_guide.subtitle || item.name,
 				steps: item.setup_guide.steps || [],
-				// Whether a plain click on the tile shows the guide; unset
-				// follows onboarding.guides_on_click.
-				openOnClick: typeof item.setup_guide.open_on_click === 'boolean' ? item.setup_guide.open_on_click : null
+				// A plain click on the tile shows the guide instead of the app.
+				onClick: item.setup_guide.on_click === true
 			};
 		}
 	}
