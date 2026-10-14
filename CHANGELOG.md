@@ -5,6 +5,14 @@ section in its "What's new" dialog, so each entry is written for the people
 using it. Headings are `## <version> — <date>`. One line per change: a bold
 label, then at most about twelve words.
 
+## 0.7.0 — 2026-10-15
+
+- **Glass to taste.** Configure → Appearance → Glass: Clear, Frosted or Solid.
+- **Your clock, your units.** 12- or 24-hour and °C or °F, from the clock and weather menus.
+- **Getting started.** Apps can open a browser or mobile-app guide on click.
+- **Change your password during onboarding**, with a new `password` slide.
+- **Fixed:** a shared browser no longer carries someone else's settings into your account.
+
 ## 0.6.2 — 2026-10-13
 
 - **Fixed:** upgrading from 0.5.0 shows every release since, not just the latest.
