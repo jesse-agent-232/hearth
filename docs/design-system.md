@@ -311,7 +311,7 @@ Appearance → Glass** sets `data-glass` on `<html>`.
 | `segmented` / `segmented-item` | Two-to-four-way choices (Theme, Icon style) |
 | `glass-check`             | Checkboxes                                |
 
-Three rules the browser enforces:
+Four rules the browser enforces:
 
 - **Never put `backdrop-filter` on a modal's wrapper.** It becomes the
   backdrop root and the card inside blurs nothing. `modal-veil` paints its dim
@@ -320,6 +320,10 @@ Three rules the browser enforces:
   below 1 also makes it a backdrop root, so the blur appears only when the
   fade ends and the modal flashes. `modal-veil` fades its own layer instead;
   animate the card, not the wrapper.
+- **A menu inside a glass modal can't be glass.** The modal's blur makes it
+  the backdrop root, so the menu's own blur does nothing and its tint shows
+  the rows under it. Give it `bg-surface-modal` (the integration card's ⋯
+  menu does).
 - **Write only the unprefixed `backdrop-filter`.** The build adds the
   `-webkit-` copy; writing both by hand makes the minifier keep only the
   prefixed one, which Chrome ignores.

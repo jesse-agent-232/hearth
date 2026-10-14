@@ -562,8 +562,10 @@ body:not(.theme-dark) :is(.app-icon-wrap, .app-tile-icon) img[src$="/di/karakeep
 .wallpaper-active .surface-footer .edit-chip,
 .wallpaper-active .surface-actions .tray-reset,
 .wallpaper-active .surface-actions .tray-done {
+	/* A dark tint whatever the theme, for the white text; the blur follows
+	   the glass level. */
 	background: rgba(0,0,0,0.22);
-	backdrop-filter: blur(12px);
+	backdrop-filter: var(--glass-blur);
 	border-color: rgba(255,255,255,0.22);
 	color: rgba(255,255,255,0.85);
 	opacity: 1;
@@ -1170,149 +1172,6 @@ body.search-active .launcher-host { z-index: 40; }
 	pointer-events: none;
 }
 
-.app-tray {
-	width: 100%;
-	height: 100%;
-	padding: 0;
-	border-radius: 14px;
-	border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
-	background: rgba(15, 15, 17, 0.72);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	display: flex;
-	align-items: center;
-}
-
-/* Edge fade — conditional via .fade-left / .fade-right */
-.app-tray-fade {
-	flex: 1;
-	min-width: 0;
-	overflow: hidden;
-}
-.app-tray-fade.fade-right {
-	-webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
-	mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
-}
-.app-tray-fade.fade-left {
-	-webkit-mask-image: linear-gradient(to right, transparent, black 2rem);
-	mask-image: linear-gradient(to right, transparent, black 2rem);
-}
-.app-tray-fade.fade-left.fade-right {
-	-webkit-mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
-	mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
-}
-
-.app-tray-scroller {
-	display: flex;
-	flex-wrap: nowrap;
-	overflow-x: auto;
-	gap: 0.75rem;
-	padding: 0.25rem 0.75rem;
-	scrollbar-width: none;
-}
-.app-tray-scroller::-webkit-scrollbar { display: none; }
-
-.app-tray-empty {
-	font-size: 0.7rem;
-	color: var(--text-dim);
-	padding: 0.5rem 0.75rem;
-	font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
-}
-
-/* Left / right nav arrows */
-.app-tray-arrow {
-	flex: 0 0 auto;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 28px;
-	background: transparent;
-	border: none;
-	color: var(--text-muted);
-	cursor: pointer;
-	padding: 0;
-	transition: color 150ms;
-}
-.app-tray-arrow:hover { color: var(--text); }
-
-.app-tray-actions {
-	flex: 0 0 auto;
-	display: flex;
-	align-items: center;
-	gap: 0.25rem;
-	padding-right: 0.5rem;
-	margin-left: 0.5rem;
-}
-@media (max-width: 767px) {
-	.app-tray { flex-wrap: wrap; }
-	.app-tray-actions { flex-basis: 100%; justify-content: flex-end; margin-left: 0; padding: 0.25rem 0.5rem; }
-}
-.app-tray-reset {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 28px;
-	padding: 0 0.5rem;
-	background: transparent;
-	border: none;
-	border-radius: 8px;
-	color: var(--text-muted);
-	font-size: 0.72rem;
-	font-weight: 500;
-	cursor: pointer;
-	transition: color 150ms, background 150ms;
-}
-.app-tray-reset:hover {
-	color: var(--text);
-	background: rgba(255, 255, 255, 0.06);
-}
-.app-tray-done {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 28px;
-	padding: 0 0.625rem;
-	background: transparent;
-	border: 1px solid var(--border-card, rgba(255, 255, 255, 0.12));
-	border-radius: 8px;
-	color: var(--text);
-	font-size: 0.72rem;
-	font-weight: 500;
-	cursor: pointer;
-	transition: background 150ms, border-color 150ms;
-}
-.app-tray-done:hover {
-	background: rgba(255, 255, 255, 0.06);
-	border-color: var(--border-card, rgba(255, 255, 255, 0.2));
-}
-@media (min-width: 768px) {
-	.app-tray-done { padding: 0 0.75rem; }
-}
-
-.app-tray-item {
-	flex: 0 0 auto;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-	background: transparent;
-	border: 1px solid transparent;
-	border-radius: 12px;
-	cursor: grab;
-	/* Allow horizontal swipe to scroll the strip; the long-press gate
-	   in JS takes over once the user actually holds an icon. */
-	touch-action: pan-x;
-	-webkit-touch-callout: none;
-	user-select: none;
-	-webkit-user-select: none;
-}
-.app-tray-item:hover { border-color: var(--border-card, rgba(255, 255, 255, 0.1)); }
-.app-tray-item:active { cursor: grabbing; }
-.app-tray-item-selected {
-	border-color: var(--accent, #f5b942);
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #f5b942) 30%, transparent);
-}
-
 /* × remove badge on each app icon during edit mode */
 .app-remove-x {
 	position: absolute;
@@ -1390,12 +1249,6 @@ body.search-active .launcher-host { z-index: 40; }
 	border-color: var(--accent, #f5b942) !important;
 }
 .drop-target-hover .drop-overlay {
-	background: rgba(15, 15, 17, 0.85);
-}
-
-/* Tray becomes a drop target while dragging a placed app back. */
-.app-tray.tray-drop-hover {
-	border-color: var(--accent, #f5b942);
 	background: rgba(15, 15, 17, 0.85);
 }
 

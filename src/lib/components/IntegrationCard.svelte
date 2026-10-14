@@ -352,6 +352,8 @@
 						</svg>
 					</button>
 					{#if contextOpen}
+						<!-- Solid, not glass: inside the Configure modal's own backdrop blur
+						     a second blur doesn't apply, so a glass menu shows the rows under it. -->
 						<div class="absolute right-0 {menuUp ? 'bottom-full mb-1' : 'top-full mt-1'} bg-surface-modal border border-border-card rounded-lg shadow-theme z-50 min-w-[140px] py-1">
 							<button
 								class="w-full px-3 py-1.5 text-left text-[0.75rem] text-content-muted bg-transparent border-none cursor-pointer hover:bg-surface-card-hover transition-colors"
