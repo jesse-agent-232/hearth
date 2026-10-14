@@ -303,11 +303,16 @@
 		guideApp = app;
 	}
 
-	// Apps whose guide is set to open on a plain click, until this user
-	// opts out from the guide itself.
+	// Apps whose guide opens on a plain click (onboarding.guides_on_click, or
+	// setup_guide.open_on_click per app), until this user opts out from the
+	// guide itself.
 	let guideFromClick = $state(false);
-	const guideOnClick = (app) =>
-		!!setupGuides[app.name]?.openOnClick && !($prefs.guidesDismissed || []).includes(app.id);
+	function guideOnClick(app) {
+		const guide = setupGuides[app.name];
+		if (!guide) return false;
+		const on = guide.openOnClick ?? siteConfig?.onboarding?.guides_on_click === true;
+		return on && !($prefs.guidesDismissed || []).includes(app.id);
+	}
 
 	function dismissGuide(app, dismissed) {
 		const rest = ($prefs.guidesDismissed || []).filter((id) => id !== app.id);
@@ -638,7 +643,8 @@
 								longPressFired = false;
 								return;
 							}
-							if (guideOnClick(app)) {
+							// Ctrl/⌘-click still opens a new tab.
+							if (!e.metaKey && !e.ctrlKey && guideOnClick(app)) {
 								e.preventDefault();
 								guideFromClick = true;
 								guideApp = app;

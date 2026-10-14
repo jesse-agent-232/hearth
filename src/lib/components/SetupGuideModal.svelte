@@ -19,6 +19,8 @@
 		onclose
 	} = $props();
 
+	const touch = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
+
 	let urlCopied = $state(false);
 	let urlCopiedTimer;
 	function copyUrl(url) {
@@ -107,7 +109,14 @@
 		</div>
 		{/if}
 		{#if fromClick}
-		<div class="px-6 py-4 border-t border-border-card flex items-center justify-between gap-3">
+		<div class="px-6 py-4 border-t border-border-card">
+		<!-- The right-click / long-press menu is where the guide lives once it
+		     stops opening on click; say so before the user turns that off. -->
+		<div class="flex items-start gap-2 mb-3 px-3 py-2 rounded-lg bg-surface-input border border-border-card text-[0.72rem] leading-snug text-content-muted font-mono">
+			<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 mt-px shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>
+			<span>Tip: {touch ? 'press and hold' : 'right-click'} {app.name} any time to see this guide again.</span>
+		</div>
+		<div class="flex items-center justify-between gap-3">
 			<label class="flex items-center gap-2 text-[0.75rem] text-content-muted font-mono cursor-pointer select-none">
 				<input type="checkbox" class="guide-dismiss" checked={dismissed} onchange={(e) => ondismiss(e.currentTarget.checked)} />
 				Don’t show again
@@ -119,6 +128,7 @@
 				class="shrink-0 py-2 px-3.5 rounded-[10px] text-[0.8rem] font-medium font-mono no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-hover transition-colors"
 				onclick={() => { onopenapp(); onclose(); }}
 			>Open {app.name}</a>
+		</div>
 		</div>
 		{/if}
 	</div>
