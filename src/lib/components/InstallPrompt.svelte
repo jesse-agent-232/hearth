@@ -27,6 +27,10 @@
 		// and local dev runs aren't dominated by the install card.
 		if (devMode) return;
 
+		// Phone-sized screens only, the same breakpoint as the phone layout.
+		// Desktop browsers offer install from their own address bar.
+		if (!window.matchMedia('(max-width: 767px)').matches) return;
+
 		const ua = navigator.userAgent;
 		// iPadOS reports itself as a Mac; touch points give it away.
 		const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
