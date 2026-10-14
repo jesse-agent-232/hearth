@@ -10,8 +10,16 @@ const WALLPAPER_KEY = 'holm_wallpaper';
 function loadPrefs() {
 	if (!browser) return {};
 	try {
-		const prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-		// Restore visual prefs from persistent keys if prefs were cleared (e.g. after logout)
+		return withDeviceVisuals(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {});
+	} catch {
+		return {};
+	}
+}
+
+// Theme, icon style and wallpaper are kept per device so they survive
+// logout; fill them in wherever prefs leave them unset.
+function withDeviceVisuals(prefs) {
+	try {
 		if (!prefs.theme) {
 			const savedTheme = localStorage.getItem(THEME_KEY);
 			if (savedTheme) prefs.theme = savedTheme;
@@ -20,7 +28,7 @@ function loadPrefs() {
 			const savedIconStyle = localStorage.getItem(ICON_STYLE_KEY);
 			if (savedIconStyle) prefs.iconStyle = savedIconStyle;
 		}
-		if (!prefs.wallpaperId) {
+		if (prefs.wallpaperId === undefined) {
 			const saved = localStorage.getItem(WALLPAPER_KEY);
 			if (saved) {
 				try {
@@ -30,10 +38,8 @@ function loadPrefs() {
 				} catch {}
 			}
 		}
-		return prefs;
-	} catch {
-		return {};
-	}
+	} catch {}
+	return prefs;
 }
 
 function saveLocal(prefs) {
@@ -109,36 +115,26 @@ function createPrefsStore() {
 		},
 
 		/**
-		 * Merge prefs the server rendered with the page over localStorage.
-		 * Synchronous apart from the one-time migration PUT, so the dashboard
-		 * can render on hydration instead of waiting on a /api/prefs round trip.
+		 * Take the signed-in user's prefs from the server, which rendered them
+		 * with the page, so the dashboard renders on hydration with no
+		 * /api/prefs round trip. The server is the source: the browser's saved
+		 * prefs are not merged in or pushed up, since this browser may have
+		 * belonged to someone else, and a cleared account must stay cleared.
+		 * Only this device's theme, icon style and wallpaper fill gaps.
 		 */
-		applyServerPrefs(serverPrefs) {
+		applyServerPrefs(serverPrefs, { name, username }) {
 			if (!browser) return;
-			try {
-				serverPrefs = serverPrefs || {};
-				const localPrefs = loadPrefs();
-
-				// Migration: if server is empty but local has data, seed the server
-				if (Object.keys(serverPrefs).length === 0 && Object.keys(localPrefs).length > 0) {
-					const { name, username, groups, adminApps, ...toSync } = localPrefs;
-					fetch('/api/prefs', {
-						method: 'PUT',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(toSync)
-					}).catch(() => {});
-					serverSyncEnabled = true;
-					return; // local prefs are already correct
-				}
-
-				// Merge: server wins, but keep local-only fields if server doesn't have them
-				const merged = { ...localPrefs, ...serverPrefs };
-				saveLocal(merged);
-				_set(merged);
-				serverSyncEnabled = true;
-			} catch {
-				// Server unreachable — localStorage-only mode
-			}
+			const next = withDeviceVisuals({
+				...(serverPrefs || {}),
+				name,
+				username,
+				firstLoginAt: serverPrefs?.firstLoginAt || new Date().toISOString()
+			});
+			saveLocal(next);
+			_set(next);
+			serverSyncEnabled = true;
+			const filled = ['firstLoginAt', 'theme', 'iconStyle', 'wallpaperId'].some((k) => next[k] !== undefined && next[k] !== serverPrefs?.[k]);
+			if (filled) debouncedServerSync(next);
 		}
 	};
 }

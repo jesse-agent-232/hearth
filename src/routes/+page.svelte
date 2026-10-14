@@ -64,14 +64,15 @@
 		prefs.reset();
 	}
 
-	// Sync auth info into prefs on every authenticated load. Server prefs come
-	// with the page data, so this is synchronous and the server-rendered
-	// dashboard stays on screen through hydration.
+	// Signed in: prefs come from the server with the page data, so this is
+	// synchronous and the server-rendered dashboard stays on screen through
+	// hydration. With auth off there is no account, so prefs stay local.
 	if (browser && loggedIn) {
-		prefs.update((p) => {
-			return { ...p, name: data.authName, username: data.authUsername, firstLoginAt: p.firstLoginAt || new Date().toISOString() };
-		});
-		if (data.prefs) prefs.applyServerPrefs(data.prefs);
+		if (data.prefs) {
+			prefs.applyServerPrefs(data.prefs, { name: data.authName, username: data.authUsername });
+		} else {
+			prefs.update((p) => ({ ...p, name: data.authName, username: data.authUsername, firstLoginAt: p.firstLoginAt || new Date().toISOString() }));
+		}
 	}
 
 	// Also decided at top level (not only in the effect) so the server render
@@ -81,10 +82,13 @@
 		if ($prefs.onboarded) onboarded = true;
 	});
 
-	// First-login screens show one at a time: password gate, then onboarding,
+	// First-login screens show one at a time: onboarding (with its password
+	// slide, if listed), then the password gate for anyone who still needs it,
 	// then the install bar. Mirrors PasswordChangePrompt's own `blocked` check.
 	const passwordGate = $derived(
 		authEnabled &&
+		onboarded &&
+		!!siteConfig?.onboarding?.slides?.some((s) => s.type === 'password') &&
 		!!siteConfig?.auth?.password_change_url &&
 		!$prefs.passwordVerified &&
 		!!$prefs.firstLoginAt
@@ -182,7 +186,7 @@
 {:else if showDashboard}
 	<!-- Password change gate (only when auth + password_change_url configured) -->
 	{#if authEnabled}
-		<PasswordChangePrompt />
+		<PasswordChangePrompt ready={onboarded} />
 	{/if}
 	<!-- Dashboard -->
 	{#if wallpapersEnabled && theme === 'auto' && (viewPrefs.wallpaperEnabled !== false)}
@@ -196,7 +200,7 @@
 		<!-- Fixed top offset rather than vertical centring: centring would move
 		     the search bar whenever the content grows, e.g. entering edit mode.
 		     The flex-1 spacer below pushes the footer to the viewport bottom. -->
-		<div class="shrink-0 h-[18vh] max-md:hidden"></div>
+		<div class="shrink-0 h-[12vh] max-md:hidden"></div>
 		<!-- Phones: share the free height with the spacer above the footer, so
 		     the clock and search come down within a thumb's reach. Capped so the
 		     header starts no lower than a quarter of the screen; a full grid
@@ -241,7 +245,7 @@
 	<Changelog ready={onboarded && !passwordGate} />
 
 	<!-- Post-login onboarding (only when auth + onboarding enabled) -->
-	{#if authEnabled && onboardingEnabled && !onboarded && !passwordGate}
+	{#if authEnabled && onboardingEnabled && !onboarded}
 		<OnboardingModal oncomplete={onOnboardingComplete} authName={data.authName} authUsername={data.authUsername} devMode={data.devMode} />
 	{/if}
 {/if}

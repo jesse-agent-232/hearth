@@ -18,6 +18,7 @@
 	const welcomeText = onboardingConfig.welcome_text || 'Your data stays on your hardware — no third-party clouds, no tracking, no ads.';
 	const slideHeight = onboardingConfig.slide_height || null;
 	const registrationConfig = siteConfig?.auth?.registration;
+	const passwordChangeUrl = siteConfig?.auth?.password_change_url;
 	const privacyConfig = siteConfig?.privacy || {};
 	const privacyHtml = privacyConfig.html || null;
 	// Only someone who can open the privacy notice is asked to agree to it.
@@ -80,6 +81,15 @@
 		step = 'done';
 		prefs.update((p) => ({ ...p, name: authName, username: authUsername, onboarded: true, firstLoginAt: p.firstLoginAt || new Date().toISOString() }));
 		oncomplete();
+	}
+
+	// The password slide's link opens in a new tab; "Done, continue" unlocks
+	// once it has been opened, then records the change and moves on.
+	let passwordOpened = $state(false);
+	function passwordDone() {
+		prefs.update((p) => ({ ...p, passwordVerified: true }));
+		if (slide < totalSlides - 1) next();
+		else finish();
 	}
 
 
@@ -151,15 +161,28 @@
 				{ title: 'Enable 2FA', desc: 'Use a TOTP app like Aegis or Google Authenticator for all your accounts' },
 				{ title: 'Watch for phishing', desc: 'Only enter credentials at your auth provider' }
 			]
+		},
+		password: {
+			icon: 'key-round',
+			title: 'Change password',
+			subtitle: 'Replace the one you were given',
+			items: [
+				{ text: 'Pick something **only you** know' },
+				{ text: 'Save it in your **password manager**' },
+				{ text: 'It opens in a **new tab**; come back here when you are done' }
+			]
 		}
 	};
 
 	// Build slides from config — merge with type defaults for list-based slides
-	const listTypes = new Set(['privacy', 'security', 'list']);
+	const listTypes = new Set(['privacy', 'security', 'list', 'password']);
 	// The old 'weather' slide asked for location up front; the location is
 	// now set from the weather pill itself, so the type is skipped even when
 	// an existing config still lists it.
-	const configSlides = (onboardingConfig.slides || [{ type: 'welcome' }, { type: 'services' }]).filter(s => s.type !== 'weather');
+	// The password slide asks only while there is a password to change.
+	const configSlides = (onboardingConfig.slides || [{ type: 'welcome' }, { type: 'services' }])
+		.filter(s => s.type !== 'weather')
+		.filter(s => s.type !== 'password' || (passwordChangeUrl && !$prefs.passwordVerified));
 	const slides = configSlides.map(s => {
 		if (listTypes.has(s.type)) {
 			const defaults = slideDefaults[s.type] || {};
@@ -299,7 +322,7 @@
 						<p class="text-content-dim text-[0.7rem] mt-auto pt-4 text-center">All self-hosted on our hardware. Your data never leaves.</p>
 					</div>
 
-				{:else if currentSlideType() === 'privacy' || currentSlideType() === 'security' || currentSlideType() === 'list'}
+				{:else if listTypes.has(currentSlideType())}
 					{@const s = slides[slide]}
 					{@const defaultListIcon = resolveSlideIcon(s.list_icon || 'check')}
 					<div class="flex flex-col w-full">
@@ -324,6 +347,15 @@
 								</div>
 							{/each}
 						</div>
+						{#if s.type === 'password'}
+							<a
+								href={passwordChangeUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								onclick={() => passwordOpened = true}
+								class="self-center mt-5 py-2.5 px-6 rounded-[10px] text-[0.85rem] font-medium font-mono no-underline cursor-pointer login-btn"
+							>Change password</a>
+						{/if}
 						{#if s.footer}
 							<p class="text-content-dim/50 text-[0.7rem] mt-auto pt-4 text-center">{s.footer}</p>
 						{/if}
@@ -356,7 +388,13 @@
 						disabled={slide === 0}
 						onclick={back}
 					>Back</button>
-					{#if slide === totalSlides - 1}
+					{#if currentSlideType() === 'password'}
+					<button
+						class="py-2 px-5 rounded-lg text-[0.8rem] font-mono cursor-pointer transition-colors duration-150 login-btn disabled:opacity-40 disabled:cursor-default"
+						disabled={!passwordOpened}
+						onclick={passwordDone}
+					>Done, continue</button>
+					{:else if slide === totalSlides - 1}
 					<button
 						class="py-2 px-5 rounded-lg text-[0.8rem] font-mono cursor-pointer transition-colors duration-150 login-btn"
 						onclick={finish}
