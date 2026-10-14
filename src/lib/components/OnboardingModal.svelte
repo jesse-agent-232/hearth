@@ -173,6 +173,21 @@
 	function currentSlideType() {
 		return slides[slide]?.type;
 	}
+
+	// The services list keeps every blurb whole and scrolls inside the slide;
+	// a fade on the bottom edge says there is more until the end is reached.
+	let servicesEl = $state();
+	let servicesMore = $state(false);
+	function checkServices() {
+		if (servicesEl) servicesMore = servicesEl.scrollTop + servicesEl.clientHeight < servicesEl.scrollHeight - 4;
+	}
+	$effect(() => {
+		if (!servicesEl) return;
+		const ro = new ResizeObserver(checkServices);
+		ro.observe(servicesEl);
+		checkServices();
+		return () => ro.disconnect();
+	});
 </script>
 
 {#if step === 'welcome'}
@@ -267,16 +282,16 @@
 					</div>
 
 				{:else if currentSlideType() === 'services'}
-					<div class="flex flex-col w-full">
+					<div class="flex flex-col w-full h-full min-h-0">
 						<h2 class="text-[1.2rem] font-semibold mb-1 text-center">What you get</h2>
 						<p class="text-content-dim text-[0.75rem] mb-5 text-center">Included with your account — no extra cost</p>
-						<div class="space-y-1">
+						<div class="services-list min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-1" class:more={servicesMore} bind:this={servicesEl} onscroll={checkServices}>
 							{#each services as svc, i}
-								<div class="flex items-center gap-3 px-2 py-2.5 min-w-0 overflow-hidden">
+								<div class="flex items-start gap-3 px-2 py-2.5 min-w-0">
 									<AppIcon icon={svc.icon} name={svc.name} size="w-4 h-4" wrapSize="w-6 h-6" wrap />
 									<div class="flex flex-col min-w-0">
 										<span class="text-[0.8rem] text-content font-medium">{svc.name}</span>
-										{#if svc.desc}<span class="text-[0.7rem] text-content-dim truncate">{svc.desc}</span>{/if}
+										{#if svc.desc}<span class="text-[0.7rem] text-content-dim leading-snug">{svc.desc}</span>{/if}
 									</div>
 								</div>
 							{/each}
@@ -360,6 +375,10 @@
 {/if}
 
 <style>
+	.services-list.more {
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+		-webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+	}
 	.onboarding-privacy-md :global(h1),
 	.onboarding-privacy-md :global(h2),
 	.onboarding-privacy-md :global(h3) {
