@@ -128,7 +128,9 @@ function queryOne(sql, params = []) {
 
 export async function getUserPrefs(username) {
 	await ensureInit();
-	if (!db) return {};
+	// No database, no server copy: null tells the page to keep this
+	// browser's prefs rather than replace them with an empty set.
+	if (!db) return null;
 	const row = queryOne('SELECT prefs_json FROM user_prefs WHERE username = ?', [username]);
 	if (!row) return {};
 	try { return JSON.parse(row.prefs_json); }
