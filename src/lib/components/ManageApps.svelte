@@ -164,7 +164,7 @@
 
 	// Reset is appearance-only: bookmarks (customApps) and the tile layout are
 	// left alone. The button offers Undo for a few seconds afterwards.
-	const RESET_KEYS = ['visibleApps', 'iconStyle', 'theme', 'wallpaperEnabled', 'wallpaperId', 'openInNewTab'];
+	const RESET_KEYS = ['visibleApps', 'iconStyle', 'theme', 'glass', 'wallpaperEnabled', 'wallpaperId', 'openInNewTab'];
 	let resetUndo = $state(null);
 	let resetUndoTimer;
 
@@ -172,7 +172,7 @@
 		resetUndo = Object.fromEntries(RESET_KEYS.map((k) => [k, $prefs[k]]));
 		clearTimeout(resetUndoTimer);
 		resetUndoTimer = setTimeout(() => (resetUndo = null), 8000);
-		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true }));
+		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', glass: 'frosted', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true }));
 		loadFromPrefs();
 	}
 
@@ -189,6 +189,12 @@
 		{ id: 'colored', label: 'Colored' },
 		{ id: 'white', label: 'White' },
 		{ id: 'grayed', label: 'Grayed' }
+	];
+
+	const glassLevels = [
+		{ id: 'clear', label: 'Clear' },
+		{ id: 'soft', label: 'Soft' },
+		{ id: 'frosted', label: 'Frosted' }
 	];
 
 	const themes = [
@@ -298,6 +304,11 @@
 							>{t.label}</button>
 						{/each}
 					</div>
+				</div>
+
+				<!-- Glass: how much tint and blur the cards, menus and search take. -->
+				<div class="mb-5">
+					<UnitPicker key="glass" label="Glass" options={glassLevels} fallback="frosted" />
 				</div>
 
 				<!-- Icon style -->

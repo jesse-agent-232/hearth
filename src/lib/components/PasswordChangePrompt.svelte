@@ -46,7 +46,7 @@
 		</div>
 		<div class="fixed inset-0 -z-10 pointer-events-none backdrop-blur-[6px] login-overlay"></div>
 
-		<div class="bg-surface-modal-card backdrop-blur-[80px] border border-border-modal-card rounded-2xl p-8 w-full max-w-[360px] text-center shadow-theme animate-modal-enter">
+		<div class="glass-card rounded-2xl p-8 w-full max-w-[360px] text-center shadow-theme animate-modal-enter">
 			{#if brandLogo}
 				<img src={brandLogo} alt="" class="w-12 h-12 mx-auto mb-4" />
 			{:else}

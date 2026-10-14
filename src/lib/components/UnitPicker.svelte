@@ -1,8 +1,8 @@
 <script>
 	import { prefs } from '$lib/stores/prefs.js';
 
-	// One unit preference as a segmented control: the clock's time format or
-	// the weather's temperature unit. Saves on click. `inline` puts the label
+	// One preference as a segmented control: the clock's time format, the
+	// weather's temperature unit, the glass density. Saves on click. `inline` puts the label
 	// beside the control, as a settings row.
 	let { key, label, options, fallback, compact = false, inline = false } = $props();
 </script>

@@ -27,7 +27,6 @@
 	--color-surface-overlay: var(--overlay);
 	--color-surface-overlay-strong: var(--overlay-strong);
 	--color-surface-input: var(--input-bg);
-	--color-surface-modal-card: var(--modal-card-bg);
 	--color-surface-pill: var(--pill-bg);
 	--color-surface-settings-btn: var(--settings-btn-bg);
 	--color-surface-toggle-on: var(--toggle-on);
@@ -40,7 +39,6 @@
 	/* Borders */
 	--color-border-card: var(--card-border);
 	--color-border-input: var(--input-border);
-	--color-border-modal-card: var(--modal-card-border);
 	--color-border-pill: var(--pill-border);
 	/* Shadow */
 	--shadow-theme: 0 25px 50px -12px var(--shadow);
@@ -159,8 +157,6 @@
 	--pill-border: rgba(255, 255, 255, 0.2);
 	--pill-bg: rgba(255, 255, 255, 0.15);
 	--shadow: rgba(0, 0, 0, 0.3);
-	--modal-card-bg: rgba(255, 255, 255, 0.08);
-	--modal-card-border: rgba(255, 255, 255, 0.12);
 	--settings-btn-bg: rgba(255, 255, 255, 0.08);
 	--icon-filter-white: brightness(0) invert(1);
 	--icon-filter-grayed: brightness(0) invert(1) opacity(0.5);
@@ -248,8 +244,6 @@ body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-
 	--pill-border: rgba(0, 0, 0, 0.25);
 	--pill-bg: rgba(0, 0, 0, 0.1);
 	--shadow: rgba(0, 0, 0, 0.08);
-	--modal-card-bg: #ffffff;
-	--modal-card-border: rgba(0, 0, 0, 0.15);
 	--settings-btn-bg: rgba(0, 0, 0, 0.08);
 	--icon-filter-white: brightness(0);
 	--icon-filter-grayed: brightness(0) opacity(0.5);
@@ -266,7 +260,6 @@ body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-
 	--color-surface-overlay: var(--overlay);
 	--color-surface-overlay-strong: var(--overlay-strong);
 	--color-surface-input: var(--input-bg);
-	--color-surface-modal-card: var(--modal-card-bg);
 	--color-surface-pill: var(--pill-bg);
 	--color-surface-settings-btn: var(--settings-btn-bg);
 	--color-surface-toggle-on: var(--toggle-on);
@@ -277,7 +270,6 @@ body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-
 	--color-content-dim: var(--text-dim);
 	--color-border-card: var(--card-border);
 	--color-border-input: var(--input-border);
-	--color-border-modal-card: var(--modal-card-border);
 	--color-border-pill: var(--pill-border);
 	--shadow-theme: 0 25px 50px -12px var(--shadow);
 
@@ -387,6 +379,29 @@ body {
 	--glass-border: rgba(0, 0, 0, 0.08);
 	--glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 	--segment-on: #ffffff;
+}
+/* Glass density, from Configure → Appearance. Frosted is the recipe above;
+   Soft halves the tint and blur, and Clear drops the tint so only the blur
+   is left. Every glass surface reads these tokens, so all of them follow.
+   The level sits on <html>, not <body>: tokens built from these in :root
+   (the search palette's) take their value there. */
+html[data-glass='soft'] {
+	--glass-bg: rgba(255, 255, 255, 0.04);
+	--glass-menu-bg: rgba(28, 28, 32, 0.32);
+	--glass-blur: blur(24px) saturate(1.4);
+}
+html[data-glass='clear'] {
+	--glass-bg: transparent;
+	--glass-menu-bg: transparent;
+	--glass-blur: blur(16px) saturate(1.2);
+}
+html[data-glass='soft'] body.theme-light {
+	--glass-bg: rgba(255, 255, 255, 0.4);
+	--glass-menu-bg: rgba(255, 255, 255, 0.5);
+}
+html[data-glass='clear'] body.theme-light {
+	--glass-bg: transparent;
+	--glass-menu-bg: transparent;
 }
 .glass-card {
 	background: var(--glass-bg);

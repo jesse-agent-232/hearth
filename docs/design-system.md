@@ -290,6 +290,19 @@ Small cards that come and go on their own (a calendar reminder, the music player
 Modals, menus and the search palette share one frosted-glass recipe, taken
 from the login card. The tokens live in `src/app.css` (`--glass-*`).
 
+Every glass surface (modals, the sign-in and first-run cards, menus,
+popovers, toasts, the player and the search palette) reads `--glass-bg`,
+`--glass-menu-bg` and `--glass-blur`, through `glass-card` or directly.
+Don't give a new one its own tint or blur: the tokens are what lets one
+setting change all of them. **Configure →
+Appearance → Glass** sets `data-glass` on `<html>`.
+
+| Level     | Tint (dark / light) | Menu tint (dark / light) | Blur |
+| --------- | ------------------- | ------------------------ | ---- |
+| `frosted` (default) | 8% white / 72% white | 58% / 80% | 40px, saturate 1.6 |
+| `soft`    | 4% / 40%            | 32% / 50%                | 24px, saturate 1.4 |
+| `clear`   | none                | none                     | 16px, saturate 1.2 |
+
 | Class                     | Use for                                   |
 | ------------------------- | ----------------------------------------- |
 | `glass-card`              | Modals and first-run cards: clear glass   |
@@ -332,7 +345,6 @@ For the gradual refactor of existing components, here's the legacy → v1 mappin
 | Legacy class / pattern                      | Replace with                              |
 | ------------------------------------------- | ----------------------------------------- |
 | `bg-surface-card border border-border-card` | `surface-1`                               |
-| `bg-surface-modal-card backdrop-blur-[80px\|120px] border border-border-modal-card` | `surface-3` |
 | `bg-surface-modal backdrop-blur-xl border border-border-card` (dropdowns) | `surface-2` |
 | `.glass-card`                               | `surface-1` (or `surface-2` if it sits over content) |
 | `bg-surface-card/30 backdrop-blur-sm` (inline tip) | `surface-0` or `surface-1`         |

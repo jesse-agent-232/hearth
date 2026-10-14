@@ -199,7 +199,7 @@
 			{/if}
 		</div>
 		<div class="fixed inset-0 -z-10 pointer-events-none backdrop-blur-[6px] login-overlay"></div>
-		<div class="bg-surface-modal-card backdrop-blur-[80px] border border-border-modal-card rounded-2xl p-8 w-full max-w-[360px] text-center shadow-theme animate-modal-enter">
+		<div class="glass-card rounded-2xl p-8 w-full max-w-[360px] text-center shadow-theme animate-modal-enter">
 			{#if brandLogo}
 				<img src={brandLogo} alt="" class="w-12 h-12 mx-auto mb-4" />
 			{:else}
@@ -254,7 +254,7 @@
 
 {:else if step === 'onboarding'}
 	<div use:dialog={{ label: 'Welcome' }} class="fixed inset-0 modal-veil flex items-center justify-center z-[100] p-4">
-		<div class="bg-surface-modal-card backdrop-blur-[120px] border border-border-modal-card rounded-2xl w-full max-w-[480px] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden animate-modal-enter shadow-theme">
+		<div class="glass-card rounded-2xl w-full max-w-[480px] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden animate-modal-enter shadow-theme">
 
 			<!-- Slide content: one fixed height for every slide so the card doesn't
 			     jump; on short screens it shrinks and scrolls, keeping the nav bar

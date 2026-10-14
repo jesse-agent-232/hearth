@@ -103,6 +103,10 @@
 		if (theme === 'light') document.body.classList.add('theme-light');
 		else if (theme === 'dark') document.body.classList.add('theme-dark');
 	});
+	$effect(() => {
+		if (!browser) return;
+		document.documentElement.dataset.glass = viewPrefs.glass || 'frosted';
+	});
 
 
 	// Weather shows only for a location the user chose from the weather
