@@ -381,8 +381,8 @@ body {
 	--segment-on: #ffffff;
 }
 /* Glass density, from Configure → Appearance. Frosted is the recipe above;
-   Soft halves the tint and blur, and Clear drops the tint so only the blur
-   is left. Every glass surface reads these tokens, so all of them follow.
+   Soft (the default) halves the tint and blur. Clear has no tint at all and
+   takes the old getting-started card's heavy blur and border instead. Every glass surface reads these tokens, so all of them follow.
    The level sits on <html>, not <body>: tokens built from these in :root
    (the search palette's) take their value there. */
 html[data-glass='soft'] {
@@ -393,7 +393,8 @@ html[data-glass='soft'] {
 html[data-glass='clear'] {
 	--glass-bg: transparent;
 	--glass-menu-bg: transparent;
-	--glass-blur: blur(16px) saturate(1.2);
+	--glass-border: rgba(255, 255, 255, 0.12);
+	--glass-blur: blur(80px);
 }
 html[data-glass='soft'] body.theme-light {
 	--glass-bg: rgba(255, 255, 255, 0.4);
@@ -402,6 +403,7 @@ html[data-glass='soft'] body.theme-light {
 html[data-glass='clear'] body.theme-light {
 	--glass-bg: transparent;
 	--glass-menu-bg: transparent;
+	--glass-border: rgba(0, 0, 0, 0.15);
 }
 .glass-card {
 	background: var(--glass-bg);

@@ -172,7 +172,7 @@
 		resetUndo = Object.fromEntries(RESET_KEYS.map((k) => [k, $prefs[k]]));
 		clearTimeout(resetUndoTimer);
 		resetUndoTimer = setTimeout(() => (resetUndo = null), 8000);
-		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', glass: 'frosted', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true }));
+		prefs.update(p => ({ ...p, visibleApps: null, iconStyle: 'colored', theme: 'auto', glass: 'soft', wallpaperEnabled: true, wallpaperId: null, openInNewTab: true }));
 		loadFromPrefs();
 	}
 
@@ -308,7 +308,7 @@
 
 				<!-- Glass: how much tint and blur the cards, menus and search take. -->
 				<div class="mb-5">
-					<UnitPicker key="glass" label="Glass" options={glassLevels} fallback="frosted" />
+					<UnitPicker key="glass" label="Glass" options={glassLevels} fallback="soft" />
 				</div>
 
 				<!-- Icon style -->
