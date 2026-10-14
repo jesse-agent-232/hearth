@@ -105,7 +105,7 @@
 	});
 	$effect(() => {
 		if (!browser) return;
-		document.documentElement.dataset.glass = viewPrefs.glass || 'soft';
+		document.documentElement.dataset.glass = viewPrefs.glass || 'frosted';
 	});
 
 

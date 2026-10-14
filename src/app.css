@@ -380,30 +380,28 @@ body {
 	--glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 	--segment-on: #ffffff;
 }
-/* Glass density, from Configure → Appearance. Frosted is the recipe above;
-   Soft (the default) halves the tint and blur. Clear has no tint at all and
-   takes the old getting-started card's heavy blur and border instead. Every glass surface reads these tokens, so all of them follow.
+/* Glass density, from Configure → Appearance. Frosted (the default) is the
+   recipe above; Clear halves the tint and blur, and Solid drops the glass
+   for an opaque dark or white surface. Every glass surface reads these tokens, so all of them follow.
    The level sits on <html>, not <body>: tokens built from these in :root
    (the search palette's) take their value there. */
-html[data-glass='soft'] {
+html[data-glass='clear'] {
 	--glass-bg: rgba(255, 255, 255, 0.04);
 	--glass-menu-bg: rgba(28, 28, 32, 0.32);
 	--glass-blur: blur(24px) saturate(1.4);
 }
-html[data-glass='clear'] {
-	--glass-bg: transparent;
-	--glass-menu-bg: transparent;
-	--glass-border: rgba(255, 255, 255, 0.12);
-	--glass-blur: blur(80px);
+html[data-glass='solid'] {
+	--glass-bg: rgb(28, 28, 32);
+	--glass-menu-bg: rgb(28, 28, 32);
+	--glass-blur: none;
 }
-html[data-glass='soft'] body.theme-light {
+html[data-glass='clear'] body.theme-light {
 	--glass-bg: rgba(255, 255, 255, 0.4);
 	--glass-menu-bg: rgba(255, 255, 255, 0.5);
 }
-html[data-glass='clear'] body.theme-light {
-	--glass-bg: transparent;
-	--glass-menu-bg: transparent;
-	--glass-border: rgba(0, 0, 0, 0.15);
+html[data-glass='solid'] body.theme-light {
+	--glass-bg: #ffffff;
+	--glass-menu-bg: #ffffff;
 }
 .glass-card {
 	background: var(--glass-bg);

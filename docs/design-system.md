@@ -299,9 +299,9 @@ Appearance → Glass** sets `data-glass` on `<html>`.
 
 | Level     | Tint (dark / light) | Menu tint (dark / light) | Blur |
 | --------- | ------------------- | ------------------------ | ---- |
-| `frosted` | 8% white / 72% white | 58% / 80% | 40px, saturate 1.6 |
-| `soft` (default) | 4% / 40%     | 32% / 50%                | 24px, saturate 1.4 |
-| `clear`   | none                | none                     | 80px, the old getting-started card's border |
+| `clear`   | 4% / 40%            | 32% / 50%                | 24px, saturate 1.4 |
+| `frosted` (default) | 8% white / 72% white | 58% / 80% | 40px, saturate 1.6 |
+| `solid`   | opaque `rgb(28,28,32)` / white | same as tint  | none |
 
 | Class                     | Use for                                   |
 | ------------------------- | ----------------------------------------- |

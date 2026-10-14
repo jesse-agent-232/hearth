@@ -21,7 +21,7 @@
 			const t = p?.theme || localStorage.getItem('holm_theme');
 			if (t === 'light') document.body.classList.add('theme-light');
 			else if (t === 'dark') document.body.classList.add('theme-dark');
-			document.documentElement.dataset.glass = p?.glass || 'soft';
+			document.documentElement.dataset.glass = p?.glass || 'frosted';
 		} catch {}
 	</script>
 	<div style="display: contents">%sveltekit.body%</div>
