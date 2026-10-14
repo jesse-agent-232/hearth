@@ -381,21 +381,23 @@ body {
 	--segment-on: #ffffff;
 }
 /* Glass density, from Configure → Appearance. Frosted (the default) is the
-   recipe above; Clear halves the tint and blur, and Solid is a near-opaque
-   dark or white surface over the same blur. Every glass surface reads these tokens, so all of them follow.
+   recipe above. Clear drops the card tint and most of the blur so the
+   wallpaper shows, keeping a light menu tint for readable text. Solid is a
+   near-opaque surface over the same blur, a shade lighter than the dark
+   page so it reads as a panel. Every glass surface reads these tokens.
    The level sits on <html>, not <body>: tokens built from these in :root
    (the search palette's) take their value there. */
 html[data-glass='clear'] {
-	--glass-bg: rgba(255, 255, 255, 0.04);
+	--glass-bg: transparent;
 	--glass-menu-bg: rgba(28, 28, 32, 0.32);
-	--glass-blur: blur(24px) saturate(1.4);
+	--glass-blur: blur(12px) saturate(1.2);
 }
 html[data-glass='solid'] {
-	--glass-bg: rgba(28, 28, 32, 0.88);
-	--glass-menu-bg: rgba(28, 28, 32, 0.88);
+	--glass-bg: rgba(36, 36, 42, 0.88);
+	--glass-menu-bg: rgba(36, 36, 42, 0.88);
 }
 html[data-glass='clear'] body.theme-light {
-	--glass-bg: rgba(255, 255, 255, 0.4);
+	--glass-bg: transparent;
 	--glass-menu-bg: rgba(255, 255, 255, 0.5);
 }
 html[data-glass='solid'] body.theme-light {

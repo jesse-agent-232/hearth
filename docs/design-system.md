@@ -299,9 +299,9 @@ Appearance → Glass** sets `data-glass` on `<html>`.
 
 | Level     | Tint (dark / light) | Menu tint (dark / light) | Blur |
 | --------- | ------------------- | ------------------------ | ---- |
-| `clear`   | 4% / 40%            | 32% / 50%                | 24px, saturate 1.4 |
+| `clear`   | none                | 32% / 50%                | 12px, saturate 1.2 |
 | `frosted` (default) | 8% white / 72% white | 58% / 80% | 40px, saturate 1.6 |
-| `solid`   | 88% `rgb(28,28,32)` / 88% white | same as tint | 40px, saturate 1.6 |
+| `solid`   | 88% `rgb(36,36,42)` / 88% white | same as tint | 40px, saturate 1.6 |
 
 | Class                     | Use for                                   |
 | ------------------------- | ----------------------------------------- |
