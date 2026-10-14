@@ -730,27 +730,6 @@ body.search-active .dashboard-wallpaper {
 @media (max-width: 767px) {
 	.dashboard-header { padding-right: 0; }
 }
-.dashboard-header::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	left: -1.5rem;
-	right: -1.5rem;
-	background: linear-gradient(to bottom, rgba(15, 15, 17, 0.55), rgba(15, 15, 17, 0.35));
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	z-index: -1;
-	opacity: 0;
-	transition: opacity 200ms ease-out;
-	pointer-events: none;
-}
-.theme-light .dashboard-header::before {
-	background: linear-gradient(to bottom, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.5));
-}
-/* Only show the backdrop once the page has actually scrolled — avoids
-   a muddy bar over the wallpaper at rest. Using the `:is-stuck` helper
-   keeps the at-rest look clean. */
-.dashboard-header.is-stuck::before { opacity: 1; }
 body.search-active .hero-area {
 	position: relative;
 	z-index: 2;
@@ -2301,3 +2280,21 @@ body.search-active .launcher-host { z-index: 40; }
    cap height, since the uppercase line has no descenders. */
 .header-glyph { display: inline-flex; width: 1.05em; height: 1.05em; flex-shrink: 0; transform: translateY(-0.07em); }
 .header-glyph > svg { width: 100%; height: 100%; }
+/* The clock and the weather open menus; a soft glass pill on hover says
+   so. Negative margins keep the pill from shifting the line, and the thin
+   vertical padding keeps the clock's and the next event's pills apart
+   inside the header's 0.25rem gap. */
+.header-trigger {
+	display: inline-flex;
+	padding: 0.1rem 0.55rem;
+	margin: -0.1rem -0.55rem;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	transition: background 0.15s, border-color 0.15s;
+}
+.header-trigger:hover,
+.header-trigger[aria-expanded='true'] {
+	background: var(--input-bg);
+	border-color: var(--glass-border);
+}
+.header-trigger:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 2px; }

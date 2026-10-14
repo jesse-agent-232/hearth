@@ -104,10 +104,13 @@ apps:
       android: "https://play.google.com/..."
     setup_guide:
       subtitle: "Auto backup your photos"
+      open_on_click: true                  # a plain click shows the guide (optional)
       steps:
         - label: "Download"
           desc: "Get the app from your store."
 ```
+
+A setup guide opens from the tile's right-click or long-press menu. With `open_on_click: true`, a plain click on the tile opens it as well, with an **Open** button for the app, until the user ticks **Don't show again** in the guide.
 
 ### Who sees an app
 
@@ -216,6 +219,7 @@ wallpapers:
 
 weather:
   enabled: true                # users set their location from the weather pill
+                               # and their units under Configure → Widgets
 
 privacy:
   enabled: true

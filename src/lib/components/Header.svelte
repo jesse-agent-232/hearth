@@ -5,6 +5,9 @@
 	import Upcoming from './Upcoming.svelte';
 	import { DAYS, MONTHS } from '$lib/constants.js';
 	import { fetchWeather, reverseGeocode } from '$lib/weather.js';
+	import { prefs } from '$lib/stores/prefs.js';
+	import { clockParts, TIME_FORMATS, DEFAULT_TIME_FORMAT } from '$lib/units.js';
+	import UnitPicker from './UnitPicker.svelte';
 	// lat/lon are the user's chosen location (device or a searched place);
 	// without one, the weather pill offers to set it. placeName is set for a
 	// searched place, which needs no reverse lookup.
@@ -15,11 +18,26 @@
 	let locationName = $state('');
 	let now = $state(new Date());
 
-	function formatTime() {
-		const hours = String(now.getHours()).padStart(2, '0');
-		const minutes = String(now.getMinutes()).padStart(2, '0');
-		return `${hours}:${minutes}`;
-	}
+	const clock = $derived(clockParts(now, $prefs.timeFormat));
+
+	// The clock opens a small menu for its time format.
+	let clockOpen = $state(false);
+	let clockEl = $state();
+	$effect(() => {
+		if (!clockOpen) return;
+		const onDown = (e) => { if (!clockEl?.contains(e.target)) clockOpen = false; };
+		const onKey = (e) => {
+			if (e.key !== 'Escape') return;
+			clockOpen = false;
+			clockEl?.querySelector('button')?.focus();
+		};
+		document.addEventListener('pointerdown', onDown);
+		document.addEventListener('keydown', onKey);
+		return () => {
+			document.removeEventListener('pointerdown', onDown);
+			document.removeEventListener('keydown', onKey);
+		};
+	});
 
 	function formatDate() {
 		const d = now;
@@ -41,29 +59,38 @@
 		return () => { stale = true; };
 	});
 
-	let headerEl;
 	onMount(() => {
 		const timer = setInterval(() => { now = new Date(); }, 60000);
-		// Toggle a blurred backdrop on the sticky header only once the
-		// page has scrolled a bit — keeps the at-rest top-of-page clean.
-		const onScroll = () => headerEl?.classList.toggle('is-stuck', window.scrollY > 8);
-		onScroll();
-		window.addEventListener('scroll', onScroll, { passive: true });
-		return () => {
-			clearInterval(timer);
-			window.removeEventListener('scroll', onScroll);
-		};
+		return () => clearInterval(timer);
 	});
 </script>
 
 <!-- Compact status-bar header: a single mono row with time · date on the
      left and weather/location on the right. Clock is the anchor but no
      longer the visual hero — the search palette below is. -->
-<div bind:this={headerEl} class="dashboard-header mb-8 max-md:mb-6 flex justify-between items-center max-md:items-start gap-3 text-[0.85rem] max-md:text-[0.75rem] font-mono tracking-[0.12em] uppercase">
+<div class="dashboard-header mb-8 max-md:mb-6 flex justify-between items-center max-md:items-start gap-3 text-[0.85rem] max-md:text-[0.75rem] font-mono tracking-[0.12em] uppercase">
 	<div class="flex flex-col gap-1 min-w-0">
-		<div class="flex items-baseline gap-3 min-w-0 flex-wrap max-md:h-7 max-md:leading-7">
-			<span class="text-[1.35rem] max-md:text-[1.1rem] font-semibold text-content tabular-nums tracking-tight normal-case">{formatTime()}</span>
-			<span class="text-content-muted">{formatDate()}</span>
+		<div class="relative self-start" bind:this={clockEl}>
+			<button
+				type="button"
+				class="header-trigger items-baseline gap-3 min-w-0 max-md:h-7 max-md:leading-7 bg-transparent cursor-pointer font-mono tracking-[0.12em] uppercase text-left"
+				aria-haspopup="dialog"
+				aria-expanded={clockOpen}
+				title="Time format"
+				onclick={() => (clockOpen = !clockOpen)}
+			>
+				<span class="text-[1.35rem] max-md:text-[1.1rem] font-semibold text-content tabular-nums tracking-tight normal-case">{clock.time}{#if clock.dayPeriod}<span class="clock-period">{clock.dayPeriod}</span>{/if}</span>
+				<span class="text-content-muted whitespace-nowrap">{formatDate()}</span>
+			</button>
+			{#if clockOpen}
+				<div
+					class="absolute left-0 top-full mt-2 z-[70] w-[17rem] glass-card menu-surface rounded-xl shadow-theme animate-menu-up normal-case tracking-normal font-mono text-content px-4 pt-2.5 pb-3"
+					role="dialog"
+					aria-label="Time format"
+				>
+					<UnitPicker key="timeFormat" label="Time format" options={TIME_FORMATS} fallback={DEFAULT_TIME_FORMAT} compact />
+				</div>
+			{/if}
 		</div>
 		<Upcoming />
 	</div>
@@ -71,3 +98,14 @@
 		{#if showWeather}<Weather {weatherData} {weatherLoaded} {locationName} hasLocation={!!(lat && lon)} source={locationSource === 'manual' ? 'manual' : 'device'} />{/if}
 	</div>
 </div>
+
+<style>
+	/* AM/PM rides beside the digits, small, so the time still leads. */
+	.clock-period {
+		margin-left: 0.3em;
+		font-size: 0.55em;
+		font-weight: 500;
+		letter-spacing: 0.08em;
+		color: var(--color-content-muted);
+	}
+</style>

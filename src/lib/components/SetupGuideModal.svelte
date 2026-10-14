@@ -5,7 +5,19 @@
 	import AppIcon from '$lib/components/AppIcon.svelte';
 
 	// How to set up an app's mobile client: steps, server URL and store links.
-	let { app, guide, iconStyle, onclose } = $props();
+	// fromClick: opened by a plain click on the tile (setup_guide.open_on_click),
+	// so it also offers the app itself and a way to stop showing the guide.
+	let {
+		app,
+		guide,
+		iconStyle,
+		fromClick = false,
+		openInNewTab = true,
+		dismissed = false,
+		ondismiss = () => {},
+		onopenapp = () => {},
+		onclose
+	} = $props();
 
 	let urlCopied = $state(false);
 	let urlCopiedTimer;
@@ -81,7 +93,7 @@
 
 		<!-- Actions -->
 		{#if app.ios || app.android}
-		<div class="px-6 pb-6 flex gap-2">
+		<div class="px-6 {fromClick ? 'pb-4' : 'pb-6'} flex gap-2">
 			{#if app.ios}
 				<a href={app.ios} target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] text-[0.8rem] font-medium font-mono text-center no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-strong transition-colors">
 					<img src="/icons/appstore.svg" alt="" class="w-4 h-4 icon-white" /> App Store
@@ -94,5 +106,30 @@
 			{/if}
 		</div>
 		{/if}
+		{#if fromClick}
+		<div class="px-6 py-4 border-t border-border-card flex items-center justify-between gap-3">
+			<label class="flex items-center gap-2 text-[0.75rem] text-content-muted font-mono cursor-pointer select-none">
+				<input type="checkbox" class="guide-dismiss" checked={dismissed} onchange={(e) => ondismiss(e.currentTarget.checked)} />
+				Don’t show again
+			</label>
+			<a
+				href={app.url}
+				target={openInNewTab ? '_blank' : undefined}
+				rel={openInNewTab ? 'noopener noreferrer' : undefined}
+				class="shrink-0 py-2 px-3.5 rounded-[10px] text-[0.8rem] font-medium font-mono no-underline bg-surface-card-strong text-content border border-border-card hover:bg-surface-card-hover transition-colors"
+				onclick={() => { onopenapp(); onclose(); }}
+			>Open {app.name}</a>
+		</div>
+		{/if}
 	</div>
 </div>
+
+<style>
+	.guide-dismiss {
+		width: 0.95rem;
+		height: 0.95rem;
+		margin: 0;
+		accent-color: var(--text);
+		cursor: pointer;
+	}
+</style>

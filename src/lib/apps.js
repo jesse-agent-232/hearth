@@ -46,7 +46,10 @@ export function buildAppsFromConfig(appsConfig) {
 			setupGuides[item.name] = {
 				title: `${item.name} setup`,
 				subtitle: item.setup_guide.subtitle || item.name,
-				steps: item.setup_guide.steps || []
+				steps: item.setup_guide.steps || [],
+				// A plain click on the tile shows the guide until the user
+				// ticks "Don't show again".
+				openOnClick: item.setup_guide.open_on_click === true
 			};
 		}
 	}

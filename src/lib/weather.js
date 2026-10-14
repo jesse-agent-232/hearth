@@ -14,7 +14,8 @@ function readCache(key) {
 	}
 }
 
-// Current conditions plus the forecast LATER_HOURS from now.
+// Current conditions plus the forecast LATER_HOURS from now. Temperatures
+// stay in unrounded Celsius; the pill rounds them in the user's unit.
 export async function fetchWeather(lat, lon) {
 	const c = readCache(WEATHER_CACHE_KEY);
 	if (c?.data?.later && c.lat === lat && c.lon === lon && Date.now() - c.ts < WEATHER_TTL) return c.data;
@@ -24,11 +25,11 @@ export async function fetchWeather(lat, lon) {
 		);
 		const d = await r.json();
 		const data = {
-			temp: Math.round(d.current.temperature_2m),
+			temp: d.current.temperature_2m,
 			code: d.current.weather_code,
 			later: {
 				hours: LATER_HOURS,
-				temp: Math.round(d.hourly.temperature_2m[LATER_HOURS]),
+				temp: d.hourly.temperature_2m[LATER_HOURS],
 				code: d.hourly.weather_code[LATER_HOURS]
 			}
 		};

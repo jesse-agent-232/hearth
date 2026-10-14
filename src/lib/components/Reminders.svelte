@@ -1,6 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
+	import { prefs } from '$lib/stores/prefs.js';
+	import { formatClock } from '$lib/units.js';
 
 	// Calendar reminders, shown on the page at the times the events' own
 	// reminders say. Only runs while some connected integration has its
@@ -135,7 +137,7 @@
 	}
 
 	const DAY = 24 * 60 * 60 * 1000;
-	const clock = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+	const clock = (t) => formatClock(t, $prefs.timeFormat);
 	const dayStart = (t) => new Date(t).setHours(0, 0, 0, 0);
 
 	function when(r, at) {
@@ -149,7 +151,7 @@
 		if (mins < 60) return `Starts in ${mins} min · ${clock(r.start)}`;
 		if (dayStart(r.start) === dayStart(at)) return `Today at ${clock(r.start)}`;
 		if (dayStart(r.start) - dayStart(at) === DAY) return `Tomorrow at ${clock(r.start)}`;
-		return new Date(r.start).toLocaleString([], { weekday: 'long', hour: 'numeric', minute: '2-digit' });
+		return `${new Date(r.start).toLocaleDateString([], { weekday: 'long' })} ${clock(r.start)}`;
 	}
 </script>
 

@@ -1,6 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
+	import { prefs } from '$lib/stores/prefs.js';
+	import { formatClock } from '$lib/units.js';
 
 	// "At a glance" for the calendar: the next event on a small line under the clock, and the
 	// week ahead in its menu. Only runs while some connected integration has
@@ -62,9 +64,13 @@
 	// A timed event before an all-day one: "Standup in 10 min" says more than
 	// "Holiday today".
 	const next = $derived(live.find((e) => !e.allDay) || live[0]);
+	// The line is muted until a timed event is 10 minutes out, then white
+	// until it ends.
+	const SOON = 10 * 60 * 1000;
+	const soon = $derived(!!next && !next.allDay && next.start - now <= SOON);
 
-	// The header's clock is 24-hour; event times match it.
-	const clock = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+	// Event times match the header's clock.
+	const clock = (t) => formatClock(t, $prefs.timeFormat);
 	const dayStart = (t) => new Date(t).setHours(0, 0, 0, 0);
 	const daysFrom = (t) => Math.round((dayStart(t) - dayStart(now)) / DAY);
 
@@ -138,7 +144,7 @@
 	<div class="relative max-md:static flex items-center max-md:items-start gap-1 min-w-0 self-start max-w-full" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
-			class="upcoming-pill animate-fade-in flex items-center gap-1.5 min-w-0 max-w-full bg-transparent border-none p-0 cursor-pointer font-mono uppercase text-content"
+			class="upcoming-pill header-trigger items-center animate-fade-in gap-1.5 min-w-0 bg-transparent cursor-pointer font-mono uppercase {soon ? 'text-content' : 'text-content-muted'}"
 			aria-haspopup="dialog"
 			aria-expanded={open}
 			title="Upcoming events"
@@ -146,10 +152,10 @@
 		>
 			<svg class="header-glyph opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
 			<span class="truncate">{next.title}</span>
-			<span class="pill-when shrink-0 tabular-nums text-content-muted">· {when(next)}</span>
+			<span class="pill-when shrink-0 tabular-nums {soon ? 'text-content-muted' : 'text-content-dim'}">· {when(next)}</span>
 			<!-- Phones: the time gets a line of its own, so the title keeps its room.
 			     The place is one tap away, in the menu. -->
-			<span class="pill-meta truncate tabular-nums text-content-muted">{when(next)}</span>
+			<span class="pill-meta truncate tabular-nums {soon ? 'text-content-muted' : 'text-content-dim'}">{when(next)}</span>
 		</button>
 		{#if next.call}
 			<a class="upcoming-call pill-call" href={next.call} target="_blank" rel="noopener noreferrer" title="Join call · {hostOf(next.call)}" aria-label="Join call on {hostOf(next.call)}">{@render camera()}</a>
@@ -209,7 +215,8 @@
 	/* A smaller line under the clock. */
 	/* A button drops the inherited text-shadow; keep the header's, which
 	   the wallpaper sets so the line reads over a bright photo. */
-	.upcoming-pill { font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
+	/* The hover pill reaches past the line by its padding (see .header-trigger). */
+	.upcoming-pill { display: flex; max-width: calc(100% + 1.1rem); font-size: 0.82em; letter-spacing: 0.1em; text-shadow: inherit; }
 	.pill-meta { display: none; }
 	@media (max-width: 767px) {
 		/* Title over time, flush with the clock: no calendar icon. */

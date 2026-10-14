@@ -10,6 +10,8 @@
 	import { TOTAL_WALLPAPERS, getWallpaperThumbUrl } from '$lib/wallpaper.js';
 	import { browser } from '$app/environment';
 	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
+	import { DEFAULT_TIME_FORMAT, DEFAULT_TEMP_UNIT, TIME_FORMATS, TEMP_UNITS } from '$lib/units.js';
+	import UnitPicker from '$lib/components/UnitPicker.svelte';
 
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
@@ -391,47 +393,61 @@
 					<div class="text-[0.7rem] text-content-dim mt-0.5">Turn parts of your page on or off. To add or move apps, use Edit on the dashboard.</div>
 				</div>
 				{@const widgets = [
-					{ id: 'weather', name: 'Weather', desc: 'Temperature and conditions for your location', icon: 'M12 3v2M12 19v2M5.6 5.6 7 7M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
-					{ id: 'search', name: 'Search', desc: 'Search apps and files from the middle of the page', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4' }
+					{ id: 'clock', name: 'Clock', desc: 'Time and date, top of page', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2', fixed: true,
+						settings: [{ key: 'timeFormat', label: 'Time format', options: TIME_FORMATS, fallback: DEFAULT_TIME_FORMAT }] },
+					{ id: 'weather', name: 'Weather', desc: 'Conditions where you are', icon: 'M12 3v2M12 19v2M5.6 5.6 7 7M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+						settings: [{ key: 'tempUnit', label: 'Temperature', options: TEMP_UNITS, fallback: DEFAULT_TEMP_UNIT }] },
+					{ id: 'search', name: 'Search', desc: 'Apps and files, mid-page', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4' }
 				]}
-				{#each widgets as widget}
-					<button
-						class="flex items-center gap-3 w-full px-2 py-3 bg-transparent border-none border-b border-border-card text-left font-mono cursor-pointer hover:bg-surface-card-hover"
-						onclick={() => toggleWidget(widget.id)}
-					>
-						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0 text-content-muted">
+				{#snippet toggle(on)}
+					<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {on ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
+						<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {on ? 'translate-x-4' : 'translate-x-0.5'}"></div>
+					</div>
+				{/snippet}
+				{#snippet cardHead(icon, name, desc)}
+					<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0 text-content-muted">{@render icon()}</span>
+					<div class="flex-1 min-w-0">
+						<div class="text-[0.8rem] text-content font-medium">{name}</div>
+						<div class="text-[0.7rem] text-content-dim truncate" title={desc}>{desc}</div>
+					</div>
+				{/snippet}
+				<!-- One card per widget: the same head on every card, and each
+				     setting it has as a row of the same height below. -->
+				<div class="flex flex-col gap-2">
+					{#each widgets as widget}
+						{@const on = widget.fixed || enabledWidgets.has(widget.id)}
+						{#snippet icon()}
 							<svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={widget.icon} /></svg>
-						</span>
-						<div class="flex-1 min-w-0">
-							<div class="text-[0.8rem] text-content font-medium">{widget.name}</div>
-							<div class="text-[0.7rem] text-content-dim">{widget.desc}</div>
+						{/snippet}
+						<div class="widget-card">
+							{#if widget.fixed}
+								<div class="widget-head">{@render cardHead(icon, widget.name, widget.desc)}</div>
+							{:else}
+								<button class="widget-head" role="switch" aria-checked={on} onclick={() => toggleWidget(widget.id)}>
+									{@render cardHead(icon, widget.name, widget.desc)}
+									{@render toggle(on)}
+								</button>
+							{/if}
+							{#if widget.settings && on}
+								{#each widget.settings as setting}
+									<div class="widget-setting"><UnitPicker {...setting} inline /></div>
+								{/each}
+							{/if}
 						</div>
-						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {enabledWidgets.has(widget.id) ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
-							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {enabledWidgets.has(widget.id) ? 'translate-x-4' : 'translate-x-0.5'}"></div>
-						</div>
-					</button>
-				{/each}
-				{#each integrationWidgets as it (it.id)}
-					{@const on = widgetPending[it.id] ?? it.userState.surfaces?.widgets === true}
-					<button
-						class="flex items-center gap-3 w-full px-2 py-3 bg-transparent border-none border-b border-border-card text-left font-mono cursor-pointer hover:bg-surface-card-hover"
-						role="switch"
-						aria-checked={on}
-						aria-busy={it.id in widgetPending}
-						onclick={() => toggleIntegrationWidgets(it)}
-					>
-						<span class="w-8 h-8 rounded-lg bg-surface-input border border-border-card flex items-center justify-center shrink-0">
+					{/each}
+					{#each integrationWidgets as it (it.id)}
+						{@const on = widgetPending[it.id] ?? it.userState.surfaces?.widgets === true}
+						{#snippet icon()}
 							<AppIcon icon={resolveIcon(it.icon)} name={it.name} size="w-4 h-4" iconStyle="white" />
-						</span>
-						<div class="flex-1 min-w-0">
-							<div class="text-[0.8rem] text-content font-medium">{it.name}</div>
-							<div class="text-[0.7rem] text-content-dim">{it.widgets.map((w) => w.label).join(', ')}</div>
+						{/snippet}
+						<div class="widget-card">
+							<button class="widget-head" role="switch" aria-checked={on} aria-busy={it.id in widgetPending} onclick={() => toggleIntegrationWidgets(it)}>
+								{@render cardHead(icon, it.name, it.widgets.map((w) => w.label).join(', '))}
+								{@render toggle(on)}
+							</button>
 						</div>
-						<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {on ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
-							<div class="absolute top-0.5 w-4 h-4 rounded-full bg-surface-toggle-knob shadow transition-transform duration-200 {on ? 'translate-x-4' : 'translate-x-0.5'}"></div>
-						</div>
-					</button>
-				{/each}
+					{/each}
+				</div>
 				{#if widgetSaveError}
 					<div class="px-2 pt-2 text-[0.7rem] text-red-400">{widgetSaveError}</div>
 				{/if}
@@ -469,6 +485,38 @@
 		padding: 0 0.75rem;
 	}
 	.version-line.flush { padding: 0; }
+	.widget-card {
+		border: 1px solid var(--glass-border);
+		border-radius: 12px;
+		background: var(--input-bg);
+		overflow: hidden;
+	}
+	.widget-head {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		width: 100%;
+		min-height: 3.5rem;
+		padding: 0.6rem 0.75rem;
+		background: transparent;
+		border: none;
+		text-align: left;
+		font-family: var(--font-mono);
+	}
+	button.widget-head { cursor: pointer; transition: background 0.15s; }
+	button.widget-head:hover { background: var(--input-bg); }
+	button.widget-head:focus-visible { outline: 2px solid var(--text-muted); outline-offset: -2px; border-radius: 12px; }
+	.widget-setting {
+		display: flex;
+		align-items: center;
+		min-height: 2.75rem;
+		padding: 0.4rem 0.75rem 0.4rem 3.5rem;
+		border-top: 1px solid var(--glass-border);
+	}
+	.widget-setting > :global(*) { flex: 1; min-width: 0; }
+	@media (max-width: 767px) {
+		.widget-setting { padding-left: 0.75rem; }
+	}
 	.version-link {
 		text-align: left;
 		text-decoration: none;

@@ -299,7 +299,24 @@
 
 	function openGuide(app) {
 		contextApp = null;
+		guideFromClick = false;
 		guideApp = app;
+	}
+
+	// Apps whose guide is set to open on a plain click, until this user
+	// opts out from the guide itself.
+	let guideFromClick = $state(false);
+	const guideOnClick = (app) =>
+		!!setupGuides[app.name]?.openOnClick && !($prefs.guidesDismissed || []).includes(app.id);
+
+	function dismissGuide(app, dismissed) {
+		const rest = ($prefs.guidesDismissed || []).filter((id) => id !== app.id);
+		prefs.update((p) => ({ ...p, guidesDismissed: dismissed ? [...rest, app.id] : rest }));
+	}
+
+	function closeGuide() {
+		guideApp = null;
+		guideFromClick = false;
 	}
 
 	let searchInput = $state('');
@@ -621,6 +638,12 @@
 								longPressFired = false;
 								return;
 							}
+							if (guideOnClick(app)) {
+								e.preventDefault();
+								guideFromClick = true;
+								guideApp = app;
+								return;
+							}
 							recordAppOpen(app.id);
 						}}
 						oncontextmenu={editMode ? undefined : (e) => showContext(app, e)}
@@ -708,7 +731,17 @@
 
 <!-- Setup Guide Modal (portal to body) -->
 {#if guideApp && setupGuides[guideApp.name]}
-	<SetupGuideModal app={guideApp} guide={setupGuides[guideApp.name]} {iconStyle} onclose={() => (guideApp = null)} />
+	<SetupGuideModal
+		app={guideApp}
+		guide={setupGuides[guideApp.name]}
+		{iconStyle}
+		fromClick={guideFromClick}
+		{openInNewTab}
+		dismissed={($prefs.guidesDismissed || []).includes(guideApp.id)}
+		ondismiss={(d) => dismissGuide(guideApp, d)}
+		onopenapp={() => recordAppOpen(guideApp.id)}
+		onclose={closeGuide}
+	/>
 {/if}
 
 {#if customizationEnabled}
@@ -824,6 +857,7 @@
 	}
 	.add-btn.app-tile-link:hover {
 		background: transparent;
+		border-color: transparent;
 	}
 	.add-icon {
 		background: transparent;
@@ -926,18 +960,21 @@
 		width: 100%;
 		height: 100%;
 		padding: 0.4rem 0.25rem;
+		border: 1px solid transparent;
 		border-radius: 0.6rem;
 		text-decoration: none;
 		color: var(--color-content, #e4e4e7);
-		transition: background 200ms var(--ease-standard, ease);
+		transition: background 200ms var(--ease-standard, ease), border-color 200ms var(--ease-standard, ease);
 		/* Long-press opens our menu; suppress iOS's link preview and text selection */
 		-webkit-touch-callout: none;
 		-webkit-user-select: none;
 		user-select: none;
 	}
+	/* The same glass pill as the header's clock and weather. */
 	.app-tile-link:hover,
 	.app-tile-link.menu-open {
-		background: var(--card-hover);
+		background: var(--input-bg);
+		border-color: var(--glass-border);
 	}
 	.app-tile-icon {
 		width: 44px;

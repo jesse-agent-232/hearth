@@ -2,6 +2,8 @@
 	import { WEATHER_MAP } from '$lib/constants.js';
 	import { prefs } from '$lib/stores/prefs.js';
 	import { searchPlaces } from '$lib/weather.js';
+	import { temperature, TEMP_UNITS, DEFAULT_TEMP_UNIT } from '$lib/units.js';
+	import UnitPicker from './UnitPicker.svelte';
 	import AnimatedNumber from './AnimatedNumber.svelte';
 
 	// Until a location is chosen the pill reads "Set location", and its first
@@ -32,6 +34,7 @@
 		const at = new Date(Date.now() + (weatherData.later.hours ?? 6) * 3600e3);
 		return at.getDate() === new Date().getDate() ? 'later today' : 'overnight';
 	});
+	const degrees = (c) => temperature(c, $prefs.tempUnit);
 	const sourceLabel = $derived(
 		source === 'manual' ? 'Address you set' : 'From your device location'
 	);
@@ -156,10 +159,10 @@
 	<div class="relative shrink-0" bind:this={rootEl}>
 		<button
 			bind:this={pillEl}
-			class="animate-fade-in flex items-center max-md:leading-7 gap-1.5 text-[0.85rem] max-md:text-[0.75rem] tracking-[0.12em] uppercase text-content font-mono bg-transparent border-none p-0 cursor-pointer hover:opacity-80"
+			class="header-trigger items-center animate-fade-in max-md:leading-7 gap-1.5 text-[0.85rem] max-md:text-[0.75rem] tracking-[0.12em] uppercase text-content font-mono bg-transparent cursor-pointer"
 			aria-haspopup="dialog"
 			aria-expanded={open}
-			title="Weather and location"
+			title="Weather and units"
 			onclick={toggle}
 		>
 			{#if weatherInfo}
@@ -167,7 +170,7 @@
 				     sits 2px lower; drop the temperature onto it. -->
 				<span class="header-glyph weather-glyph opacity-85 max-md:translate-y-0.5">{@html weatherInfo[0]}</span>
 				<span class="tabular-nums normal-case font-medium max-md:translate-y-0.5">
-					<AnimatedNumber value={weatherData.temp} />&deg;
+					<AnimatedNumber value={degrees(weatherData.temp)} />&deg;
 				</span>
 				{#if locationName}
 					<span class="text-content-muted hidden md:inline">·</span>
@@ -189,7 +192,7 @@
 				{#if hasLocation && laterInfo}
 					<div class="flex items-center gap-2.5 px-4 py-3">
 						<span class="w-4 h-4 shrink-0 text-content-muted">{@html laterInfo[0]}</span>
-						<span><span class="tabular-nums">{weatherData.later.temp}&deg;</span> {laterInfo[1].toLowerCase()} {laterWhen}</span>
+						<span><span class="tabular-nums">{degrees(weatherData.later.temp)}&deg;</span> {laterInfo[1].toLowerCase()} {laterWhen}</span>
 					</div>
 				{/if}
 				{#if hasLocation}
@@ -200,6 +203,11 @@
 						<div class="text-[0.7rem] text-content-dim">{sourceLabel}</div>
 					</div>
 				</div>
+				{/if}
+				{#if hasLocation}
+					<div class="px-4 pt-2.5 pb-3 border-t border-border-card">
+						<UnitPicker key="tempUnit" label="Temperature" options={TEMP_UNITS} fallback={DEFAULT_TEMP_UNIT} compact />
+					</div>
 				{/if}
 				<div class="py-1 {hasLocation ? 'border-t border-border-card' : ''}">
 					<button

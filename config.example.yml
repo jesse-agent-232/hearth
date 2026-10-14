@@ -74,7 +74,9 @@ customization:
 #   tags            Optional list of strings, shown (up to three) on the app's search result.
 #   app_store       Optional: { ios, android } links for onboarding.
 #   browser_extension  Optional URL for onboarding.
-#   setup_guide     Optional first-run walkthrough.
+#   setup_guide     Optional first-run walkthrough, from the tile's right-click menu.
+#                   open_on_click: true also opens it on a plain click, until the
+#                   user ticks "Don't show again".
 apps:
   - id: photos
     name: "Photos"
