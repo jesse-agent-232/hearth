@@ -7,7 +7,7 @@
 
 	// Getting started with an app: use it in the browser, or set up the mobile
 	// client (server URL, store links, steps).
-	// dismissible: the tile opens this on a plain click (setup_guide.on_click),
+	// dismissible: the tile opens this on a plain click (on_click: getting_started),
 	// so it offers a way to stop that.
 	let {
 		app,

@@ -99,18 +99,26 @@ apps:
     tile_color: "#4250AF"                  # brand tile background (optional)
     self_hosted: true                      # listed in onboarding's services slide
     default_visible: true                  # placed on a new user's surface
+    on_click: getting_started              # optional: open (default) | getting_started | menu
     app_store:
       ios: "https://apps.apple.com/..."
       android: "https://play.google.com/..."
     setup_guide:
       subtitle: "Auto backup your photos"
-      on_click: true                       # optional: a plain click opens the guide
       steps:
         - label: "Download"
           desc: "Get the app from your store."
 ```
 
-A setup guide opens as a **Getting started** card from the tile's right-click or long-press menu. It asks how the user wants to use the app: **In the browser** opens it, **In the mobile app** shows the server URL, store links and the steps. The line under the app name is the app's `onboarding.services[].desc`, or `setup_guide.subtitle` when there is none. Set `setup_guide.on_click: true` on an app and a plain click on its tile opens the same card instead of the app, until the user ticks **Don't show again**; a tip says the right-click / long-press menu brings it back. Ctrl/⌘-click still opens the app in a new tab.
+A setup guide opens as a **Getting started** card from the tile's right-click or long-press menu. It asks how the user wants to use the app: **In the browser** opens it, **In the mobile app** shows the server URL, store links and the steps. The line under the app name is the app's `onboarding.services[].desc`, or `setup_guide.subtitle` when there is none.
+
+`on_click` sets what a plain click (or tap) on the tile does:
+
+- `open`, or unset: opens the app.
+- `getting_started`: opens the Getting started card instead, until the user ticks **Don't show again**; a tip says the right-click / long-press menu brings it back. Needs a `setup_guide` or `app_store` links; with neither, the click opens the app.
+- `menu`: opens the tile's right-click / long-press menu.
+
+Ctrl/⌘-click always opens the app in a new tab. Any other value opens the app, and Holm logs a warning at startup.
 
 ### Who sees an app
 
@@ -307,7 +315,7 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `database.enabled` | bool | `true` | restart | `false` = preferences in each browser only, integrations off |
 | `database.path` | path | `./data/holm.db` | restart | `DATABASE_PATH` wins |
 | `customization.enabled` | bool | `false` | yes | Without it there is no Configure panel and the grid is fixed |
-| `apps[]` | list | `[]` | yes | Fields under [Apps](#apps): `id`, `name`, `url`, `icon`, `icon_mono`, `tile_color`, `self_hosted`, `default_visible`, `groups`, `tags` (shown on search results), `app_store`, `browser_extension`, `setup_guide` |
+| `apps[]` | list | `[]` | yes | Fields under [Apps](#apps): `id`, `name`, `url`, `icon`, `icon_mono`, `tile_color`, `self_hosted`, `default_visible`, `on_click`, `groups`, `tags` (shown on search results), `app_store`, `browser_extension`, `setup_guide` |
 | `search.enabled` / `url` / `param` / `name` / `icon` | | enabled, Google, `q` | yes | The fallback web search |
 | `integrations.<id>.enabled` | bool | on when the block exists | yes | `false` hides it; so does leaving the block out |
 | `integrations.<id>.name` / `shortcut` / `tip` | string | adapter's | yes | Display name, `!scope`, a hint on the connect card |

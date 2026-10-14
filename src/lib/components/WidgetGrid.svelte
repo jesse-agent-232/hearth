@@ -33,9 +33,12 @@
 
 	const siteConfig = getContext('config');
 
-	// Setup guides keyed by app name, for the tile context menu's "Setup Guide"
-	// entry and the modal it opens. Same helper +page.svelte uses for tipApps.
-	const setupGuides = $derived.by(() => buildAppsFromConfig(siteConfig?.apps).setupGuides);
+	// Setup guides keyed by app name, for the tile context menu's "Getting
+	// started" entry and the modal it opens. Same helper +page.svelte uses for
+	// tipApps. clickActions: what a plain click does, by app id.
+	const builtApps = $derived.by(() => buildAppsFromConfig(siteConfig?.apps));
+	const setupGuides = $derived(builtApps.setupGuides);
+	const clickActions = $derived(Object.fromEntries(builtApps.apps.map((a) => [a.id, a.onClick])));
 
 	// Flat catalog: config apps (already filtered by group on the server) +
 	// per-user custom bookmarks. One source of truth used by every
@@ -302,12 +305,10 @@
 		guideApp = app;
 	}
 
-	// Apps whose guide opens on a plain click (setup_guide.on_click), until
-	// this user opts out from the
-	// guide itself.
+	// Apps whose Getting started card opens on a plain click
+	// (on_click: getting_started), until this user opts out from the card.
 	function guideClickable(app) {
-		const guide = setupGuides[app.name];
-		return !!guide?.onClick;
+		return clickActions[app.id] === 'getting_started' && !!setupGuides[app.name];
 	}
 	function guideOnClick(app) {
 		return guideClickable(app) && !($prefs.guidesDismissed || []).includes(app.id);
@@ -645,6 +646,10 @@
 							if (!e.metaKey && !e.ctrlKey && guideOnClick(app)) {
 								e.preventDefault();
 								guideApp = app;
+								return;
+							}
+							if (!e.metaKey && !e.ctrlKey && clickActions[app.id] === 'menu') {
+								showContext(app, e);
 								return;
 							}
 							recordAppOpen(app.id);

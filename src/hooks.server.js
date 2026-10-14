@@ -4,6 +4,7 @@ import { getConfig, getIntegrationsConfig } from '$lib/server/config.js';
 import { getMasterKey } from '$lib/server/secrets.js';
 import { resolveDbPath } from '$lib/server/db.js';
 import { parseFrameAncestors, allowFraming } from '$lib/server/framing.js';
+import { clickActionWarnings } from '$lib/apps.js';
 
 // Runs once at startup. Any problem here stops Holm with the reason, rather
 // than serving with sign-in off or an encryption key nobody chose.
@@ -39,6 +40,9 @@ export function init() {
 	}
 	for (const entry of parseFrameAncestors(config.security?.frame_ancestors).invalid) {
 		console.warn(`[holm] config: security.frame_ancestors entry ${JSON.stringify(entry)} is not an origin like https://dash.example.com, so it is ignored`);
+	}
+	for (const warning of clickActionWarnings(config.apps)) {
+		console.warn(`[holm] config: ${warning}`);
 	}
 }
 

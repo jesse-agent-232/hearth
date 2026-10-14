@@ -23,6 +23,35 @@ function normalizeAppsInput(appsConfig) {
 	return appsConfig;
 }
 
+// What a plain click on the tile does (apps[].on_click). Unset is 'open';
+// so is an unknown value, or 'getting_started' with nothing to show.
+export const CLICK_ACTIONS = ['open', 'getting_started', 'menu'];
+
+function hasGettingStarted(item) {
+	return !!(item.setup_guide || item.app_store?.ios || item.app_store?.android);
+}
+
+export function clickAction(item) {
+	const action = item.on_click ?? 'open';
+	if (!CLICK_ACTIONS.includes(action)) return 'open';
+	if (action === 'getting_started' && !hasGettingStarted(item)) return 'open';
+	return action;
+}
+
+// Config problems with on_click, for the startup log.
+export function clickActionWarnings(appsConfig) {
+	const warnings = [];
+	for (const item of normalizeAppsInput(appsConfig)) {
+		if (item.on_click === undefined) continue;
+		if (!CLICK_ACTIONS.includes(item.on_click)) {
+			warnings.push(`apps.${item.id}.on_click ${JSON.stringify(item.on_click)} is not one of ${CLICK_ACTIONS.join(', ')}, so a click opens the app`);
+		} else if (item.on_click === 'getting_started' && !hasGettingStarted(item)) {
+			warnings.push(`apps.${item.id}.on_click is getting_started but the app has no setup_guide or app_store links, so a click opens the app`);
+		}
+	}
+	return warnings;
+}
+
 export function buildAppsFromConfig(appsConfig) {
 	const items = normalizeAppsInput(appsConfig);
 
@@ -37,18 +66,19 @@ export function buildAppsFromConfig(appsConfig) {
 		android: item.app_store?.android || null,
 		extension: item.browser_extension || null,
 		subtitle: item.setup_guide?.subtitle || null,
-		tags: Array.isArray(item.tags) ? item.tags : []
+		tags: Array.isArray(item.tags) ? item.tags : [],
+		onClick: clickAction(item)
 	}));
 
 	const setupGuides = {};
 	for (const item of items) {
-		if (item.setup_guide) {
+		// Store links alone are enough for a Getting started card the app
+		// asks for on click; it just has no steps.
+		if (item.setup_guide || clickAction(item) === 'getting_started') {
 			setupGuides[item.name] = {
 				title: `${item.name} setup`,
-				subtitle: item.setup_guide.subtitle || item.name,
-				steps: item.setup_guide.steps || [],
-				// A plain click on the tile shows the guide instead of the app.
-				onClick: item.setup_guide.on_click === true
+				subtitle: item.setup_guide?.subtitle || item.name,
+				steps: item.setup_guide?.steps || []
 			};
 		}
 	}

@@ -74,9 +74,10 @@ customization:
 #   tags            Optional list of strings, shown (up to three) on the app's search result.
 #   app_store       Optional: { ios, android } links for onboarding.
 #   browser_extension  Optional URL for onboarding.
+#   on_click        What a plain click on the tile does: open (default), getting_started
+#                   (the Getting started card, until the user ticks "Don't show again"),
+#                   or menu (the tile's right-click menu).
 #   setup_guide     Optional Getting started card (browser or mobile app), from the tile's right-click menu.
-#                   on_click: true opens it on a plain click, until the user
-#                   ticks "Don't show again".
 apps:
   - id: photos
     name: "Photos"
@@ -84,13 +85,13 @@ apps:
     icon: "di:immich"
     self_hosted: true
     default_visible: true
+    on_click: getting_started
     tags: ["media", "selfhosted"]
     app_store:
       ios: "https://apps.apple.com/app/immich/id1613945652"
       android: "https://play.google.com/store/apps/details?id=app.alextran.immich"
     setup_guide:
       subtitle: "Immich - Auto backup your photos & videos"
-      on_click: true
       steps:
         - label: "Download the app"
           desc: "Get Immich from the App Store or Play Store."
