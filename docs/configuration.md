@@ -110,7 +110,7 @@ apps:
           desc: "Get the app from your store."
 ```
 
-A setup guide opens as a **Getting started** card from the tile's right-click or long-press menu. It asks how the user wants to use the app: **In the browser** opens it, **In the mobile app** shows the server URL, store links and the steps. The line under the app name is the app's `onboarding.services[].desc`, or `setup_guide.subtitle` when there is none. Set `onboarding.guides_on_click: true` and a plain click on any app with a guide opens the same card instead of the app, until the user ticks **Don't show again**; a tip says the right-click / long-press menu brings it back. Ctrl/⌘-click still opens the app in a new tab. `setup_guide.open_on_click` turns this on or off for one app, whatever the global setting. Like the rest of `onboarding`, it applies only to users in `onboarding.groups`.
+A setup guide opens as a **Getting started** card from the tile's right-click or long-press menu. It asks how the user wants to use the app: **In the browser** opens it, **In the mobile app** shows the server URL, store links and the steps. The line under the app name is the app's `onboarding.services[].desc`, or `setup_guide.subtitle` when there is none. Set `onboarding.guides_on_click: true` and a plain click on any app with a guide opens the same card instead of the app, until the user ticks **Don't show again**; a tip says the right-click / long-press menu brings it back. Ctrl/⌘-click still opens the app in a new tab. Like the rest of `onboarding`, the global switch applies only to users in `onboarding.groups`. `setup_guide.open_on_click` turns this on or off for one app, whatever the global setting, and applies to everyone who can see the app.
 
 ### Who sees an app
 
