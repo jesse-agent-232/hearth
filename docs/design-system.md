@@ -301,7 +301,7 @@ Appearance → Glass** sets `data-glass` on `<html>`.
 | --------- | ------------------- | ------------------------ | ---- |
 | `clear`   | 4% / 40%            | 32% / 50%                | 24px, saturate 1.4 |
 | `frosted` (default) | 8% white / 72% white | 58% / 80% | 40px, saturate 1.6 |
-| `solid`   | opaque `rgb(28,28,32)` / white | same as tint  | none |
+| `solid`   | 88% `rgb(28,28,32)` / 88% white | same as tint | 40px, saturate 1.6 |
 
 | Class                     | Use for                                   |
 | ------------------------- | ----------------------------------------- |
