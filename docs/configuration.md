@@ -110,7 +110,7 @@ apps:
           desc: "Get the app from your store."
 ```
 
-A setup guide opens from the tile's right-click or long-press menu. Set `onboarding.guides_on_click: true` and a plain click on any app with a guide shows the guide instead of opening the app, with an **Open** button for the app, until the user ticks **Don't show again**. The guide says the right-click menu brings it back. Ctrl/⌘-click still opens the app in a new tab. `setup_guide.open_on_click` turns this on or off for one app, whatever the global setting. Like the rest of `onboarding`, it applies only to users in `onboarding.groups`.
+A setup guide opens as a **Getting started** card from the tile's right-click or long-press menu. It asks how the user wants to use the app: **In the browser** opens it, **In the mobile app** shows the server URL, store links and the steps. The line under the app name is the app's `onboarding.services[].desc`, or `setup_guide.subtitle` when there is none. Set `onboarding.guides_on_click: true` and a plain click on any app with a guide opens the same card instead of the app, until the user ticks **Don't show again**; a tip says the right-click / long-press menu brings it back. Ctrl/⌘-click still opens the app in a new tab. `setup_guide.open_on_click` turns this on or off for one app, whatever the global setting. Like the rest of `onboarding`, it applies only to users in `onboarding.groups`.
 
 ### Who sees an app
 
@@ -317,7 +317,7 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `wallpapers.enabled` | bool | `false` | yes | Wallpaper picker and daily rotation |
 | `weather.enabled` | bool | `false` | yes | Users set their own location |
 | `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | See [Onboarding](#onboarding) |
-| `onboarding.guides_on_click` | bool | `false` | yes | A plain click on an app with a `setup_guide` shows the guide. See [Apps](#apps) |
+| `onboarding.guides_on_click` | bool | `false` | yes | A plain click on an app with a `setup_guide` opens its Getting started card. See [Apps](#apps) |
 | `onboarding.groups` / `privacy.groups` / `changelog.groups` | list | everyone | yes | Only these OIDC groups see it. See [Groups](#groups-for-onboarding-privacy-and-whats-new) |
 | `privacy.enabled` / `last_updated` / `file` / `sections` | | off | yes | `file` is relative to `config.yml` |
 | `security.frame_ancestors` | list of origins | none | yes | Pages allowed to show Holm in a frame. See [Embedding](#embedding-holm-in-another-page) |

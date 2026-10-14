@@ -74,7 +74,7 @@ customization:
 #   tags            Optional list of strings, shown (up to three) on the app's search result.
 #   app_store       Optional: { ios, android } links for onboarding.
 #   browser_extension  Optional URL for onboarding.
-#   setup_guide     Optional first-run walkthrough, from the tile's right-click menu.
+#   setup_guide     Optional Getting started card (browser or mobile app), from the tile's right-click menu.
 #                   open_on_click: true / false overrides onboarding.guides_on_click
 #                   for this app.
 apps:
@@ -321,7 +321,7 @@ weather:
 # ── Onboarding ──────────────────────────────────────────────
 onboarding:
   enabled: true
-  guides_on_click: true                       # A plain click on an app with a setup_guide shows the guide, until the user ticks "Don't show again"
+  guides_on_click: true                       # A plain click on an app with a setup_guide opens its Getting started card, until the user ticks "Don't show again"
   welcome_text: "A self-hosted server for your household. Your data stays on your hardware — no third-party clouds, no tracking, no ads."
   # services:                                 # Optional: pick specific apps by ID with custom descriptions
   #   - id: photos                            # References app ID from apps config (icon auto-resolved)
