@@ -382,9 +382,10 @@ body {
 }
 /* Glass density, from Configure → Appearance. Frosted (the default) is the
    recipe above. Clear drops the card tint and most of the blur so the
-   wallpaper shows, keeping a light menu tint for readable text. Solid is a
-   near-opaque surface over the same blur, a shade lighter than the dark
-   page so it reads as a panel. Every glass surface reads these tokens.
+   wallpaper shows, keeping a light menu tint for readable text. Solid is
+   the opaque page colour on the Dark and Light themes, and 75% dark over
+   the same blur on Dynamic so a little wallpaper shows. Every glass
+   surface reads these tokens.
    The level sits on <html>, not <body>: tokens built from these in :root
    (the search palette's) take their value there. */
 html[data-glass='clear'] {
@@ -393,16 +394,20 @@ html[data-glass='clear'] {
 	--glass-blur: blur(12px) saturate(1.2);
 }
 html[data-glass='solid'] {
-	--glass-bg: rgba(36, 36, 42, 0.88);
-	--glass-menu-bg: rgba(36, 36, 42, 0.88);
+	--glass-bg: rgba(9, 9, 11, 0.75);
+	--glass-menu-bg: rgba(9, 9, 11, 0.75);
+}
+html[data-glass='solid'] body.theme-dark {
+	--glass-bg: #09090b;
+	--glass-menu-bg: #09090b;
 }
 html[data-glass='clear'] body.theme-light {
 	--glass-bg: transparent;
 	--glass-menu-bg: rgba(255, 255, 255, 0.5);
 }
 html[data-glass='solid'] body.theme-light {
-	--glass-bg: rgba(255, 255, 255, 0.88);
-	--glass-menu-bg: rgba(255, 255, 255, 0.88);
+	--glass-bg: #ffffff;
+	--glass-menu-bg: #ffffff;
 }
 .glass-card {
 	background: var(--glass-bg);
