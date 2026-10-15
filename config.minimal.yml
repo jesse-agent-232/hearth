@@ -1,7 +1,6 @@
 # Holm: the smallest useful config. Copy it to config.yml, fill in the
 # three URLs and your apps, and set OIDC_CLIENT_ID / OIDC_CLIENT_SECRET.
-# Everything left out runs on its default: wallpapers and weather on,
-# onboarding and privacy notice off, web search through Google.
+# Everything left out is off or on its default (web search through Google).
 # config.example.yml lists every option.
 
 auth:
@@ -15,6 +14,12 @@ auth:
 
 # Lets each person arrange their own page. Off when this block is missing.
 customization:
+  enabled: true
+
+# The daily wallpaper and the weather pill. Both are off when missing.
+wallpapers:
+  enabled: true
+weather:
   enabled: true
 
 apps:
