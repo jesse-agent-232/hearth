@@ -113,6 +113,17 @@
 		node.addEventListener('animationend', done);
 	}
 
+	// Request → Requested pops once, when the request lands; a title that was
+	// already requested opens without it.
+	function landed(node, done) {
+		return {
+			update(now) {
+				if (now && !done) enter(node, 'is-landed');
+				done = now;
+			}
+		};
+	}
+
 	function scrollIntoView(node, isSelected) {
 		const run = (sel) => { if (sel) node.scrollIntoView({ block: 'nearest' }); };
 		run(isSelected);
@@ -170,6 +181,7 @@
 								type="button"
 								class="launcher-detail-btn is-primary"
 								class:is-done={detail.request.done}
+								use:landed={detail.request.done}
 								disabled={detail.request.busy || detail.request.done}
 								onmousedown={(e) => e.preventDefault()}
 								onclick={() => detail.request.run?.()}
@@ -329,6 +341,7 @@
 												class="launcher-request"
 												class:is-busy={item.request.busy}
 												class:is-done={item.request.done}
+												use:landed={item.request.done}
 												tabindex="-1"
 												disabled={item.request.busy || item.request.done}
 												onmousedown={(e) => e.preventDefault()}

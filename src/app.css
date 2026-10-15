@@ -1984,8 +1984,8 @@ body.search-active .launcher-host { z-index: 40; }
 /* A press dips the button; Request → Requested lands with a small pop. */
 .launcher-detail-btn:not(:disabled):active,
 .launcher-request:not(:disabled):active { scale: 0.96; }
-.launcher-detail-btn.is-done,
-.launcher-request.is-done { animation: launcher-done 300ms var(--ease-standard); }
+.launcher-detail-btn.is-landed,
+.launcher-request.is-landed { animation: launcher-done 300ms var(--ease-standard); }
 @keyframes launcher-done {
 	0% { scale: 0.92; }
 	60% { scale: 1.05; }
@@ -1993,8 +1993,8 @@ body.search-active .launcher-host { z-index: 40; }
 }
 @media (prefers-reduced-motion: reduce) {
 	.launcher-detail,
-	.launcher-detail-btn.is-done,
-	.launcher-request.is-done { animation: none; }
+	.launcher-detail-btn.is-landed,
+	.launcher-request.is-landed { animation: none; }
 	.launcher-detail-btn:not(:disabled):active,
 	.launcher-request:not(:disabled):active { scale: none; }
 }
