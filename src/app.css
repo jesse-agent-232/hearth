@@ -1682,6 +1682,22 @@ body.search-active .launcher-host { z-index: 40; }
 	background-size: 200% 100%;
 	animation: thumb-shimmer 1.2s linear infinite;
 }
+/* Under the search input while an app is still searching. */
+.search-progress {
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	bottom: -1px;
+	height: 2px;
+	border-radius: 1px;
+	background: linear-gradient(90deg, transparent 20%, var(--hero-search-text-dim) 50%, transparent 80%);
+	background-size: 200% 100%;
+	animation: thumb-shimmer 1.2s linear infinite;
+	pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	.search-progress { animation: none; background: var(--hero-search-chip-border); }
+}
 @keyframes thumb-shimmer {
 	from { background-position: 150% 0; }
 	to { background-position: -50% 0; }

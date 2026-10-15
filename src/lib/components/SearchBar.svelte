@@ -676,7 +676,8 @@
 			const at = out[0]?.id === 'answer' ? 1 : 0;
 			out.splice(at, 0, { id: 'top', label: 'Top hit', layout: 'list', items: [{ ...hit.item, key: `top:${hit.item.key}`, accessory: hit.item.accessory || hit.section.label }] });
 		}
-		out.push(...arranged);
+		// The top hit leaves its own section, so ↓ doesn't visit it twice.
+		out.push(...(hit ? arranged.map((s) => (s === hit.section ? { ...s, items: s.items.filter((i) => i !== hit.item) } : s)) : arranged));
 
 		// Fallback: the web search, always last. One row only; each app's
 		// results are already above, and its !shortcut still scopes to it.
@@ -994,7 +995,7 @@
 <div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px"
 	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) { inlineOpen = false; panelOpen = false; } }}>
 	<form
-		class="hero-search-form flex items-center px-4 md:px-6"
+		class="hero-search-form relative flex items-center px-4 md:px-6"
 		action={searchConfig.url}
 		method="GET"
 		target="_blank"
@@ -1042,6 +1043,9 @@
 		{:else}
 			<kbd class="hero-search-kbd hidden md:inline-flex items-center gap-0.5 text-[0.7rem] py-1 px-2 rounded border font-mono shrink-0">{#if macKeys}<svg class="kbd-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Command"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3Z"/></svg>{:else}Ctrl&nbsp;{/if}K</kbd>
 		{/if}
+		<!-- One thin line while an app is still searching, so "still looking"
+		     and "found nothing" don't look the same. -->
+		{#if isPaletteOpen && sections.some((s) => s.loading)}<span class="search-progress" aria-hidden="true"></span>{/if}
 	</form>
 
 	{#if isPaletteOpen}
