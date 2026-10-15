@@ -42,7 +42,6 @@ export function defaultWidgetLayout(catalog, registry) {
 	const out = [];
 	for (const app of catalog) {
 		if (app.default === false) continue;
-		if (!app.selfHosted) continue;
 		const inst = newInstance(WIDGET_TYPES.APP, entry, { appId: app.id });
 		const slot = findFreeSlot(out, inst.w, inst.h);
 		out.push({ ...inst, x: slot.x, y: slot.y });

@@ -56,6 +56,12 @@ test('defaultWidgetLayout seeds one app tile per default-visible app', () => {
 	assert.equal(ids.size, layout.length);
 });
 
+test('defaultWidgetLayout places default-visible apps that are not self-hosted', () => {
+	// self_hosted only feeds onboarding's services slide; placement is default_visible's job
+	const layout = defaultWidgetLayout([{ id: 'jellyfin', name: 'Jellyfin', default: true, selfHosted: false }], stubRegistry);
+	assert.deepEqual(layout.map((i) => i.config.appId), ['jellyfin']);
+});
+
 test('synthesizeFromLegacyPrefs preserves categoryLayout ordering', () => {
 	const legacy = {
 		categoryLayout: [

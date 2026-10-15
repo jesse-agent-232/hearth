@@ -22,9 +22,7 @@ apps:
     name: Jellyfin
     url: "https://jellyfin.example.com"
     icon: "di:jellyfin"
-    self_hosted: true                         # shows it on the page
   - id: proxmox
     name: Proxmox
     url: "https://pve.example.com"
     icon: "di:proxmox"
-    self_hosted: true
