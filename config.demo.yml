@@ -4,7 +4,7 @@
 #
 # Login is OFF: everyone who can reach the port is the same "Guest" user.
 # Use it to look around, never on a network you don't trust. For a real
-# install, start from config.example.yml and turn on auth.
+# install, start from config.minimal.yml, which has auth on.
 
 branding:
   name: "Holm"

@@ -1,0 +1,31 @@
+# Holm: the smallest useful config. Copy it to config.yml, fill in the
+# three URLs and your apps, and set OIDC_CLIENT_ID / OIDC_CLIENT_SECRET.
+# Everything left out runs on its default: wallpapers and weather on,
+# onboarding and privacy notice off, web search through Google.
+# config.example.yml lists every option.
+
+auth:
+  enabled: true
+  oidc:
+    issuer: "https://auth.example.com"        # your OIDC provider
+    client_id: "${OIDC_CLIENT_ID}"
+    client_secret: "${OIDC_CLIENT_SECRET}"
+    scopes: "openid profile groups"
+    redirect_base: "https://holm.example.com" # Holm's public URL
+
+# Lets each person arrange their own page. Off when this block is missing.
+customization:
+  enabled: true
+
+apps:
+  - id: jellyfin
+    name: Jellyfin
+    url: "https://jellyfin.example.com"
+    icon: "di:jellyfin"
+    self_hosted: true                         # puts it on each new user's page
+  - id: proxmox
+    name: Proxmox
+    url: "https://pve.example.com"
+    icon: "di:proxmox"
+    self_hosted: true
+    groups: ["admins"]                        # only these OIDC groups see it

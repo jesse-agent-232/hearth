@@ -1,6 +1,6 @@
 # Configuration
 
-Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.example.yml`](../config.example.yml) is an annotated example and the [reference table](#reference) below lists every key.
+Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.minimal.yml`](../config.minimal.yml) is the smallest working config, [`config.example.yml`](../config.example.yml) is an annotated example of everything, and the [reference table](#reference) below lists every key.
 
 **Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`) makes every request fail with the reason in the log until it's fixed.
 

@@ -29,7 +29,7 @@ function loadConfig() {
 	try {
 		raw = readFileSync(configPath, 'utf-8');
 	} catch (err) {
-		throw new Error(`Could not read config at ${configPath} (${err.message}). Copy config.example.yml to config.yml to get started.`);
+		throw new Error(`Could not read config at ${configPath} (${err.message}). Copy config.minimal.yml to config.yml to get started.`);
 	}
 
 	let parsed;
