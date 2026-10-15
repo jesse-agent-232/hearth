@@ -70,9 +70,8 @@ volumes:
   holm-data:
 ```
 
-1. Copy [`config.minimal.yml`](config.minimal.yml) to `config.yml`. It holds sign-in and two apps; everything else runs on defaults.
-2. Register Holm as an OIDC client with your provider. The redirect URI is `https://<your-holm-host>/auth/callback`. The config reads `${OIDC_CLIENT_ID}` and `${OIDC_CLIENT_SECRET}`, so Holm won't start until both are set (or you set `auth.enabled: false`).
-3. Set `auth.oidc.issuer` and `redirect_base`, list your apps, and run `docker compose up -d`.
+1. Copy [`config.minimal.yml`](config.minimal.yml) to `config.yml`, list your apps, and run `docker compose up -d`. It has no sign-in: everyone who opens Holm shares one Guest page, so keep it on your own network.
+2. For per-person pages and groups, add the `auth:` block from [`config.example.yml`](config.example.yml) and register Holm as an OIDC client with your provider. The redirect URI is `https://<your-holm-host>/auth/callback`. That block reads `${OIDC_CLIENT_ID}` and `${OIDC_CLIENT_SECRET}`, so Holm won't start until both are set.
 
 `latest` and `stable` follow the newest release. To upgrade only when you choose, pin a version tag such as `holm:0.6.1`. From 0.6.2, each [release](https://github.com/man15h/holm/releases) lists its image by tag and by digest (`holm@sha256:…`); the digest pins the exact build. `alpha` is built from `dev` for arm64 only.
 
