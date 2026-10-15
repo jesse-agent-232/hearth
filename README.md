@@ -58,8 +58,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - OIDC_CLIENT_ID=your-client-id
-      - OIDC_CLIENT_SECRET=your-client-secret
       - HOLM_SECRET_KEY=${HOLM_SECRET_KEY} # in .env: openssl rand -hex 32
     volumes:
       - ./config.yml:/app/config.yml:ro
