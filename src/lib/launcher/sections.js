@@ -1,8 +1,32 @@
 // Orders the search bar's per-provider sections and folds video results
 // into one shelf. Sections come from SearchBar: { id, label, layout, kind,
-// shelf, loading, skeleton, error, items }.
+// shelf, loading, error, items }.
 
-const PROVIDER_KIND_ORDER = { media: 0, document: 1, file: 2, card: 3, bookmark: 4, photo: 5 };
+import { matchScore } from './match.js';
+
+// Documents and files first: on a home dashboard a search is most often for
+// a paper or a file. Media and photos follow.
+const PROVIDER_KIND_ORDER = { document: 0, file: 1, event: 2, card: 3, bookmark: 4, media: 5, photo: 6 };
+
+// The top hit, Spotlight-style: the one result from any app whose title is
+// the query, or starts with it. Ties go to the earlier section. Null when no
+// title is that close; a looser match stays in its own section only.
+export function topHit(query, sections) {
+	if ((query || '').trim().length < 3) return null;
+	let best = null;
+	let bestScore = 85;
+	for (const s of sections) {
+		for (const item of s.items) {
+			if (item.more) continue;
+			const score = matchScore(query, item.title);
+			if (score > bestScore || (score === bestScore && !best)) {
+				best = { item, section: s };
+				bestScore = score;
+			}
+		}
+	}
+	return best;
+}
 
 export function arrangeProviderSections(sections) {
 	const provSections = [...sections];
@@ -33,7 +57,6 @@ export function arrangeProviderSections(sections) {
 			layout: 'poster',
 			kind: 'media',
 			loading: mediaSections.some((s) => s.loading),
-			skeleton: titles.length ? 0 : Math.max(...mediaSections.map((s) => s.skeleton)),
 			error: mediaSections.filter((s) => s.error).map((s) => `${s.label}: ${s.error}`).join(' · '),
 			items: [...titles, ...mediaSections.flatMap((s) => s.items.filter((it) => it.more))]
 		};
@@ -41,7 +64,7 @@ export function arrangeProviderSections(sections) {
 		for (const s of mediaSections) {
 			const rest = s.items.filter((it) => !it.more && !it.showDetail);
 			// What's left is music (albums, artists, songs): same cards as Navidrome.
-			if (rest.length) Object.assign(s, { layout: 'tracks', items: rest.slice(0, 6), loading: false, skeleton: 0, error: '' });
+			if (rest.length) Object.assign(s, { layout: 'tracks', items: rest.slice(0, 6), loading: false, error: '' });
 			else provSections.splice(provSections.indexOf(s), 1);
 		}
 	}

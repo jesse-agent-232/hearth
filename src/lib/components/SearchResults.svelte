@@ -222,29 +222,15 @@
 	{:else}
 	<div class="launcher-scroll" id={listId} role="listbox" aria-label="Results" use:enter={back && 'is-back'}>
 		{#each sections as section (section.id)}
-			{#if section.items.length || section.loading || section.error}
+			{#if section.items.length || section.error}
 				<div class="launcher-section" role="group" aria-labelledby="{listId}-{section.id}">
 					<div class="launcher-section-label" id="{listId}-{section.id}">
 						<span>{section.label}</span>
-						{#if section.loading}<span class="launcher-spinner" role="status" aria-label="Searching"></span>{/if}
 					</div>
 					{#if section.error}
 						<div class="launcher-error">{section.error}</div>
 					{/if}
 					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : section.layout === 'answer' ? 'launcher-answers' : 'launcher-rows'}>
-						{#each { length: section.skeleton || 0 } as _}
-							{#if section.layout === 'tracks'}
-								<div class="launcher-item is-skeleton is-track" aria-hidden="true">
-									<div class="launcher-icon-box launcher-track-art"></div>
-									<span class="launcher-text"><span class="launcher-skeleton-line"></span><span class="launcher-skeleton-line is-short"></span></span>
-								</div>
-							{:else}
-								<div class="launcher-item is-skeleton {section.layout === 'grid' ? 'is-tile' : 'is-poster'}" aria-hidden="true">
-									<div class="launcher-thumb-wrap"></div>
-									{#if section.layout === 'poster'}<div class="launcher-skeleton-line"></div><div class="launcher-skeleton-line is-short"></div>{/if}
-								</div>
-							{/if}
-						{/each}
 						{#each section.items as item, i (item.key)}
 							{@const isSel = item.key === selectedKey}
 							<!-- Keyboard lives on the search input (combobox + aria-activedescendant). -->

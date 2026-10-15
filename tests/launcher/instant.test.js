@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { instantAnswer, calculate, convert } from '../../src/lib/launcher/instant.js';
+import { instantAnswer, isCalculation, calculate, convert } from '../../src/lib/launcher/instant.js';
 
 // 15:00 in Kolkata on a Monday; London is on BST, New York on EDT.
 const opts = { now: new Date('2026-10-12T09:30:00Z'), timeZone: 'Asia/Kolkata', locale: 'en-US' };
@@ -113,4 +113,9 @@ test('converts a time between zones', () => {
 
 test('leaves ambiguous time-like queries alone', () => {
 	for (const q of ['3 in london', 'time in narnia', 'meeting to london']) assert.equal(answer(q), null, q);
+});
+
+test('a calculation skips the app searches; numbers, dates and titles do not', () => {
+	for (const q of ['12 * 7', '(250000*0.6%)/(1-(1+0.6%)^-240)', '(250000*0.65', '2+', '5 km in mi', '50%']) assert.equal(isCalculation(q, opts), true, q);
+	for (const q of ['1917', '300', '2024', '28 days later', '2024-10-16', '1.2.3', 'spider', '3pm in london', '']) assert.equal(isCalculation(q, opts), false, q);
 });

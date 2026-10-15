@@ -9,10 +9,10 @@
 	import { isMac } from './Keys.svelte';
 	import { bestScore } from '$lib/launcher/match.js';
 	import { buildActions, matchBang } from '$lib/launcher/actions.js';
-	import { arrangeProviderSections } from '$lib/launcher/sections.js';
+	import { arrangeProviderSections, topHit } from '$lib/launcher/sections.js';
 	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
-	import { instantAnswer } from '$lib/launcher/instant.js';
+	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -286,10 +286,11 @@
 		// Bang-prefixed input is a built-in command (`!settings`, `!theme`, …) or
 		// a pending scope shortcut. Either way the user is not asking integrations
 		// to search — skip the dispatch entirely so we don't waste requests on
-		// every keystroke until they hit space and a real query begins.
+		// every keystroke until they hit space and a real query begins. A sum
+		// answers in place, so it isn't sent to them either.
 		const trimmed = (query || '').trim();
 		const isBang = trimmed.startsWith('!');
-		if (hasInlineProviders && !isBang) {
+		if (hasInlineProviders && !isBang && !isCalculation(trimmed)) {
 			dispatchSearch(query, scopedProviders);
 		} else {
 			cancelSearch();
@@ -615,7 +616,10 @@
 				.map(fromMediaServer);
 			const kind = results[0]?.meta?.kind || p.kind || 'other';
 			const layout = p.layout || (kind === 'photo' ? 'grid' : kind === 'media' ? 'poster' : 'list');
-			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6;
+			// Songs sit three to a row: with a "More" card, five leave it room on
+			// the second row instead of a row of its own.
+			const more = p.searchUrl && results.length > (layout === 'grid' ? 6 : layout === 'poster' ? 8 : 6);
+			const max = layout === 'grid' ? 6 : layout === 'poster' ? 8 : layout === 'tracks' && more ? 5 : 6;
 			return {
 				id: `p-${p.providerId}`,
 				integrationId: p.integrationId,
@@ -624,8 +628,6 @@
 				layout,
 				kind,
 				loading: !!data.loading && q.length >= 3,
-				// Placeholder posters until the first results arrive.
-				skeleton: !!data.loading && q.length >= 3 && !results.length && layout !== 'list' ? (layout === 'poster' ? 5 : 6) : 0,
 				error: data.error || '',
 				items: [...results.slice(0, max).map((r) => {
 					const key = `r:${p.providerId}:${r.id}`;
@@ -666,7 +668,15 @@
 				}] : [])]
 			};
 		});
-		out.push(...arrangeProviderSections(provSections));
+		const arranged = arrangeProviderSections(provSections);
+		// A result titled just what was typed goes above everything but the
+		// answer, unless an app already matches that well.
+		const hit = !activeScope && !out.some((s) => s.id === 'apps' && s.items.some((i) => bestScore(q, i.title) >= 85)) && topHit(q, arranged);
+		if (hit) {
+			const at = out[0]?.id === 'answer' ? 1 : 0;
+			out.splice(at, 0, { id: 'top', label: 'Top hit', layout: 'list', items: [{ ...hit.item, key: `top:${hit.item.key}`, accessory: hit.item.accessory || hit.section.label }] });
+		}
+		out.push(...arranged);
 
 		// Fallback: the web search, always last. One row only; each app's
 		// results are already above, and its !shortcut still scopes to it.

@@ -12,6 +12,17 @@ export function instantAnswer(query, { now = new Date(), timeZone, locale } = {}
 	return timeAnswer(q, now, local, locale) || unitAnswer(q, locale) || bareUnitAnswer(q, locale) || mathAnswer(q, locale);
 }
 
+// A sum or a conversion, finished or still being typed ("(250000*0.6",
+// "2+"): the answer is worked out here, so the connected apps aren't asked.
+// A bare number ("1917", "300") and a date or version stay searches.
+export function isCalculation(query, opts) {
+	const q = (query || '').trim();
+	const a = instantAnswer(q, opts);
+	if (a) return a.kind === 'math' || a.kind === 'unit';
+	if (/^\d{4}-\d{1,2}-\d{1,2}$|^\d+(\.\d+){2,}$/.test(q)) return false;
+	return /^[\d\s.,+\-*/^%()×÷−]+$/.test(q) && /\d/.test(q) && /[+\-*/^%()×÷−]/.test(q);
+}
+
 // ── Maths ─────────────────────────────────────────────────────────
 // A small recursive-descent parser: + - * / ^ (or **), mod, a postfix %
 // (per cent), brackets, implicit products like 2pi or 3(4+1), and a few
