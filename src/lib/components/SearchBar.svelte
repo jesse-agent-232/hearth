@@ -423,12 +423,14 @@
 	}
 
 	// "Play on Jellyfin": Seerr says which server it plays from; a Jellyfin or
-	// Plex result plays on itself.
+	// Plex result plays on itself. The brand picks the button's colours.
 	function openOn(p, r) {
-		if (r.openLabel !== 'Play') return r.openLabel || 'Open';
+		if (r.openLabel !== 'Play') return { label: r.openLabel || 'Open' };
 		const on = r.meta?.merge ? r.meta.playOn : p.integrationName;
-		return on ? `Play on ${on}` : 'Play';
+		return { label: on ? `Play on ${on}` : 'Play', brand: playBrand(p, r) };
 	}
+	// The server a title plays on, for its colours: jellyfin, plex.
+	const playBrand = (p, r) => (r.meta?.merge ? r.meta.playOnId || r.meta.playOn : p.integrationId)?.toLowerCase() || '';
 
 	const detail = $derived(detailView && {
 		...detailView,
@@ -437,7 +439,7 @@
 		badge: (actionState[detailView.key]?.ok === false && actionState[detailView.key].message) || '',
 		request: resultAction(detailView.key, detailView.p, detailView.r),
 		open: detailView.r.href
-			? { label: openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
+			? { ...openOn(detailView.p, detailView.r), run: () => { openUrl(detailView.r.href, true); finish(); } }
 			: null,
 		// A link the details bring (an event's video call). The label names
 		// the host, since anyone who sends an invite picks the link.
@@ -587,7 +589,7 @@
 			for (const r of providerResults[p.providerId]?.results || []) {
 				if (!r.meta?.tmdb) continue;
 				if (r.meta.merge) merged.add(r.meta.tmdb);
-				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName });
+				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName, id: p.integrationId });
 			}
 		}
 		// The app a poster opens in, for the small icon on its corner: the
@@ -606,7 +608,7 @@
 		};
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name } }
+				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name, playOnId: owned.get(r.meta.tmdb).id } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};

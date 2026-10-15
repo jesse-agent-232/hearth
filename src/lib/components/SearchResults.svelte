@@ -92,6 +92,27 @@
 		else node.addEventListener('load', done, { once: true });
 	}
 
+	// Rows ease in as they arrive, and the list slides back in when a title's
+	// details close. Closing remounts the list, so `back` keeps its rows from
+	// replaying; it lasts only for the render that remounts them.
+	let back = false;
+	let hadDetail = false;
+	$effect.pre(() => {
+		back = hadDetail && !detail;
+		hadDetail = !!detail;
+		if (back) queueMicrotask(() => (back = false));
+	});
+	function enter(node, cls) {
+		if (!cls) return;
+		node.classList.add(cls);
+		const done = (e) => {
+			if (e.target !== node) return;
+			node.classList.remove(cls);
+			node.removeEventListener('animationend', done);
+		};
+		node.addEventListener('animationend', done);
+	}
+
 	function scrollIntoView(node, isSelected) {
 		const run = (sel) => { if (sel) node.scrollIntoView({ block: 'nearest' }); };
 		run(isSelected);
@@ -164,7 +185,7 @@
 							</button>
 						{/if}
 						{#if detail.open}
-							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request && !detail.link} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
+							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request && !detail.link} data-brand={detail.open.brand || undefined} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
 								{#if detail.open.label.startsWith('Play')}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
 								{detail.open.label}
 							</button>
@@ -187,7 +208,7 @@
 			{/if}
 		</div>
 	{:else}
-	<div class="launcher-scroll" id={listId} role="listbox" aria-label="Results">
+	<div class="launcher-scroll" id={listId} role="listbox" aria-label="Results" use:enter={back && 'is-back'}>
 		{#each sections as section (section.id)}
 			{#if section.items.length || section.loading || section.error}
 				<div class="launcher-section" role="group" aria-labelledby="{listId}-{section.id}">
@@ -212,7 +233,7 @@
 								</div>
 							{/if}
 						{/each}
-						{#each section.items as item (item.key)}
+						{#each section.items as item, i (item.key)}
 							{@const isSel = item.key === selectedKey}
 							<!-- Keyboard lives on the search input (combobox + aria-activedescendant). -->
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -225,6 +246,8 @@
 								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : section.layout === 'answer' ? 'is-answer' : 'is-row'}"
 								class:is-selected={isSel}
 								use:scrollIntoView={isSel}
+								use:enter={!back && 'is-rising'}
+								style:--i={Math.min(i, 5)}
 								onpointermove={() => { if (!isSel) onselect(item.key); }}
 								onmousedown={(e) => e.preventDefault()}
 								onclick={(e) => onrun(item, e)}
