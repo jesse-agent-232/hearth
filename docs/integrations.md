@@ -25,6 +25,7 @@ Holm has two kinds of app support.
 | Miniflux | Articles from the user's feeds (full text) | URL + API key | `!rss` |
 | Komga | Comics, manga and book series (full text) | URL + API key (Komga 1.20 or later) | `!komga` |
 | Kavita | Manga, comics and book series | URL + Auth Key (Kavita 0.8.9 or later) | `!kavita` |
+| Papra | Documents, by name and content | URL + API key + organization ID | `!papra` |
 
 Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders and upcoming events.
 

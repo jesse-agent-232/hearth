@@ -1,14 +1,14 @@
-// Paperless-ngx integration adapter.
+// Papra integration adapter.
 //
 // Surfaces:
-//   - searchProviders.documents — searches documents via full-text query API
+//   - searchProviders.documents — searches documents by name and content
 
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
 	id: 'papra',
 	name: 'Papra',
 	icon: 'di:papra',
-	shortcut: 'd',
+	shortcut: 'papra',
 	description: 'Document management with full-text search',
 
 	configSchema: [
@@ -30,21 +30,24 @@ const adapter = {
 			helpUrl: { baseKey: 'url', path: '/api-keys', label: 'Open Papra settings' }
 		},
 		{
-			key: 'organisation',
+			key: 'organization',
 			type: 'text',
-			label: 'Organisation ID',
+			label: 'Organization ID',
 			required: true,
-			help: '1. In Papra URL copy the **org_ value**',
+			help: '1. In Papra URL copy the **org_ value**'
 		}
 	],
 
 	async test({ config, fetch }) {
-		if (!config?.url || !config?.token || !config?.organisation) {
-			return { ok: false, message: 'URL, token, and organisation are required' };
+		if (!config?.url || !config?.token || !config?.organization) {
+			return { ok: false, message: 'URL, token, and organization are required' };
+		}
+		if (!ORG_ID.test(config.organization)) {
+			return { ok: false, message: 'Organization ID should look like org_… (copy it from the Papra URL)' };
 		}
 		const base = stripTrailingSlash(config.url);
 		try {
-			const res = await fetch(`${base}/api/organizations/${config.organisation}/documents/statistics`, {
+			const res = await fetch(`${base}/api/organizations/${encodeURIComponent(config.organization)}/documents/statistics`, {
 				method: 'GET',
 				headers: authHeaders(config)
 			});
@@ -67,7 +70,7 @@ const adapter = {
 			label: 'Documents',
 			mode: 'inline',
 			async query({ config, query, limit, fetch }) {
-				if (!config?.url || !config?.token || !config?.organisation) return { results: [] };
+				if (!config?.url || !config?.token || !ORG_ID.test(config?.organization || '')) return { results: [] };
 				const trimmed = (query || '').trim();
 				if (!trimmed) return { results: [] };
 
@@ -75,9 +78,10 @@ const adapter = {
 				const params = new URLSearchParams({
 					pageIndex: '0',
 					pageSize: String(Math.min(limit || 10, 25)),
-					searchQuery: `content:${trimmed} OR name:${trimmed}*`
+					searchQuery: trimmed
 				});
-				const res = await fetch(`${base}/api/organizations/${config.organisation}/documents?${params}`, {
+				const org = encodeURIComponent(config.organization);
+				const res = await fetch(`${base}/api/organizations/${org}/documents?${params}`, {
 					method: 'GET',
 					headers: authHeaders(config)
 				});
@@ -85,7 +89,6 @@ const adapter = {
 					throw new Error(`Papra search failed: ${res.status}`);
 				}
 				const data = await res.json();
-				console.log('Papra search results:', data);
 				const items = data?.documents || [];
 				return {
 					results: items.map((doc) => ({
@@ -93,7 +96,7 @@ const adapter = {
 						title: doc.name || `Document #${doc.id}`,
 						subtitle: '',
 						thumbnail: '',
-						href: `${base}/organizations/${config.organisation}/documents/${doc.id}`,
+						href: `${base}/organizations/${org}/documents/${encodeURIComponent(doc.id)}`,
 						meta: { kind: 'document' }
 					}))
 				};
@@ -101,23 +104,11 @@ const adapter = {
 		}
 	},
 
-	proxy: {
-		thumbnail: {
-			defaultCacheControl: 'private, max-age=3600',
-			async fetch({ config, params, fetch }) {
-				const base = stripTrailingSlash(config.url);
-				const id = params.path?.[0];
-				if (!id) return new Response('Missing document id', { status: 400 });
-				return fetch(`${base}/api/documents/${encodeURIComponent(id)}/thumb/`, {
-					method: 'GET',
-					headers: authHeaders(config)
-				});
-			}
-		}
-	},
-
 	widgets: {}
 };
+
+// Papra organization IDs look like org_ followed by lowercase letters and digits.
+const ORG_ID = /^org_[a-z0-9]+$/;
 
 function stripTrailingSlash(url) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;
