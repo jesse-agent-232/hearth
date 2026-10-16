@@ -12,7 +12,22 @@ let rendered = null;
 export async function releases() {
 	if (!rendered) {
 		const { default: DOMPurify } = await import('isomorphic-dompurify');
-		rendered = parseChangelog(changelog).map((r) => ({ ...r, html: DOMPurify.sanitize(marked.parse(r.notes)) }));
+		// A link in What's new opens in a new tab rather than leaving Holm.
+		// DOMPurify drops target, so the hook adds it back after sanitizing,
+		// and only for these notes.
+		DOMPurify.addHook('afterSanitizeAttributes', newTab);
+		try {
+			rendered = parseChangelog(changelog).map((r) => ({ ...r, html: DOMPurify.sanitize(marked.parse(r.notes)) }));
+		} finally {
+			DOMPurify.removeHook('afterSanitizeAttributes', newTab);
+		}
 	}
 	return rendered;
+}
+
+function newTab(node) {
+	if (node.tagName === 'A' && node.getAttribute('href')) {
+		node.setAttribute('target', '_blank');
+		node.setAttribute('rel', 'noopener noreferrer');
+	}
 }
