@@ -5,6 +5,15 @@ section in its "What's new" dialog, so each entry is written for the people
 using it. Headings are `## <version> — <date>`. One line per change: a bold
 label, then at most about twelve words.
 
+## 0.8.0 — 2026-10-17
+
+- **Papra search.** Search your Papra documents, thanks to Pi Home Server.
+- **Search that moves.** Results ease in, details slide, and Requested pops.
+- **Quieter search.** One loading line, documents first, a Top hit, and sums stay local.
+- **Play in your colour.** The Play button uses your accent colour.
+- **Easier first run.** `config.minimal.yml` gets you going with no sign-in.
+- **Fixed:** apps set to `default_visible` land on a new person's page.
+
 ## 0.7.0 — 2026-10-15
 
 - **Glass to taste.** Configure → Appearance → Glass: Clear, Frosted or Solid.
