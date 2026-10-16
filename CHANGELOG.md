@@ -6,6 +6,11 @@ using it. Headings are `## <version> — <date>`. One line per change:
 **New:**, **Improved:** or **Fixed:**, then a plain line of at most about
 twelve words, ending with a link to its PR.
 
+## 0.8.1 — 2026-10-17
+
+- **Improved:** What's new links each change to its pull request, opening in a new tab. ([#96](https://github.com/man15h/holm/pull/96))
+- **Fixed:** The Papra credit now names @pihomeserver. ([#96](https://github.com/man15h/holm/pull/96))
+
 ## 0.8.0 — 2026-10-17
 
 - **New:** Papra document search, contributed by [@pihomeserver](https://github.com/pihomeserver). ([#92](https://github.com/man15h/holm/pull/92))
