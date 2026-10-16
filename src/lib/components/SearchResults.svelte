@@ -197,7 +197,7 @@
 							</button>
 						{/if}
 						{#if detail.open}
-							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request && !detail.link} data-brand={detail.open.brand || undefined} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
+							<button type="button" class="launcher-detail-btn" class:is-primary={!detail.request && !detail.link} onmousedown={(e) => e.preventDefault()} onclick={detail.open.run}>
 								{#if detail.open.label.startsWith('Play')}<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>{/if}
 								{detail.open.label}
 							</button>

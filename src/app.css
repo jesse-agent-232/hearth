@@ -1978,9 +1978,6 @@ body.search-active .launcher-host { z-index: 40; }
 	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
 }
 .launcher-detail-btn:disabled { cursor: default; }
-/* Play on Jellyfin or Plex wears that server's colours. */
-.launcher-detail-btn.is-primary[data-brand='jellyfin'] { background: linear-gradient(135deg, #aa5cc3, #00a4dc); color: #fff; }
-.launcher-detail-btn.is-primary[data-brand='plex'] { background: #e5a00d; color: #1f1f1f; }
 /* A press dips the button; Request → Requested lands with a small pop. */
 .launcher-detail-btn:not(:disabled):active,
 .launcher-request:not(:disabled):active { scale: 0.96; }

@@ -423,14 +423,12 @@
 	}
 
 	// "Play on Jellyfin": Seerr says which server it plays from; a Jellyfin or
-	// Plex result plays on itself. The brand picks the button's colours.
+	// Plex result plays on itself. The button wears the accent, like the poster ▶.
 	function openOn(p, r) {
 		if (r.openLabel !== 'Play') return { label: r.openLabel || 'Open' };
 		const on = r.meta?.merge ? r.meta.playOn : p.integrationName;
-		return { label: on ? `Play on ${on}` : 'Play', brand: playBrand(p, r) };
+		return { label: on ? `Play on ${on}` : 'Play' };
 	}
-	// The server a title plays on, for its colours: jellyfin, plex.
-	const playBrand = (p, r) => (r.meta?.merge ? r.meta.playOnId || r.meta.playOn : p.integrationId)?.toLowerCase() || '';
 
 	const detail = $derived(detailView && {
 		...detailView,
@@ -589,7 +587,7 @@
 			for (const r of providerResults[p.providerId]?.results || []) {
 				if (!r.meta?.tmdb) continue;
 				if (r.meta.merge) merged.add(r.meta.tmdb);
-				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName, id: p.integrationId });
+				else if (r.href && !owned.has(r.meta.tmdb)) owned.set(r.meta.tmdb, { href: r.href, name: p.integrationName });
 			}
 		}
 		// The app a poster opens in, for the small icon on its corner: the
@@ -608,7 +606,7 @@
 		};
 		const fromMediaServer = (r) =>
 			r.meta?.merge && owned.has(r.meta.tmdb)
-				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name, playOnId: owned.get(r.meta.tmdb).id } }
+				? { ...r, href: owned.get(r.meta.tmdb).href, openLabel: 'Play', action: undefined, meta: { ...r.meta, status: '', requested: false, playOn: owned.get(r.meta.tmdb).name } }
 				: r;
 		const provSections = scopedProviders.map((p) => {
 			const data = providerResults[p.providerId] || {};
