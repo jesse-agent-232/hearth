@@ -16,7 +16,8 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 - **Small and private.** A single container (amd64 / arm64) with built-in SQLite, so there's no separate database to run. No telemetry. A few features reach public services; [what leaves the box](#what-leaves-the-box) lists them.
 
 <p>
-  <img src="docs/screenshots/mobile.jpg" alt="Holm on a phone" width="28%">
+  <img src="docs/screenshots/mobile.jpg" alt="Holm on a phone" width="27%">
+  <img src="docs/screenshots/configure.jpg" alt="Configure: theme, glass, icon style and wallpaper" width="69%">
 </p>
 
 Search reaches inside the apps people have connected, with their own login: one query for "summer" finds a calendar event, a film in Jellyfin, music and photos.
@@ -33,10 +34,6 @@ With Seerr connected, films and shows that aren't on the media server yet can be
 
 ![Launcher with Seerr: play what's there, request what isn't](docs/screenshots/seerr.jpg)
 <sub>Mock data. Posters are Blender open movies from Wikimedia Commons: <i>Spring</i>, <i>Sprite Fright</i> and <i>Cosmos Laundromat</i> <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; <i>Sintel</i>, <i>Big Buck Bunny</i> and <i>Tears of Steel</i> <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>, © Blender Foundation / Blender Studio.</sub>
-
-Each app can carry a short setup guide: what to install, the steps, and the server URL to copy.
-
-![Setup guide for Photos](docs/screenshots/setup-guide.jpg)
 
 Someone's first visit is already set up: a welcome, the apps they've been given, and a guide for each.
 
