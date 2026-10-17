@@ -34,10 +34,6 @@ Each app can carry a short setup guide: what to install, the steps, and the serv
 
 ![Setup guide for Photos](docs/screenshots/setup-guide.jpg)
 
-Pick a light or dark theme, or let the wallpaper set the mood:
-
-![Light and dark themes](docs/screenshots/themes.jpg)
-
 ## Try it in one command
 
 No identity provider needed; this runs the bundled demo with login turned off:
