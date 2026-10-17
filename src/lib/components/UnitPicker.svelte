@@ -11,7 +11,7 @@
 <div class:inline-row={inline}>
 	<div class="min-w-0">
 		<div class={inline ? 'text-[0.75rem] text-content-muted whitespace-nowrap' : 'text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2'}>{label}</div>
-		{#if hint}<div class="text-[0.7rem] text-content-dim leading-snug" class:mb-2={!inline}>{hint}</div>{/if}
+		{#if hint}<div class="text-[0.7rem] text-content-dim leading-snug text-balance" class:mb-2={!inline}>{hint}</div>{/if}
 	</div>
 	<div class="segmented" class:compact={compact || inline} role="radiogroup" aria-label={label}>
 		{#each options as opt}
