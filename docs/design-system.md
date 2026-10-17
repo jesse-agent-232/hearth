@@ -24,7 +24,7 @@ The 12 utilities you'll use most. Pin this section if nothing else.
 | Caption / helper text               | `text-caption text-content-dim`           |
 | Eyebrow / uppercase mini-label      | `text-micro uppercase tracking-widest`    |
 | Standard interaction transition     | `transition-colors duration-200`          |
-| Modal entrance                      | `animate-fade-in-up`                      |
+| Modal entrance                      | `animate-modal-enter`                     |
 | Dimmed backdrop overlay             | `modal-veil` (see Glass)                  |
 
 ---
@@ -40,7 +40,7 @@ The headline change in v1: every surface in the app picks a **depth level** inst
 | `surface-2` | lift  | Sticky header, dropdowns, popovers, toasts           |
 | `surface-3` | hero  | Hero search palette, modals, command palette         |
 
-Each level is a **bundle** of bg + border + blur + shadow that always travel together. The composite class applies all four; you don't need (and shouldn't write) the individual utilities.
+Each level from 1 to 3 is a **bundle** of bg + border + blur + shadow that always travel together; `surface-0` is a border only. The composite class applies all four; you don't need (and shouldn't write) the individual utilities.
 
 ```html
 <!-- Right -->
@@ -97,7 +97,7 @@ Four names, used in lockstep with the surface levels:
 
 Most components inherit a shadow from their `surface-*` class — you rarely apply `shadow-*` directly. The exception is `shadow-bloom`, which is applied via the `bloom-focus` utility on focus-within (see Focus, below).
 
-The legacy `shadow-theme` token is kept as an alias to `shadow-lift` for one migration cycle, then removed.
+The legacy `shadow-theme` token is its own deeper drop shadow, still used by `.glass-card` and the modals. Swap it for `shadow-lift` when a component migrates.
 
 ---
 
@@ -226,7 +226,7 @@ Copy-paste these for common components.
 
 ```html
 <div class="fixed inset-0 modal-veil z-[100] flex items-center justify-center p-4">
-  <div class="glass-card rounded-xl w-full max-w-[480px] p-8 animate-fade-in-up">
+  <div class="glass-card rounded-xl w-full max-w-[480px] p-8 animate-modal-enter">
     <h2 class="text-title text-content mb-4">Modal title</h2>
     …
   </div>
@@ -263,7 +263,7 @@ Copy-paste these for common components.
 
 ### Corner stack
 
-Small cards that come and go on their own (a calendar reminder, the music player) live in the bottom-right corner, above the docked search on a phone. They share one container, `CornerStack.svelte`, mounted once on the page; each component renders its cards in flow inside it, so a new card pushes the others up instead of covering them. Don't give these cards `position: fixed` or their own offsets. The last child sits nearest the corner, so put what stays longest (the player) last.
+Small cards that come and go on their own (a calendar reminder, the music player) live in the bottom-right corner, above the account button on a phone. They share one container, `CornerStack.svelte`, mounted once on the page; each component renders its cards in flow inside it, so a new card pushes the others up instead of covering them. Don't give these cards `position: fixed` or their own offsets. The last child sits nearest the corner, so put what stays longest (the player) last.
 
 ```svelte
 <CornerStack>
@@ -305,10 +305,10 @@ Appearance → Glass** sets `data-glass` on `<html>`.
 
 | Class                     | Use for                                   |
 | ------------------------- | ----------------------------------------- |
-| `glass-card`              | Modals and first-run cards: clear glass   |
+| `glass-card`              | Modals and first-run cards: the page's glass (Frosted by default) |
 | `glass-card menu-surface` | Menus and popovers: same blur, darker tint so text stays readable over white tiles |
 | `modal-veil`              | The full-screen wrapper behind a modal    |
-| `segmented` / `segmented-item` | Two-to-four-way choices (Theme, Icon style) |
+| `segmented` / `segmented-item` | Two-to-four-way choices (Theme, Glass, Icon style, units) |
 | `glass-check`             | Checkboxes                                |
 
 Four rules the browser enforces:
@@ -333,7 +333,7 @@ Four rules the browser enforces:
 ## Don'ts
 
 - **No raw pixel sizes**: `text-[0.8rem]`, `rounded-[10px]`, `backdrop-blur-[12px]`. Use the named scale.
-- **No raw `rgba(...)` in component styles.** All color values come from CSS variables defined in `:root` / `.theme-light`.
+- **No raw `rgba(...)` in component styles.** All color values come from CSS variables defined in `:root`, `.theme-dark` and `.theme-light`.
 - **No inline `box-shadow` rules.** Use `shadow-*` utilities or a `surface-*` composite class.
 - **No new `backdrop-filter` recipes.** Stick to `surface-{1,2,3}` or `backdrop-blur-{soft,card,glass,hero}`.
 - **No role-named one-off classes.** If your component has a `.my-component-card` selector with custom bg + border + shadow, you're re-inventing a surface level. Use one.
@@ -350,7 +350,6 @@ For the gradual refactor of existing components, here's the legacy → v1 mappin
 | ------------------------------------------- | ----------------------------------------- |
 | `bg-surface-card border border-border-card` | `surface-1`                               |
 | `bg-surface-modal backdrop-blur-xl border border-border-card` (dropdowns) | `surface-2` |
-| `.glass-card`                               | `surface-1` (or `surface-2` if it sits over content) |
 | `bg-surface-card/30 backdrop-blur-sm` (inline tip) | `surface-0` or `surface-1`         |
 | `bg-surface-overlay backdrop-blur-[6px]` (modal scrim) | `modal-veil` |
 | `shadow-theme`                              | `shadow-lift` (or inherit from `surface-*`) |
@@ -363,4 +362,4 @@ For the gradual refactor of existing components, here's the legacy → v1 mappin
 | `text-[1.2rem]`                             | `text-title`                              |
 | `focus:border-border-pill` (inputs)         | `bloom-focus`                             |
 
-Migration runs as a sequence of small PRs, one cluster of components per PR (modals → dropdowns → cards → pills → inputs). Every PR ships before/after screenshots from `.claude-playwright-capture.mjs`.
+Migration runs as a sequence of small PRs, one cluster of components per PR (modals → dropdowns → cards → pills → inputs). Every PR ships before/after screenshots.

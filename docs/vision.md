@@ -2,7 +2,7 @@
 
 > The "why" and "what" — implementation choices push against this doc.
 
-> **Status: a target, not a description of today's build.** Built so far: per-user app tiles on a grid, bookmarks, the launcher with integration search and instant answers (maths, units, time zones), onboarding slides, setup guides, and Navidrome's player as the first widget. Not built: the pinned / recently used / most used / all-apps widgets, RSS and other widget configs, the global custom CSS hook, and integration widgets for weather, Immich, Paperless and the rest. Integration credentials are each user's own, not wired once by the admin. First-week tips are switched off. Read this for direction; read [configuration.md](configuration.md) and [integrations.md](integrations.md) for what ships.
+> **Status: a target, not a description of today's build.** Built so far: per-user app tiles on a grid, bookmarks, the launcher with integration search and instant answers (maths, units, time zones), onboarding slides, setup guides, the weather pill, and the first integration widgets: Navidrome's player and the Calendar's reminders and upcoming events. Not built: the pinned / recently used / most used / all-apps widgets, RSS and other widget configs, the global custom CSS hook, and integration widgets for Immich, Paperless and the rest. Integration credentials are each user's own, not wired once by the admin. First-week tips are switched off. Read this for direction; read [configuration.md](configuration.md) and [integrations.md](integrations.md) for what ships.
 
 ## Premise
 
@@ -15,7 +15,7 @@ This is what separates Holm from Homarr, Dashy, Homepage, and Glance: those are 
 **admin (global, in `config.yml`)**
 
 - Catalog of self-hosted apps (with `default_visible` per app)
-- Integration credentials — wired once
+- Integrations — which ones are offered, and the server each one is pinned to
 - Custom CSS theme — re-skin Holm to feel like Glance, Homarr, or anything else; default theme ships as today
 - Onboarding slides — composable from built-in types
 - Per-app setup guides
@@ -43,14 +43,14 @@ A user's surface is a grid of widgets they arrange by drag and resize. **There a
 ### Built-in non-app widgets
 
 - **Bookmarks** — user's external links, picked from a built-in default list (YouTube, Reddit, GitHub, etc.) or custom URLs.
-- **Integration widgets** — the existing set: weather, Immich, Paperless, Nextcloud, Planka, Karakeep. admin wires creds; user picks which to display.
+- **Integration widgets** — one per integration in [integrations.md](integrations.md). The admin allows them; each user connects their own account and picks which to display.
 
 Bookmarks and apps stay separate widget types. Mixing them ("recently used" across both) sounds tempting but quickly produces weird rows.
 
 ## First-run
 
 1. User signs in.
-2. The existing slide-based onboarding plays through — `welcome`, `services` (auto-derived from self-hosted apps), `privacy`, `security`, plus new generic slides (`pin-tutorial`, `bookmarks-intro`, `widgets-intro`) the admin can drop into `onboarding.slides` in any order.
+2. The existing slide-based onboarding plays through — `welcome`, `services` (auto-derived from self-hosted apps), `privacy`, `security`, `password`, plus new generic slides (`pin-tutorial`, `bookmarks-intro`, `widgets-intro`) the admin can drop into `onboarding.slides` in any order.
 3. After dismiss, default surface = **All apps widget alone**, populated with `default_visible: true` apps.
 4. Everything else — bookmarks, more widgets, additional apps from the catalog — is opt-in. Nothing is pushed onto the user's surface.
 
@@ -73,9 +73,9 @@ The existing `services` slide, per-app `setup_guide`, and inline tips system con
 
 | Today | New direction |
 |---|---|
-| Apps grouped by admin-defined categories; users toggle visibility | All apps widget + smart widgets (pinned / recent / most-used / new); no categories |
-| Drag/resize at the category level | Drag/resize at the widget level |
-| Per-user customization = which apps are visible | Per-user customization = which widgets, where, plus bookmarks and opted-in apps |
+| One tile per app on a per-user grid; categories are ignored | All apps widget + smart widgets (pinned / recent / most-used / new); no categories |
+| Drag/resize of app tiles | Drag/resize at the widget level |
+| Per-user customization = which apps, where, plus bookmarks and appearance | Per-user customization = which widgets, where, plus bookmarks and opted-in apps |
 | `default_visible` controls toggle-list defaults | `default_visible` controls what shows in All apps without opt-in |
 | No admin theming knob | Global custom CSS as a first-class extension point |
 

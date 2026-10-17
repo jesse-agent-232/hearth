@@ -72,7 +72,7 @@ volumes:
 1. Copy [`config.minimal.yml`](config.minimal.yml) to `config.yml`, list your apps, and run `docker compose up -d`. It has no sign-in: everyone who opens Holm shares one Guest page, so keep it on your own network.
 2. For per-person pages and groups, add the `auth:` block from [`config.example.yml`](config.example.yml) and register Holm as an OIDC client with your provider. The redirect URI is `https://<your-holm-host>/auth/callback`. That block reads `${OIDC_CLIENT_ID}` and `${OIDC_CLIENT_SECRET}`, so Holm won't start until both are set.
 
-`latest` and `stable` follow the newest release. To upgrade only when you choose, pin a version tag such as `holm:0.6.1`. From 0.6.2, each [release](https://github.com/man15h/holm/releases) lists its image by tag and by digest (`holm@sha256:…`); the digest pins the exact build. `alpha` is built from `dev` for arm64 only.
+`latest` and `stable` follow the newest release. To upgrade only when you choose, pin a version tag such as `holm:0.8.1`. From 0.6.2, each [release](https://github.com/man15h/holm/releases) lists its image by tag and by digest (`holm@sha256:…`); the digest pins the exact build. `alpha` is built from `dev` for arm64 only.
 
 Holm refuses to start, and logs why, when the config is missing or invalid, when it names an unset `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when it can't write the data directory (needed even with the database off, unless `HOLM_SECRET_KEY` is set). The container runs as the `node` user (uid 1000). A data directory bind-mounted from a release before 0.5.0 needs `chown -R 1000:1000` once.
 
@@ -86,13 +86,14 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 
 ## Features
 
-- Per-user app grid, bookmarks, theme (auto / dark / light) and icon style (colored / white / grayed)
+- Per-user app grid, bookmarks, theme (dynamic / dark / light), glass (clear / frosted / solid) and icon style (colored / white / grayed)
 - 326 wallpapers or a daily rotation
 - Brand tiles, Dashboard Icons and Simple Icons, custom mono icons
 - Launcher: frecency ranking, `!photos`-style scopes, `!settings` / `!theme` / `!wall` commands, instant answers for maths (`12*(3+4)`), unit conversions (`5 km in mi`, or just `72f`) and time zones (`3pm ist in london`), `/?q=` and OpenSearch so it can be your browser's search engine
 - Search inside your apps with per-user encrypted credentials ([supported apps](#supported-apps))
 - Weather (Open-Meteo) and a configurable fallback search engine
 - Onboarding slides, setup guides, Markdown privacy policy
+- A "What's new" dialog after each upgrade, and a notice in Configure when a newer release is out
 - Installable PWA; on phones the search docks above the keyboard
 - Config-driven branding and fonts
 
@@ -120,7 +121,7 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 | Miniflux | Articles from your feeds |
 | Komga | Comics, manga and book series |
 | Kavita | Manga, comics and book series |
-| Papra | Documents |
+| Papra | Documents, by name and content |
 
 Adding an integration is one adapter file and one import line. [docs/integrations.md](docs/integrations.md) covers enabling, connecting, the security model and writing a new adapter.
 

@@ -1,6 +1,6 @@
 # Configuration
 
-Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.minimal.yml`](../config.minimal.yml) is the smallest working config, [`config.example.yml`](../config.example.yml) is an annotated example of everything, and the [reference table](#reference) below lists every key.
+Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.minimal.yml`](../config.minimal.yml) is the smallest working config, [`config.example.yml`](../config.example.yml) is an annotated example of everything, [`config.demo.yml`](../config.demo.yml) runs the demo with no sign-in, and the [reference table](#reference) below lists every key.
 
 **Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`, an unknown `search.on_focus`) makes every request fail with the reason in the log until it's fixed.
 
@@ -48,11 +48,11 @@ auth:
     url: null
 ```
 
-Secrets use `${ENV_VAR}` syntax, substituted at load, so they stay out of the file. Session cookies are HMAC-signed with a key derived from Holm's master key (`HOLM_SECRET_KEY` or the key file) and expire after 30 days; groups are read at sign-in.
+Secrets use `${ENV_VAR}` syntax, substituted at load, so they stay out of the file. Session cookies are HMAC-signed with a key derived from Holm's master key (`HOLM_SECRET_KEY` or the key file) and expire after 30 days; groups are read at sign-in. The cookies are `Secure`, so sign-in needs Holm served over HTTPS (or `localhost`).
 
 Any OIDC provider works. Two details trip people up:
 
-- **The issuer must match the provider's exactly.** Copy it from the provider's `/.well-known/openid-configuration`. Holm retries once with or without a trailing slash. If discovery still fails, the login page says sign-in is unavailable and the server log has the reason.
+- **The issuer must match the provider's exactly.** Copy it from the provider's `/.well-known/openid-configuration`. Holm retries once with or without a trailing slash. If discovery still fails, clicking Sign in shows a "Sign-in is unavailable" page and the server log has the reason.
 - **Log out ends the provider session only if the provider supports it.** When the discovery document lists an `end_session_endpoint`, Log out sends the user there, so the next login asks for a password. Without one (Authelia, for example), Log out only clears Holm's session, and the next login goes straight back in while the provider session lasts.
 
 ### Authentik
@@ -136,15 +136,15 @@ The server drops apps a user can't see before the page reaches the browser, so t
 
 `admin_only: true` and the `admin_groups` / `admin_usernames` settings are gone. An app that still has `admin_only: true` and no `groups` is hidden from everyone, with a warning in the log; replace it with something like `groups: ["admins"]`.
 
-Apps are a flat list. The older `category:` / `items:` shape still loads, flattened silently.
+Apps are a flat list. The older `category:` / `items:` shape still loads, flattened, with a deprecation warning in the log at startup.
 
 ## Icons
 
-Icons load from CDNs. Users choose Colored, White, or Grayed in the Configure panel.
+Holm fetches `di:` / `si:` icons from their CDNs and serves them itself, so visitors' browsers never reach the CDNs; a full URL loads from wherever it points. Users choose Colored, White, or Grayed in the Configure panel.
 
 **Colored mode** displays full-color dashboard icons by default. Apps with an explicit `tile_color` field get iOS-style brand tiles (mono glyph on colored background).
 
-**White/Grayed modes** use the mono icon source with CSS filters. When no mono icon is available, the colored icon is automatically grayscaled.
+**White/Grayed modes** use the mono icon source with CSS filters. Without `icon_mono`, Holm tries the Simple Icons icon of the same name, and grayscales the colored icon only if there is none.
 
 | Field | Purpose | Example |
 |-------|---------|---------|
@@ -162,6 +162,8 @@ Icons load from CDNs. Users choose Colored, White, or Grayed in the Configure pa
 Direct URLs also work: `"https://cdn.example.com/icon.svg"`.
 
 ## Onboarding
+
+Onboarding shows only with `auth.enabled: true`. Without `slides`, it plays `welcome` then `services`.
 
 Onboarding uses a composable `slides` array. Each slide has a `type` — built-in types (`welcome`, `services`) have special behavior, while `privacy`, `security`, `password`, and `list` all render through a generic list engine with per-type defaults.
 
@@ -193,7 +195,7 @@ onboarding:
 
 All list-based types (`privacy`, `security`, `password`, `list`) support: `icon`, `title`, `subtitle`, `items`, `footer`, `list_icon`. Items auto-detect format: `{text}` renders with bold markdown, `{title, desc}` renders as **title** — desc. Both formats can coexist in one slide.
 
-**Password slide:** `password` asks a new user to replace the password they were given. It shows only when `auth.password_change_url` is set and the user has not confirmed yet; it is never added on its own, so list it to use it. Under the list it adds a "Change password" button that opens `password_change_url` in a new tab, and "Done, continue" unlocks once that tab has been opened. Listing it also turns on a standalone version for users who are already onboarded.
+**Password slide:** `password` asks a new user to replace the password they were given. It shows only when auth is on, `auth.password_change_url` is set and the user has not confirmed yet; it is never added on its own, so list it to use it. Under the list it adds a "Change password" button that opens `password_change_url` in a new tab, and "Done, continue" unlocks once that tab has been opened. Listing it also turns on a standalone version for users who are already onboarded.
 
 **Icons:** Use any [Lucide](https://lucide.dev/icons) icon by name (e.g., `shield-check`, `lock`, `info`). Direct URLs also work. Browse 1400+ icons at [lucide.dev/icons](https://lucide.dev/icons).
 
@@ -243,9 +245,9 @@ Set `default_url` for every integration you enable: it pins the server URL for e
 
 ### What's new
 
-After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on, and someone who used Holm before 0.6.0 (which added the dialog) sees every release since 0.5.0; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
+After an update, each user gets a **What's new in vX.Y.Z** dialog the first time they open Holm, with that release's notes from `CHANGELOG.md` (bundled at build time; Holm never asks GitHub). Once closed, it stays closed until the next version. Someone who skipped versions sees every release since the one they last closed it on, and someone signed in who used Holm before 0.6.0 (which added the dialog) sees every release since 0.5.0; a brand-new user doesn't get it at all. Signed-in users' last version is kept on the server, so it follows them across devices. With auth off, everyone is the shared guest, so each browser keeps its own in `localStorage` instead (and so does every user when the database is off).
 
-`changelog: { enabled: false }` turns the dialog off for everyone, and `changelog: { groups: ["admins"] }` shows it only to those groups. The version still shows at the bottom of Configure as "Holm vX.Y.Z", whatever `branding.name` is, and links to Holm on GitHub.
+`changelog: { enabled: false }` turns the dialog off for everyone, and `changelog: { groups: ["admins"] }` shows it only to those groups. The version still shows at the bottom of Configure as "Holm vX.Y.Z", whatever `branding.name` is, and links to Holm on GitHub. Configure, and with it the version and the update notice, needs `customization.enabled: true`.
 
 ### Groups for onboarding, privacy and What's new
 
@@ -312,23 +314,23 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `branding.accent_color` | hex | `#f5b942` | yes | Focus rings, selected states, hover halos |
 | `branding.show_footer` | bool | `true` | yes | Footer with the brand name and register / privacy links |
 | `auth.enabled` | bool | `false` | yes | `false` = every visitor is the same Guest with no groups |
-| `auth.oidc.issuer` / `client_id` / `client_secret` / `scopes` / `redirect_base` | string | none | restart | Endpoints are discovered from the issuer |
+| `auth.oidc.issuer` / `client_id` / `client_secret` / `scopes` / `redirect_base` | string | none (`scopes`: `openid profile`) | restart | Endpoints are discovered from the issuer |
 | `auth.password_change_url` | URL | none | yes | Adds "Change password" to the user menu; also the target of the `password` onboarding slide |
-| `auth.registration.enabled` / `url` | bool / URL | `false` | yes | A "Register" link on the sign-in screen |
+| `auth.registration.enabled` / `url` | bool / URL | `false` | yes | A "Register" link on the sign-in screen, when both are set |
 | `database.enabled` | bool | `true` | restart | `false` = preferences in each browser only, integrations off |
 | `database.path` | path | `./data/holm.db` | restart | `DATABASE_PATH` wins |
 | `customization.enabled` | bool | `false` | yes | Without it there is no Configure panel and the grid is fixed |
 | `apps[]` | list | `[]` | yes | Fields under [Apps](#apps): `id`, `name`, `url`, `icon`, `icon_mono`, `tile_color`, `self_hosted`, `default_visible`, `on_click`, `groups`, `tags` (shown on search results), `app_store`, `browser_extension`, `setup_guide` |
-| `search.enabled` / `url` / `param` / `name` / `icon` | | enabled, Google, `q` | yes | The fallback web search |
+| `search.enabled` / `url` / `param` / `name` / `icon` | | on, Google, `q` when the block is missing | yes | The fallback web search. A `search:` block needs `enabled: true` |
 | `search.on_focus` | `top` \| `in_place` | `top` | yes | Where the bar goes when it opens on desktop: slides up toward the top, or stays put. The default for everyone; each person can override it in Configure → Widgets → Search. Phones always pin it above the keyboard. Any other value is rejected like bad YAML, with the reason in the log |
 | `integrations.<id>.enabled` | bool | on when the block exists | yes | `false` hides it; so does leaving the block out |
 | `integrations.<id>.name` / `shortcut` / `tip` | string | adapter's | yes | Display name, `!scope`, a hint on the connect card |
 | `integrations.<id>.default_url` | URL | none | yes | Pins the server URL for every user. Set it for every integration |
-| `integrations.<id>.surfaces.search` / `widgets` | bool | `true` / `false` | yes | `widgets` is used by Navidrome's player only |
+| `integrations.<id>.surfaces.search` / `widgets` | bool | `true` / `false` | yes | Widgets so far: Navidrome's player, the Calendar's reminders and upcoming events |
 | `integrations.planka.cache_ttl` | seconds | `300` | yes | How long Planka cards are cached per user |
 | `wallpapers.enabled` | bool | `false` | yes | Wallpaper picker and daily rotation |
 | `weather.enabled` | bool | `false` | yes | Users set their own location |
-| `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | See [Onboarding](#onboarding) |
+| `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | Needs `auth.enabled: true`. See [Onboarding](#onboarding) |
 | `onboarding.groups` / `privacy.groups` / `changelog.groups` | list | everyone | yes | Only these OIDC groups see it. See [Groups](#groups-for-onboarding-privacy-and-whats-new) |
 | `privacy.enabled` / `last_updated` / `file` / `sections` | | off | yes | `file` is relative to `config.yml` |
 | `security.frame_ancestors` | list of origins | none | yes | Pages allowed to show Holm in a frame. See [Embedding](#embedding-holm-in-another-page) |

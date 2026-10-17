@@ -163,11 +163,12 @@ search:
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,
 # Nextcloud, Planka, Karakeep, Linkwarden, Jellyfin, Plex, Navidrome,
-# Audiobookshelf, Mealie, Seerr, Miniflux, Komga, Kavita, Papra. Add more in
+# Audiobookshelf, Mealie, Seerr, Calendar (CalDAV), Miniflux, Komga, Kavita,
+# Papra. Add more in
 # src/lib/server/integrations/.
 #
-# Each key must match both the adapter's `id` AND an app `id` in the apps
-# section above — the integration inherits the app's icon automatically.
+# Each key must match the adapter's `id`. If an app in the section above has
+# the same `id`, the integration uses its icon; otherwise the adapter's own.
 # For example, `integrations.immich` resolves its icon from the app with
 # `id: immich` in the apps list.
 #
@@ -203,7 +204,7 @@ integrations:
     # tip: "Find your API key under Account settings"   # Optional hint on the connect card
     surfaces:                                 # Which surfaces this instance is allowed to power
       search: true                            # Photo search in the search bar
-      widgets: false                          # Only Navidrome has a widget (its player) so far
+      widgets: false                          # Navidrome's player, the Calendar's reminders and upcoming events
   paperless:
     enabled: true
     name: "Paperless"
@@ -402,6 +403,12 @@ privacy:
 # doesn't get it. The version is shown in Configure either way.
 changelog:
   enabled: true                # false turns the dialog off for everyone
+
+# ── Update notice ───────────────────────────────────────────
+# Holm's server asks GitHub for the latest release at most every 6 hours and
+# Configure shows "vX.Y.Z available" when there's a newer one.
+update_check:
+  enabled: true                # false = never ask GitHub
 
 # ── Tips ────────────────────────────────────────────────────
 # First-week tips are switched off in this release; a tips: block is accepted

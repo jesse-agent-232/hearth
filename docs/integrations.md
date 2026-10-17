@@ -18,14 +18,14 @@ Holm has two kinds of app support.
 | Linkwarden | Links by name, URL, description and tags (full text with Meilisearch) | URL + access token | `!lw` |
 | Plex | Movies, shows and music | Code at plex.tv/link, no key to copy | `!plex` |
 | Navidrome | Artists, albums and songs; optional player for songs | URL + username + password (only a derived token is kept) | `!nd` |
-| Audiobookshelf | Audiobooks and podcasts | URL + API key | `!abs` |
+| Audiobookshelf | Audiobooks and podcasts | URL + API key (before 2.26, the account's API token) | `!abs` |
 | Mealie | Recipes | URL + API token | `!r` |
 | Seerr | Movies and shows: play what's there, request what isn't | Automatic through Jellyfin or Plex; otherwise a Quick Connect code | `!sr` |
 | Calendar (CalDAV) | Events, by title, a month back to a year ahead; optional reminders and upcoming events on the page | URL + username + app password | `!cal` |
 | Miniflux | Articles from the user's feeds (full text) | URL + API key | `!rss` |
 | Komga | Comics, manga and book series (full text) | URL + API key (Komga 1.20 or later) | `!komga` |
 | Kavita | Manga, comics and book series | URL + Auth Key (Kavita 0.8.9 or later) | `!kavita` |
-| Papra | Documents, by name and content | URL + API key + organization ID | `!papra` |
+| Papra | Documents, by name and content | URL + read-only API token + organization ID | `!papra` |
 
 Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders and upcoming events.
 
@@ -53,7 +53,7 @@ The key (`immich`) must match the adapter id. If an app in `apps:` has the same 
 ## Connecting (users)
 
 1. Open **Configure → Integrations**.
-2. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to the right settings page.
+2. Pick an app and fill in the fields. Each field says where to find the key in that app, with a link to its settings page where Holm knows one.
 3. Press **Connect**. The form tests the connection before saving it.
 
 Jellyfin skips the form: Holm shows a code, the user approves it under Quick Connect in Jellyfin, and Holm receives that user's own token.
@@ -78,7 +78,7 @@ With **Reminders** on, Holm shows each event's own reminders on the page, at the
 
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
 
-An integration's widgets switch is also in **Configure → Widgets**. Once an integration is connected, it appears there next to Weather and Search, and both places flip the same switch.
+An integration's widgets switch is also in **Configure → Widgets**. Once an integration with `surfaces.widgets` on is connected, it appears there next to Clock, Weather and Search, and both places flip the same switch.
 
 After connecting, results from the app appear in the search bar. Typing `!<shortcut>` searches only that app.
 
@@ -87,7 +87,7 @@ After connecting, results from the app appear in the search bar. Typing `!<short
 - **Per-user credentials.** Each user connects with their own key, so search results respect that user's permissions in the app.
 - **Encrypted at rest** with AES-256-GCM. Set `HOLM_SECRET_KEY` to 32 bytes, hex or base64 (`openssl rand -hex 32`). Without it, Holm generates `.integrations-key` next to the database, so anyone with a copy of the data directory also has the key. See [configuration.md](configuration.md#integration-credentials).
 - **Never sent back to the browser.** API responses redact secret fields. Thumbnails and previews are fetched through Holm (`/api/integrations/<id>/proxy/…`), so the key never appears in an `<img src>`. The proxy passes on images and audio only (other binary replies only as a download).
-- **Tied to their server.** Changing a connection's URL to another host drops its stored key or token, so the new host has to be signed in to afresh.
+- **Tied to their server.** Changing a connection's URL to another server (a different scheme, host or port) drops its stored key or token, so the new host has to be signed in to afresh.
 - **Disconnect** deletes the stored credentials. A Seerr connected through Jellyfin or Plex is linked to it: disconnecting that Jellyfin or Plex disconnects Seerr too, and connecting it again brings Seerr back. A Seerr signed in with a code stays connected. A disconnected Seerr stays disconnected rather than reconnecting through Jellyfin or Plex on its own; **Sign in** on its card brings it back, and so does connecting Jellyfin or Plex again, through Jellyfin or Plex when it can and with a code otherwise. Jellyfin also revokes its token. To revoke a Plex sign-in, remove the "Holm" device under **Authorized Devices** in Plex. A Seerr code sign-in through plex.tv/link appears there as "Holm (Seerr sign-in)"; Holm doesn't keep that token, but Seerr saves it as the user's Plex token, so removing it leaves Holm alone and can stop Seerr's own Plex features for that user, such as watchlist sync.
 
 ## Adding an integration
