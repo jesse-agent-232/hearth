@@ -16,7 +16,6 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
 - **Small and private.** A single container (amd64 / arm64) with built-in SQLite, so there's no separate database to run. No telemetry. A few features reach public services; [what leaves the box](#what-leaves-the-box) lists them.
 
 <p>
-  <img src="docs/screenshots/launcher.jpg" alt="Launcher" width="68%">
   <img src="docs/screenshots/mobile.jpg" alt="Holm on a phone" width="28%">
 </p>
 
