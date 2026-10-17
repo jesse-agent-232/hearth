@@ -6,6 +6,11 @@ using it. Headings are `## <version> — <date>`. One line per change:
 **New:**, **Improved:** or **Fixed:**, then a plain line of at most about
 twelve words, ending with a link to its PR.
 
+## 0.9.0 — 2026-10-17
+
+- **New:** Choose whether search slides to the top or stays put when opened. ([#98](https://github.com/man15h/holm/pull/98))
+- **Improved:** Docs and screenshots match the current build. ([#99](https://github.com/man15h/holm/pull/99))
+
 ## 0.8.1 — 2026-10-17
 
 - **Improved:** What's new links each change to its pull request, opening in a new tab. ([#96](https://github.com/man15h/holm/pull/96))
