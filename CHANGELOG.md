@@ -8,7 +8,7 @@ twelve words, ending with a link to its PR.
 
 ## 0.9.0 — 2026-10-17
 
-- **New:** Choose whether search slides to the top or stays put when opened. ([#98](https://github.com/man15h/holm/pull/98))
+- **New:** Choose whether search slides to the top or stays put when focused. ([#98](https://github.com/man15h/holm/pull/98))
 - **Improved:** Docs and screenshots match the current build. ([#99](https://github.com/man15h/holm/pull/99))
 
 ## 0.8.1 — 2026-10-17
