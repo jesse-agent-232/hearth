@@ -4,9 +4,11 @@
 // search.on_focus sets the default and each person can override it under
 // Configure → Widgets → Search. Phones always pin it above the keyboard.
 
+// Each icon is a screen with the bar where that option puts it.
+const SCREEN = 'M3.5 2.5h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z';
 export const SEARCH_ON_FOCUS = [
-	{ id: 'top', label: 'At top' },
-	{ id: 'in_place', label: 'In place' }
+	{ id: 'top', label: 'At top', icon: `${SCREEN}M5 4.5h6v2H5z` },
+	{ id: 'in_place', label: 'In place', icon: `${SCREEN}M5 7h6v2H5z` }
 ];
 export const DEFAULT_SEARCH_ON_FOCUS = 'top';
 

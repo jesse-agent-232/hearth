@@ -21,7 +21,7 @@
 				aria-checked={($prefs[key] || fallback) === opt.id}
 				class="segmented-item"
 				onclick={() => prefs.update((p) => ({ ...p, [key]: opt.id }))}
-			>{opt.label}</button>
+			>{#if opt.icon}<svg viewBox="0 0 16 16" class="segmented-icon" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" aria-hidden="true"><path d={opt.icon} /></svg>{/if}{opt.label}</button>
 		{/each}
 	</div>
 </div>
@@ -33,4 +33,6 @@
 	.inline-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 	/* One width for every settings row, so the controls line up. */
 	.inline-row .segmented { width: 12.5rem; min-width: 0; flex-shrink: 0; }
+	/* An option's optional icon, before its label. */
+	.segmented-icon { width: 0.9rem; height: 0.9rem; flex-shrink: 0; margin-right: 0.35rem; display: inline-block; vertical-align: -0.15em; }
 </style>
