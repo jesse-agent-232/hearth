@@ -42,9 +42,10 @@ function loadConfig() {
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`${configPath} must be a YAML mapping of settings`);
 	}
-	const invalid = searchOnFocusError(parsed.search);
+	const config = substituteEnvVars(parsed);
+	const invalid = searchOnFocusError(config.search);
 	if (invalid) throw new Error(`Invalid setting in ${configPath}: ${invalid}`);
-	_config = substituteEnvVars(parsed);
+	_config = config;
 	return _config;
 }
 
