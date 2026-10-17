@@ -24,6 +24,11 @@ Search reaches inside the apps people have connected, with their own login: one 
 ![Launcher searching a calendar, Jellyfin, music and photos at once](docs/screenshots/integrations.jpg)
 <sub>Mock data. The photos are CC0 from StockSnap.</sub>
 
+Open a result for its details and play it straight from the launcher.
+
+![A film's details in the launcher, with Play on Jellyfin](docs/screenshots/film-detail.jpg)
+<sub>Mock data. The poster, album covers and titles are made up for the demo.</sub>
+
 With Seerr connected, films and shows that aren't on the media server yet can be requested right from the results, as that person. Titles already there play in Jellyfin or Plex.
 
 ![Launcher with Seerr: play what's there, request what isn't](docs/screenshots/seerr.jpg)
@@ -32,6 +37,10 @@ With Seerr connected, films and shows that aren't on the media server yet can be
 Each app can carry a short setup guide: what to install, the steps, and the server URL to copy.
 
 ![Setup guide for Photos](docs/screenshots/setup-guide.jpg)
+
+Someone's first visit is already set up: a welcome, the apps they've been given, and a guide for each.
+
+![First visit: welcome slide, their apps, a setup guide](docs/screenshots/first-visit.jpg)
 
 ## Try it in one command
 
