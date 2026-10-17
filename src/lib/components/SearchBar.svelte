@@ -13,6 +13,7 @@
 	import { cycleHints } from '$lib/launcher/typedHints.js';
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
 	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
+	import { searchOnFocus } from '$lib/searchOnFocus.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -26,10 +27,12 @@
 	let resultsMaxHeight = $state(420);
 	// On desktop the open palette slides up toward the top of the viewport,
 	// Spotlight-style, so short screens (a 14" laptop) give the results most
-	// of the height instead of the strip under a mid-page bar. On phones it
-	// pins to the top, just under the status bar, above the keyboard.
-	// `lift` is the px the bar is raised by.
+	// of the height instead of the strip under a mid-page bar, unless the
+	// person (or search.on_focus in config.yml) chose to open it in place. On
+	// phones it always pins to the top, just under the status bar, above the
+	// keyboard. `lift` is the px the bar is raised by.
 	let lift = $state(0);
+	const onFocus = $derived(searchOnFocus($prefs.searchOnFocus, searchConfig.on_focus));
 	// env(safe-area-inset-top) in px: the status bar in an installed app.
 	// Measured on mount and on resize (which covers rotation), not per scroll.
 	let safeTop = 0;
@@ -54,7 +57,7 @@
 		const vv = window.visualViewport;
 		const desktop = window.matchMedia('(min-width: 768px)').matches;
 		const targetTop = desktop ? Math.max(48, window.innerHeight * 0.1) : (vv?.offsetTop ?? 0) + safeTop + 12;
-		lift = inlineOpen ? Math.max(0, Math.round(restTop - targetTop)) : 0;
+		lift = inlineOpen && (!desktop || onFocus === 'top') ? Math.max(0, Math.round(restTop - targetTop)) : 0;
 		const gap = 24;
 		const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
 		const available = visibleBottom - (restBottom - lift) - gap;

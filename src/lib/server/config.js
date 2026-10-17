@@ -7,6 +7,7 @@ import { getBrandColor } from './brandColors.js';
 import { canSeeApp, canSeeSection, sectionsFor } from './appAccess.js';
 import { latestRelease, updateFor } from './updateCheck.js';
 import { substituteEnvVars } from './envVars.js';
+import { searchOnFocusError } from '../searchOnFocus.js';
 
 let _config = null;
 
@@ -41,6 +42,8 @@ function loadConfig() {
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`${configPath} must be a YAML mapping of settings`);
 	}
+	const invalid = searchOnFocusError(parsed.search);
+	if (invalid) throw new Error(`Invalid setting in ${configPath}: ${invalid}`);
 	_config = substituteEnvVars(parsed);
 	return _config;
 }

@@ -158,6 +158,7 @@ search:
   param: "q"                                  # Query parameter name
   name: "Google"                              # Shown as subtitle in the search dropdown
   icon: "di:google"                           # Icon prefix (di:, si:, or full URL)
+  # on_focus: top                            # Desktop: top (bar slides up) or in_place; each person can override it
 
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,

@@ -2,7 +2,7 @@
 
 Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.minimal.yml`](../config.minimal.yml) is the smallest working config, [`config.example.yml`](../config.example.yml) is an annotated example of everything, and the [reference table](#reference) below lists every key.
 
-**Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`) makes every request fail with the reason in the log until it's fixed.
+**Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`, an unknown `search.on_focus`) makes every request fail with the reason in the log until it's fixed.
 
 **Failing closed.** Holm refuses to start, and logs why, when the config is missing or unreadable, isn't valid YAML, names an unset or empty `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when the data directory isn't writable. That directory holds the database and, without `HOLM_SECRET_KEY`, the key file, so it must be writable even with `database.enabled: false` unless you set `HOLM_SECRET_KEY`. It never falls back to defaults with sign-in off.
 
@@ -320,6 +320,7 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `customization.enabled` | bool | `false` | yes | Without it there is no Configure panel and the grid is fixed |
 | `apps[]` | list | `[]` | yes | Fields under [Apps](#apps): `id`, `name`, `url`, `icon`, `icon_mono`, `tile_color`, `self_hosted`, `default_visible`, `on_click`, `groups`, `tags` (shown on search results), `app_store`, `browser_extension`, `setup_guide` |
 | `search.enabled` / `url` / `param` / `name` / `icon` | | enabled, Google, `q` | yes | The fallback web search |
+| `search.on_focus` | `top` \| `in_place` | `top` | yes | Where the bar goes when it opens on desktop: slides up toward the top, or stays put. The default for everyone; each person can override it in Configure → Widgets → Search. Phones always pin it above the keyboard. Any other value is rejected like bad YAML, with the reason in the log |
 | `integrations.<id>.enabled` | bool | on when the block exists | yes | `false` hides it; so does leaving the block out |
 | `integrations.<id>.name` / `shortcut` / `tip` | string | adapter's | yes | Display name, `!scope`, a hint on the connect card |
 | `integrations.<id>.default_url` | URL | none | yes | Pins the server URL for every user. Set it for every integration |
