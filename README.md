@@ -20,10 +20,10 @@ Most self-hosted dashboards are built by one admin, for one admin. Holm is for t
   <img src="docs/screenshots/mobile.jpg" alt="Holm on a phone" width="28%">
 </p>
 
-Search reaches inside the apps people have connected, with their own login: one query for "spring" finds a film in Jellyfin, documents in Paperless and photos in Immich.
+Search reaches inside the apps people have connected, with their own login: one query for "summer" finds a calendar event, a film in Jellyfin, music and photos.
 
-![Launcher searching Jellyfin, Paperless and Immich at once](docs/screenshots/integrations.jpg)
-<sub>Mock data. Search-result photos in these screenshots are CC0 from Wikimedia Commons; the <i>Spring</i> poster is by Blender Studio, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</sub>
+![Launcher searching a calendar, Jellyfin, music and photos at once](docs/screenshots/integrations.jpg)
+<sub>Mock data. The photos are CC0 from StockSnap.</sub>
 
 With Seerr connected, films and shows that aren't on the media server yet can be requested right from the results, as that person. Titles already there play in Jellyfin or Plex.
 
