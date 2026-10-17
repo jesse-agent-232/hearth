@@ -3,23 +3,27 @@
 
 	// One preference as a segmented control: the clock's time format, the
 	// weather's temperature unit, the glass density. Saves on click. `inline` puts the label
-	// beside the control, as a settings row.
-	let { key, label, options, fallback, compact = false, inline = false } = $props();
+	// beside the control, as a settings row; `hint` is a line under the label
+	// saying what the setting does.
+	let { key, label, options, fallback, hint = '', compact = false, inline = false } = $props();
 </script>
 
-<div class:inline-row={inline}>
-	<div class={inline ? 'text-[0.75rem] text-content-muted whitespace-nowrap' : 'text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2'}>{label}</div>
-	<div class="segmented" class:compact={compact || inline} role="radiogroup" aria-label={label}>
-		{#each options as opt}
-			<button
-				type="button"
-				role="radio"
-				aria-checked={($prefs[key] || fallback) === opt.id}
-				class="segmented-item"
-				onclick={() => prefs.update((p) => ({ ...p, [key]: opt.id }))}
-			>{opt.label}</button>
-		{/each}
+<div>
+	<div class:inline-row={inline}>
+		<div class={inline ? 'text-[0.75rem] text-content-muted whitespace-nowrap' : 'text-[0.65rem] font-bold uppercase tracking-[0.2em] text-content-dim mb-2'}>{label}</div>
+		<div class="segmented" class:compact={compact || inline} role="radiogroup" aria-label={label}>
+			{#each options as opt}
+				<button
+					type="button"
+					role="radio"
+					aria-checked={($prefs[key] || fallback) === opt.id}
+					class="segmented-item"
+					onclick={() => prefs.update((p) => ({ ...p, [key]: opt.id }))}
+				>{opt.label}</button>
+			{/each}
+		</div>
 	</div>
+	{#if hint}<div class="text-[0.68rem] text-content-dim mt-1.5 leading-snug">{hint}</div>{/if}
 </div>
 
 <style>
