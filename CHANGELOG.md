@@ -6,6 +6,16 @@ using it. Headings are `## <version> — <date>`. One line per change:
 **New:**, **Improved:** or **Fixed:**, then a plain line of at most about
 twelve words, ending with a link to its PR.
 
+## 0.10.0 — 2026-10-20
+
+- **New:** Search → Transparency: Match theme or Solid, with `search.transparency`. ([#103](https://github.com/man15h/holm/pull/103))
+- **New:** Search → Hints: Rotating or Still, with `search.hints`. ([#103](https://github.com/man15h/holm/pull/103))
+- **New:** Wallpapers from your own folder or a URL, with an optional resizer. ([#104](https://github.com/man15h/holm/pull/104))
+- **New:** 4K screens fade to the full-size wallpaper. ([#104](https://github.com/man15h/holm/pull/104))
+- **Improved:** The resting search bar follows Glass; on Light it's frosted unless Solid. ([#103](https://github.com/man15h/holm/pull/103))
+- **Improved:** Numbered wallpapers need sign-in; today's wallpaper stays public. ([#104](https://github.com/man15h/holm/pull/104))
+- **Fixed:** Picker thumbnails show the original when wsrv.nl is down. ([#104](https://github.com/man15h/holm/pull/104))
+
 ## 0.9.0 — 2026-10-17
 
 - **New:** Choose whether search slides to the top or stays put when focused. ([#98](https://github.com/man15h/holm/pull/98))
