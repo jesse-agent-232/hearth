@@ -2,7 +2,7 @@
 
 Everything is in a single `config.yml`, found at `CONFIG_PATH` (default `config.yml` in the working directory; `/app/config.yml` in the image). [`config.minimal.yml`](../config.minimal.yml) is the smallest working config, [`config.example.yml`](../config.example.yml) is an annotated example of everything, [`config.demo.yml`](../config.demo.yml) runs the demo with no sign-in, and the [reference table](#reference) below lists every key.
 
-**Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`, an unknown `search.on_focus`, `search.transparency` or `search.hints`) makes every request fail with the reason in the log until it's fixed.
+**Reloading.** Holm watches the file and rereads it on the next request after a save: apps, branding, search, integrations, onboarding and the rest take effect without a restart. These are read once and need a restart: `auth.oidc` (the provider is discovered once), `database`, and the encryption key. A save that breaks the file (bad YAML, an unset `${VAR}`, an unknown `search.on_focus`, `search.transparency` or `search.hints`, a bad `wallpapers` value) makes every request fail with the reason in the log until it's fixed.
 
 **Failing closed.** Holm refuses to start, and logs why, when the config is missing or unreadable, isn't valid YAML, names an unset or empty `${VAR}`, when `HOLM_SECRET_KEY` is malformed, or when the data directory isn't writable. That directory holds the database and, without `HOLM_SECRET_KEY`, the key file, so it must be writable even with `database.enabled: false` unless you set `HOLM_SECRET_KEY`. It never falls back to defaults with sign-in off.
 
@@ -281,6 +281,71 @@ update_check:
 
 `tips` is accepted but has no effect: the first-week tips are switched off in this release.
 
+### Wallpapers
+
+`wallpapers: { enabled: true }` alone shows DistroTube's set of 326 wallpapers from GitLab, resized through the public [wsrv.nl](https://wsrv.nl) proxy. To show your own images, or to keep Holm from calling outside services, set **either** `path` **or** `url`:
+
+```yaml
+wallpapers:
+  enabled: true
+
+  # A) A folder mounted into the container. Every .jpg, .jpeg, .png, .webp
+  #    and .avif in it, sorted by name (img2 before img10). Holm counts them.
+  path: /wallpapers
+
+  # B) Or a URL pattern, numbered from start to start + count - 1.
+  # url: "https://images.example.com/walls/{id}.jpg"
+  # count: 120
+  # pad: 4                     # {id} zero-padded to 4 digits: 0001
+  # start: 1
+
+  # Resizer. Built-in set: wsrv.nl, as today. Your own path or url:
+  # originals, unless you set resize.
+  # resize: wsrv           # the public wsrv.nl (url only; it can't reach a folder)
+  # resize: none           # originals
+  # resize: "http://imgproxy:8080/insecure/rs:fit:{width}/plain/local:///{file}@webp"
+```
+
+Users still pick wallpapers by number in Configure → Appearance, and the daily rotation runs through the whole set. Extensions match in any case (`.JPG` too). A photo added to the folder shows up on the next page load, with no restart. Folder images are served by their number in the sorted list, never by a filename from the request. Hidden files, subfolders and symlinks are skipped. Adding or removing files renumbers the ones after them, so a folder's images are cached for an hour, not a week. If someone's pick runs past the end of a smaller set, they get the wallpaper of the day.
+
+Holm serves only JPEG, PNG, WebP and AVIF, up to 25 MB each, with `X-Content-Type-Options: nosniff`. It checks the type the server sends for `url` images and the extension for folder images. Anything else, including SVG, gets a 404.
+
+**Resizing.** Full wallpapers are asked for at 1920px wide and picker thumbnails at 200px. `resize` is a URL template for any weserv- or imgproxy-style service: `{width}` is the width, `{url}` is the original image's URL (with `url`), and `{file}` is the folder image's file name (with `path`, for a resizer that mounts the same folder). `resize: wsrv` is shorthand for the public [wsrv.nl](https://wsrv.nl), with no sidecar to run; it works with `url` only, since wsrv.nl can't reach a folder on your server. If the resizer is down, errors, or answers with something that isn't an image, Holm serves the original. Without `resize`, the built-in set keeps using wsrv.nl, and `path` and `url` serve originals.
+
+**A folder of photos needs a resizer.** Without one, the picker loads every full-size original as a thumbnail: 200 phone photos at ~5 MB each is about 1 GB per pass through the picker.
+
+A self-hosted [imgproxy](https://imgproxy.net) sidecar handles both sources. Mount the same folder read-only into both containers. The `/insecure/` URLs below are unsigned, so imgproxy will resize anything for anyone who can reach it. Keep it on the Docker network Holm shares with it: give it no `ports:` and no reverse-proxy route.
+
+```yaml
+services:
+  holm:
+    # ...
+    volumes:
+      - ./wallpapers:/wallpapers:ro
+  imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:latest
+    restart: unless-stopped
+    environment:
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /wallpapers
+      IMGPROXY_ENFORCE_WEBP: "true"
+    volumes:
+      - ./wallpapers:/wallpapers:ro
+    # No ports: Holm reaches it as http://imgproxy:8080 on the shared network.
+```
+
+```yaml
+wallpapers:
+  enabled: true
+  path: /wallpapers
+  resize: "http://imgproxy:8080/insecure/rs:fit:{width}/plain/local:///{file}@webp"
+  # With url instead of path:
+  # resize: "http://imgproxy:8080/insecure/rs:fit:{width}/plain/{url}@webp"
+```
+
+To resize a `url` set with a weserv sidecar instead, add `image: ghcr.io/weserv/images:5.x` as `weserv` (it listens on port 80) and set `resize: "http://weserv/?url={url}&w={width}&we&output=webp&q=80"`. weserv only fetches URLs, so it can't resize a folder. Keep the sidecar off your public network, since it fetches whatever URL it's given.
+
+Holm checks `wallpapers` when it loads the config, like `search.on_focus`. Any of these makes every request fail, with the reason in the log, until it's fixed: both `path` and `url`; a relative `path`, or one that isn't a readable folder; a `url` without `{id}`, not http(s), or not ending in an image extension; `count` missing or not a whole number from 1 to 100000 with `url`; `count` with `path`; `pad` or `start` without `url`; `pad` outside 0–8; a negative `start`; a `resize` that isn't `none`, `wsrv` or an http(s) URL with `{width}` and `{url}` (or `{file}` with `path`); and `resize: wsrv` with `path`.
+
 ## Integration credentials
 
 Users connect integrations with their own credentials, encrypted at rest with AES-256-GCM. Set `HOLM_SECRET_KEY` (32 bytes, hex or base64: `openssl rand -hex 32`) in production. Without it, Holm generates `.integrations-key` in the same directory as the database, so anyone with a copy of the data directory also has the key. The same key signs sessions, so changing it signs everyone out.
@@ -331,6 +396,10 @@ Every key Holm reads. "Reload" means a save takes effect without a restart.
 | `integrations.<id>.surfaces.search` / `widgets` | bool | `true` / `false` | yes | Widgets so far: Navidrome's player, the Calendar's reminders and upcoming events |
 | `integrations.planka.cache_ttl` | seconds | `300` | yes | How long Planka cards are cached per user |
 | `wallpapers.enabled` | bool | `false` | yes | Wallpaper picker and daily rotation |
+| `wallpapers.path` | absolute path | none | yes | A mounted folder of jpg/png/webp/avif images, sorted by name. Not with `url`. See [Wallpapers](#wallpapers) |
+| `wallpapers.url` | URL with `{id}` | none | yes | An http(s) image URL pattern; needs `count`. Not with `path` |
+| `wallpapers.count` / `pad` / `start` | whole numbers | none / `0` / `1` | yes | With `url`: how many images, `{id}`'s zero-padding (0–8), and the first `{id}` |
+| `wallpapers.resize` | URL template \| `wsrv` \| `none` | `wsrv` for the built-in set, else `none` | yes | A resizer with `{width}` and `{url}` (or `{file}` with `path`); `wsrv` is the public wsrv.nl, `url` only. Holm serves the original when it fails |
 | `weather.enabled` | bool | `false` | yes | Users set their own location |
 | `onboarding.enabled` / `welcome_text` / `services` / `slides` | | off | yes | Needs `auth.enabled: true`. See [Onboarding](#onboarding) |
 | `onboarding.groups` / `privacy.groups` / `changelog.groups` | list | everyone | yes | Only these OIDC groups see it. See [Groups](#groups-for-onboarding-privacy-and-whats-new) |

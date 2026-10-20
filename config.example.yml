@@ -327,6 +327,13 @@ integrations:
 # ── Wallpapers ──────────────────────────────────────────────
 wallpapers:
   enabled: true                               # 326 wallpapers from DistroTube's set, fetched through Holm
+  # path: /wallpapers                         # or your own: a mounted folder of jpg/png/webp/avif
+  # url: "https://images.example.com/{id}.jpg" # or a URL pattern, with count (and pad, start)
+  # count: 120
+  # Resizer. Built-in set: wsrv.nl, as today. Your own path or url: originals, unless you set resize.
+  # resize: wsrv                               # the public wsrv.nl (url only; it can't reach a folder)
+  # resize: none                               # originals
+  # resize: "http://imgproxy:8080/insecure/rs:fit:{width}/plain/local:///{file}@webp"  # imgproxy sidecar for a folder; more in docs/configuration.md
 
 # ── Weather Widget ──────────────────────────────────────────
 weather:

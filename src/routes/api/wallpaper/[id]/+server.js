@@ -1,29 +1,29 @@
-import { fetchHeadersWithin } from '$lib/server/fetchHeaders.js';
-import { getTodayWallpaperId } from '$lib/wallpaper.js';
+import { getWallpaperConfig } from '$lib/server/config.js';
+import { FULL_WIDTH, loadWallpaper, parseIndex, wallpaperCount } from '$lib/server/wallpapers.js';
 
 // /api/wallpaper/today is the wallpaper of the day, picked in the server's
 // time zone, so other apps (e.g. a sign-in page) can show the same image as
-// the dashboard without knowing how Holm picks it.
+// the dashboard without knowing how Holm picks it. Numbered ids run from 1
+// to the count of the configured source (src/lib/server/wallpapers.js).
 export async function GET({ params }) {
+	const config = getWallpaperConfig();
+	// A folder's numbering moves when files are added or removed.
+	const lasting = config.path ? 'public, max-age=3600' : 'public, max-age=604800, stale-while-revalidate=86400';
 	const today = params.id === 'today';
-	const id = today ? getTodayWallpaperId() : params.id.replace(/[^0-9]/g, '').padStart(4, '0');
-	const original = `https://gitlab.com/dwt1/wallpapers/-/raw/master/${id}.jpg`;
-	// Re-encoded as WebP through wsrv (same as the thumb route), capped at
-	// 1920px wide and never enlarged: ~40% smaller than the source JPEGs.
-	// Falls back to the original if wsrv is slow or down.
-	const optimized = `https://wsrv.nl/?url=${encodeURIComponent(original)}&w=1920&we&output=webp&q=80`;
-
-	let res = await fetchHeadersWithin(optimized, 8000);
-	if (!res?.ok) res = await fetchHeadersWithin(original, 15000);
-	if (!res?.ok) {
+	const n = parseIndex(params.id, wallpaperCount(config));
+	// Capped at 1920px wide and never enlarged by the resizer; the original
+	// when there is none, or it fails.
+	const image = n && (await loadWallpaper(config, n, FULL_WIDTH));
+	if (!image) {
 		return new Response('Not found', { status: 404 });
 	}
 
-	return new Response(res.body, {
+	return new Response(image.body, {
 		headers: {
-			'Content-Type': res.headers.get('Content-Type') || 'image/jpeg',
-			// "today" changes at midnight; numbered ids never change.
-			'Cache-Control': today ? 'public, max-age=3600' : 'public, max-age=604800, stale-while-revalidate=86400',
+			'Content-Type': image.type,
+			'X-Content-Type-Options': 'nosniff',
+			// "today" changes at midnight.
+			'Cache-Control': today ? 'public, max-age=3600' : lasting,
 		}
 	});
 }

@@ -7,7 +7,7 @@
 	import IntegrationsPanel from '$lib/components/IntegrationsPanel.svelte';
 	import AppIcon from '$lib/components/AppIcon.svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
-	import { TOTAL_WALLPAPERS, getWallpaperThumbUrl } from '$lib/wallpaper.js';
+	import { getWallpaperThumbUrl } from '$lib/wallpaper.js';
 	import { browser } from '$app/environment';
 	import { confirmDiscardUnsaved } from '$lib/unsaved.js';
 	import { DEFAULT_TIME_FORMAT, DEFAULT_TEMP_UNIT, TIME_FORMATS, TEMP_UNITS } from '$lib/units.js';
@@ -38,7 +38,8 @@
 	let wallpaperPage = $state(0);
 	let enabledWidgets = $state(new Set($prefs.enabledWidgets || ['weather', 'search']));
 	const WALLPAPERS_PER_PAGE = 12;
-	const totalPages = Math.ceil(TOTAL_WALLPAPERS / WALLPAPERS_PER_PAGE);
+	const wallpaperCount = siteConfig?.wallpapers?.count || 0;
+	const totalPages = Math.max(1, Math.ceil(wallpaperCount / WALLPAPERS_PER_PAGE));
 
 	let prevOpen = false;
 
@@ -360,7 +361,7 @@
 
 						<!-- Wallpaper grid — always visible -->
 						<div class="grid grid-cols-3 max-md:grid-cols-2 gap-1.5">
-							{#each Array.from({length: WALLPAPERS_PER_PAGE}, (_, i) => wallpaperPage * WALLPAPERS_PER_PAGE + i + 1).filter(id => id <= TOTAL_WALLPAPERS) as id}
+							{#each Array.from({length: WALLPAPERS_PER_PAGE}, (_, i) => wallpaperPage * WALLPAPERS_PER_PAGE + i + 1).filter(id => id <= wallpaperCount) as id}
 								<button
 									class="relative aspect-video rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-150 bg-surface-card {wallpaperId == id ? 'border-white/60 shadow-lg' : 'border-transparent hover:border-border-pill'}"
 									onclick={() => selectWallpaper(id)}

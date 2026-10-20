@@ -1,11 +1,13 @@
 <script>
 	import { watchImage } from '$lib/imageLoad.js';
+	import { getContext } from 'svelte';
 	import { getWallpaperUrl } from '$lib/wallpaper.js';
 
 	let { wallpaperId = null } = $props();
 	let loaded = $state(false);
 	let failed = $state(false);
-	let imgSrc = $derived(getWallpaperUrl(wallpaperId));
+	const count = getContext('config')?.wallpapers?.count;
+	let imgSrc = $derived(getWallpaperUrl(wallpaperId, count));
 
 	// Reset load state when wallpaper changes
 	$effect(() => {

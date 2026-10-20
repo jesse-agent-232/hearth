@@ -1,17 +1,14 @@
-export const TOTAL_WALLPAPERS = 326;
+// Wallpaper URLs for the browser. Wallpapers are numbered 1 to count, the
+// number of images in the configured source (config's wallpapers.count, sent
+// by the server). No pick, or one past the count (the source shrank), shows
+// the wallpaper of the day, which the server picks.
 
-export function getTodayWallpaperId() {
-	const now = new Date();
-	const dayOfYear = Math.floor((Date.now() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
-	return String(((dayOfYear % TOTAL_WALLPAPERS) + 1)).padStart(4, '0');
+const inRange = (id, count) => Number.isInteger(Number(id)) && id >= 1 && (!count || id <= count);
+
+export function getWallpaperUrl(wallpaperId, count) {
+	return inRange(wallpaperId, count) ? `/api/wallpaper/${String(wallpaperId).padStart(4, '0')}` : '/api/wallpaper/today';
 }
 
-export function getWallpaperUrl(wallpaperId) {
-	const id = wallpaperId || getTodayWallpaperId();
-	return `/api/wallpaper/${String(id).padStart(4, '0')}`;
-}
-
-export function getWallpaperThumbUrl(wallpaperId) {
-	const id = wallpaperId || getTodayWallpaperId();
-	return `/api/wallpaper/${String(id).padStart(4, '0')}/thumb`;
+export function getWallpaperThumbUrl(wallpaperId, count) {
+	return inRange(wallpaperId, count) ? `/api/wallpaper/${String(wallpaperId).padStart(4, '0')}/thumb` : '/api/wallpaper/today/thumb';
 }

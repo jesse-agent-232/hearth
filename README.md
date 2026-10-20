@@ -87,7 +87,7 @@ What Holm deliberately leaves out: server stats, container health, uptime widget
 ## Features
 
 - Per-user app grid, bookmarks, theme (dynamic / dark / light), glass (clear / frosted / solid) and icon style (colored / white / grayed)
-- 326 wallpapers or a daily rotation
+- 326 wallpapers or your own (a folder or a URL pattern, with an optional self-hosted resizer), picked or rotated daily
 - Brand tiles, Dashboard Icons and Simple Icons, custom mono icons
 - Launcher: frecency ranking, `!photos`-style scopes, `!settings` / `!theme` / `!wall` commands, instant answers for maths (`12*(3+4)`), unit conversions (`5 km in mi`, or just `72f`) and time zones (`3pm ist in london`), `/?q=` and OpenSearch so it can be your browser's search engine
 - Search inside your apps with per-user encrypted credentials ([supported apps](#supported-apps))
@@ -131,7 +131,7 @@ Holm has no telemetry. These features do talk to public services:
 
 | Feature | Goes to | From |
 |---|---|---|
-| Wallpapers | `wsrv.nl` (resizing) and `gitlab.com` (the wallpaper set) | Holm's server |
+| Wallpapers | `wsrv.nl` (resizing) and `gitlab.com` (the wallpaper set), unless `wallpapers.path` or `url` is set | Holm's server |
 | `di:` / `si:` / Lucide icons | `cdn.jsdelivr.net`, `cdn.simpleicons.org` | Holm's server, cached a day; visitors' IPs don't reach them |
 | Seerr posters | `image.tmdb.org` | Holm's server |
 | Update notice | `api.github.com` (Holm's latest release) | Holm's server, at most every 6 hours; `update_check: { enabled: false }` turns it off |
@@ -139,7 +139,7 @@ Holm has no telemetry. These features do talk to public services:
 | Fallback search | Google by default (`search.url`) | The visitor's browser, only when they send a query there |
 | Custom font, icon URLs, logo | Whatever URL `config.yml` names | The visitor's browser |
 
-Turn off `wallpapers` and `weather`, use `di:` / `si:` icons or local files, and point `search.url` at your own engine to keep everything in-house.
+Turn off `weather`, point `wallpapers.path` at a local folder (or turn wallpapers off), use `di:` / `si:` icons or local files, and point `search.url` at your own engine to keep everything in-house.
 
 ## Development
 

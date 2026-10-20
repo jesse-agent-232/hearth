@@ -156,7 +156,7 @@
 	);
 
 	// ── Quick-action registry ───────────────────────────────────
-	const ACTIONS = buildActions({ wallpapers: !!siteConfig?.wallpapers?.enabled, onSettingsOpen: () => onSettingsOpen() });
+	const ACTIONS = buildActions({ wallpapers: siteConfig?.wallpapers?.enabled ? siteConfig.wallpapers.count || 0 : 0, onSettingsOpen: () => onSettingsOpen() });
 	const matchedActions = $derived(activeScope ? [] : matchBang(ACTIONS, query));
 
 	function runAction(action) {

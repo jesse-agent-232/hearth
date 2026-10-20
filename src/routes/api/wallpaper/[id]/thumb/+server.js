@@ -1,19 +1,22 @@
-import { fetchHeadersWithin } from '$lib/server/fetchHeaders.js';
+import { getWallpaperConfig } from '$lib/server/config.js';
+import { THUMB_WIDTH, loadWallpaper, parseIndex, wallpaperCount } from '$lib/server/wallpapers.js';
 
+// The picker's thumbnail: 200px through the resizer, else the original.
 export async function GET({ params }) {
-	const id = params.id.replace(/[^0-9]/g, '').padStart(4, '0');
-	const source = encodeURIComponent(`https://gitlab.com/dwt1/wallpapers/-/raw/master/${id}.jpg`);
-	const upstream = `https://wsrv.nl/?url=${source}&w=200&q=75`;
-
-	const res = await fetchHeadersWithin(upstream, 8000);
-	if (!res?.ok) {
+	const config = getWallpaperConfig();
+	// A folder's numbering moves when files are added or removed.
+	const lasting = config.path ? 'public, max-age=3600' : 'public, max-age=604800, stale-while-revalidate=86400';
+	const n = parseIndex(params.id, wallpaperCount(config));
+	const image = n && (await loadWallpaper(config, n, THUMB_WIDTH));
+	if (!image) {
 		return new Response('Not found', { status: 404 });
 	}
 
-	return new Response(res.body, {
+	return new Response(image.body, {
 		headers: {
-			'Content-Type': res.headers.get('Content-Type') || 'image/jpeg',
-			'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+			'Content-Type': image.type,
+			'X-Content-Type-Options': 'nosniff',
+			'Cache-Control': lasting,
 		}
 	});
 }

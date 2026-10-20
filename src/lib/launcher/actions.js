@@ -1,5 +1,4 @@
 import { prefs } from '$lib/stores/prefs.js';
-import { TOTAL_WALLPAPERS } from '$lib/wallpaper.js';
 
 // The search bar's commands: run with !bang or found by name.
 // Icon SVG strings are pre-rendered paths (fed into a <svg> wrapper in the row).
@@ -11,6 +10,7 @@ const ICONS = {
 	logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
 };
 
+// wallpapers: how many there are, 0 when they're off.
 export function buildActions({ wallpapers, onSettingsOpen }) {
 	return [
 		{ id: 'settings', bang: 'settings', label: 'Open Configure', keywords: ['settings', 'preferences', 'integrations', 'widgets'], icon: ICONS.settings, exec: onSettingsOpen },
@@ -21,7 +21,7 @@ export function buildActions({ wallpapers, onSettingsOpen }) {
 		...(wallpapers ? [{
 			id: 'wall', bang: 'wall', label: 'Pick a random wallpaper', keywords: ['wallpaper', 'background', 'shuffle'], icon: ICONS.wall,
 			exec: () => {
-				const next = Math.floor(Math.random() * TOTAL_WALLPAPERS) + 1;
+				const next = Math.floor(Math.random() * wallpapers) + 1;
 				prefs.update((p) => ({ ...p, wallpaperId: next, wallpaperEnabled: true, theme: 'auto' }));
 			}
 		}] : []),
