@@ -29,7 +29,7 @@
 	.compact :global(.segmented-item) { flex: 1; padding: 0.3rem 0.5rem; font-size: 0.72rem; white-space: nowrap; }
 	.inline-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 	/* One width for every settings row, so the controls line up; narrower
-	   on a small screen. Tighter sides so four options fit. */
+	   on a small screen. */
 	.inline-row .segmented { width: min(15rem, 64%); min-width: 0; flex: none; }
 	.inline-row :global(.segmented-item) { padding-inline: 0.35rem; }
 	/* An option's optional icon, before its label. */

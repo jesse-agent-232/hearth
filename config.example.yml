@@ -160,7 +160,7 @@ search:
   icon: "di:google"                           # Icon prefix (di:, si:, or full URL)
   # on_focus: top                            # Desktop: top (bar slides up) or in_place; each person can override it
   # transparency: theme                      # theme (follows Glass) or solid; each person can override it
-  # tips: true                               # false = no rotating hints in the empty bar; each person can override it
+  # hints: rotating                          # rotating (typed out in turn) or still; each person can override it
 
 # ── Integrations ────────────────────────────────────────────
 # Pluggable third-party app adapters. Shipped adapters: Immich, Paperless,

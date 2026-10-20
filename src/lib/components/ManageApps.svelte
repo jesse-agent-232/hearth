@@ -13,7 +13,7 @@
 	import { DEFAULT_TIME_FORMAT, DEFAULT_TEMP_UNIT, TIME_FORMATS, TEMP_UNITS } from '$lib/units.js';
 	import UnitPicker from '$lib/components/UnitPicker.svelte';
 	import { SEARCH_ON_FOCUS, searchOnFocus } from '$lib/searchOnFocus.js';
-	import { SEARCH_TRANSPARENCY, SEARCH_TIPS, searchTransparency, searchTips } from '$lib/searchLook.js';
+	import { SEARCH_TRANSPARENCY, SEARCH_HINTS, searchTransparency, searchHints } from '$lib/searchLook.js';
 
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
@@ -414,7 +414,7 @@
 						settings: [
 							{ key: 'searchOnFocus', label: 'On focus', options: SEARCH_ON_FOCUS, fallback: searchOnFocus(undefined, siteConfig?.search?.on_focus) },
 							{ key: 'searchTransparency', label: 'Transparency', options: SEARCH_TRANSPARENCY, fallback: searchTransparency(undefined, siteConfig?.search?.transparency) },
-							{ key: 'searchTips', label: 'Hints', options: SEARCH_TIPS, fallback: searchTips(undefined, siteConfig?.search?.tips) }
+							{ key: 'searchHints', label: 'Hints', options: SEARCH_HINTS, fallback: searchHints(undefined, siteConfig?.search?.hints) }
 						] }
 				]}
 				{#snippet toggle(on)}

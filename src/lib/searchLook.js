@@ -1,11 +1,11 @@
 // How the search bar looks, chosen under Configure → Widgets → Search with
-// config.yml's search.transparency and search.tips as the defaults.
+// config.yml's search.transparency and search.hints as the defaults.
 //
 // Transparency: 'theme' follows the page's Glass (Configure → Appearance) on
 // every theme; 'solid' keeps the bar and its results solid, whatever Glass
 // says.
-// Hints (search.tips): 'on' types out rotating hints in the empty bar; 'off' keeps one
-// still placeholder.
+// Hints: 'rotating' types out hints in turn in the empty bar; 'still' keeps
+// the first one.
 
 // Each icon is the bar: see-through with a glint, or filled in.
 const PILL = 'M4.5 5.5h7a2.5 2.5 0 0 1 0 5h-7a2.5 2.5 0 0 1 0-5z';
@@ -15,11 +15,11 @@ export const SEARCH_TRANSPARENCY = [
 ];
 export const DEFAULT_SEARCH_TRANSPARENCY = 'theme';
 
-export const SEARCH_TIPS = [
-	{ id: 'on', label: 'Rotating' },
-	{ id: 'off', label: 'Still' }
+export const SEARCH_HINTS = [
+	{ id: 'rotating', label: 'Rotating' },
+	{ id: 'still', label: 'Still' }
 ];
-export const DEFAULT_SEARCH_TIPS = 'on';
+export const DEFAULT_SEARCH_HINTS = 'rotating';
 
 const validTransparency = (v) => SEARCH_TRANSPARENCY.some((o) => o.id === v);
 
@@ -34,24 +34,24 @@ export function searchGlassLevel(transparency, pageGlass) {
 	return transparency === 'solid' ? 'solid' : pageGlass || 'frosted';
 }
 
-// The person's pick, else the configured default (true / false in
-// config.yml), else on.
-export function searchTips(pref, configured) {
-	if (pref === 'on' || pref === 'off') return pref;
-	if (typeof configured === 'boolean') return configured ? 'on' : 'off';
-	return DEFAULT_SEARCH_TIPS;
+const validHints = (v) => SEARCH_HINTS.some((o) => o.id === v);
+
+// The person's pick, else the configured default, else 'rotating'.
+export function searchHints(pref, configured) {
+	if (validHints(pref)) return pref;
+	return validHints(configured) ? configured : DEFAULT_SEARCH_HINTS;
 }
 
-// Why a config's search.transparency or search.tips can't be used, or null
+// Why a config's search.transparency or search.hints can't be used, or null
 // when both can.
 export function searchLookError(search) {
 	const t = search?.transparency;
 	if (t !== undefined && !validTransparency(t)) {
 		return `search.transparency must be theme or solid, not ${JSON.stringify(t)}`;
 	}
-	const tips = search?.tips;
-	if (tips !== undefined && typeof tips !== 'boolean') {
-		return `search.tips must be true or false, not ${JSON.stringify(tips)}`;
+	const hints = search?.hints;
+	if (hints !== undefined && !validHints(hints)) {
+		return `search.hints must be rotating or still, not ${JSON.stringify(hints)}`;
 	}
 	return null;
 }

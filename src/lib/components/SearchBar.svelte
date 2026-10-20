@@ -14,7 +14,7 @@
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
 	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
 	import { searchOnFocus } from '$lib/searchOnFocus.js';
-	import { searchTransparency, searchGlassLevel, searchTips } from '$lib/searchLook.js';
+	import { searchTransparency, searchGlassLevel, searchHints } from '$lib/searchLook.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -36,7 +36,7 @@
 	const onFocus = $derived(searchOnFocus($prefs.searchOnFocus, searchConfig.on_focus));
 	// The bar's glass level: the page's, or the one this person pinned it to.
 	const glassLevel = $derived(searchGlassLevel(searchTransparency($prefs.searchTransparency, searchConfig.transparency), $prefs.glass));
-	const tipsOn = $derived(searchTips($prefs.searchTips, searchConfig.tips) === 'on');
+	const hintsRotate = $derived(searchHints($prefs.searchHints, searchConfig.hints) === 'rotating');
 	// env(safe-area-inset-top) in px: the status bar in an installed app.
 	// Measured on mount and on resize (which covers rotation), not per scroll.
 	let safeTop = 0;
@@ -222,7 +222,7 @@
 
 	$effect(() => {
 		if (typeof document === 'undefined') return;
-		if (!tipsOn) {
+		if (!hintsRotate) {
 			placeholderText = FIRST_HINT;
 			return;
 		}

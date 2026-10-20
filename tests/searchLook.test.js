@@ -1,11 +1,11 @@
-// Unit tests for the search bar's Transparency and Tips, chosen under
+// Unit tests for the search bar's Transparency and Hints, chosen under
 // Configure → Widgets → Search with config.yml's search.transparency and
-// search.tips as the defaults.
+// search.hints as the defaults.
 // Run: npm test
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { searchTransparency, searchGlassLevel, searchTips, searchLookError } from '../src/lib/searchLook.js';
+import { searchTransparency, searchGlassLevel, searchHints, searchLookError } from '../src/lib/searchLook.js';
 
 test("a person's transparency wins over the config default", () => {
 	assert.equal(searchTransparency('theme', 'solid'), 'theme');
@@ -25,26 +25,25 @@ test("theme follows the page's glass; solid ignores it", () => {
 	assert.equal(searchGlassLevel('solid', 'clear'), 'solid');
 });
 
-test("a person's tips pick wins over the config default", () => {
-	assert.equal(searchTips('off', true), 'off');
-	assert.equal(searchTips('on', false), 'on');
+test("a person's hints pick wins over the config default", () => {
+	assert.equal(searchHints('still', 'rotating'), 'still');
+	assert.equal(searchHints('rotating', 'still'), 'rotating');
 });
 
-test('with no tips pick, config true / false applies, else on', () => {
-	assert.equal(searchTips(undefined, false), 'off');
-	assert.equal(searchTips(undefined, true), 'on');
-	assert.equal(searchTips(undefined, undefined), 'on');
-	assert.equal(searchTips('maybe', false), 'off');
+test('with no hints pick, the config default applies, else rotating', () => {
+	assert.equal(searchHints(undefined, 'still'), 'still');
+	assert.equal(searchHints(undefined, undefined), 'rotating');
+	assert.equal(searchHints('maybe', 'still'), 'still');
 });
 
-test('valid or missing search.transparency and search.tips are accepted', () => {
+test('valid or missing search.transparency and search.hints are accepted', () => {
 	assert.equal(searchLookError(undefined), null);
 	assert.equal(searchLookError({}), null);
 	for (const transparency of ['theme', 'solid']) {
 		assert.equal(searchLookError({ transparency }), null);
 	}
-	assert.equal(searchLookError({ tips: false }), null);
-	assert.equal(searchLookError({ tips: true }), null);
+	assert.equal(searchLookError({ hints: 'rotating' }), null);
+	assert.equal(searchLookError({ hints: 'still' }), null);
 });
 
 test('any other value is rejected with the reason', () => {
@@ -55,6 +54,8 @@ test('any other value is rejected with the reason', () => {
 	for (const transparency of ['page', 'clear', 'frosted', 'Solid', '', null, 1, true]) {
 		assert.match(searchLookError({ transparency }), /^search\.transparency must be /);
 	}
-	assert.equal(searchLookError({ tips: 'off' }), 'search.tips must be true or false, not "off"');
-	assert.match(searchLookError({ tips: null }), /^search\.tips must be true or false/);
+	assert.equal(searchLookError({ hints: 'off' }), 'search.hints must be rotating or still, not "off"');
+	for (const hints of [true, false, null, 'Still']) {
+		assert.match(searchLookError({ hints }), /^search\.hints must be rotating or still/);
+	}
 });
