@@ -11,10 +11,10 @@ twelve words, ending with a link to its PR.
 - **New:** Search → Transparency: Match theme or Solid, with `search.transparency`. ([#103](https://github.com/man15h/holm/pull/103))
 - **New:** Search → Hints: Rotating or Still, with `search.hints`. ([#103](https://github.com/man15h/holm/pull/103))
 - **New:** Wallpapers from your own folder or a URL, with an optional resizer. ([#104](https://github.com/man15h/holm/pull/104))
-- **New:** 4K screens fade to the full-size wallpaper. ([#104](https://github.com/man15h/holm/pull/104))
+- **New:** Wallpapers stay sharp on 4K and other high-resolution screens. ([#104](https://github.com/man15h/holm/pull/104))
 - **Improved:** The resting search bar follows Glass; on Light it's frosted unless Solid. ([#103](https://github.com/man15h/holm/pull/103))
-- **Improved:** Numbered wallpapers need sign-in; today's wallpaper stays public. ([#104](https://github.com/man15h/holm/pull/104))
-- **Fixed:** Picker thumbnails show the original when wsrv.nl is down. ([#104](https://github.com/man15h/holm/pull/104))
+- **Improved:** Wallpapers load only for signed-in people, except today's on the sign-in page. ([#104](https://github.com/man15h/holm/pull/104))
+- **Fixed:** Wallpaper thumbnails still load when the image resizer is down. ([#104](https://github.com/man15h/holm/pull/104))
 
 ## 0.9.0 — 2026-10-17
 
