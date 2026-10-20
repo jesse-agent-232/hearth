@@ -368,7 +368,7 @@
 								>
 									<div class="absolute inset-0 shimmer"></div>
 									<img
-										src={getWallpaperThumbUrl(id)}
+										src={getWallpaperThumbUrl(id, siteConfig?.wallpapers)}
 										alt="Wallpaper {id}"
 										loading="lazy"
 										class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0"

@@ -17,6 +17,7 @@
 import { readdirSync, statSync, openSync, fstatSync, closeSync, createReadStream } from 'node:fs';
 import { isAbsolute, join, extname } from 'node:path';
 import { Readable } from 'node:stream';
+import { createHash } from 'node:crypto';
 import { fetchHeadersWithin } from './fetchHeaders.js';
 
 export const BUILTIN_COUNT = 326;
@@ -121,6 +122,15 @@ export function wallpaperCount(w = {}) {
 	if (w.path) return folderImages(w.path).length;
 	if (w.url) return w.count;
 	return BUILTIN_COUNT;
+}
+
+// A short tag for the source as it is now: its settings and, for a folder,
+// its file names. URLs carry it, so changing either shows fresh images
+// instead of ones cached under the same numbers.
+export function wallpaperVersion(w = {}) {
+	const { path, url, count, pad, start, resize } = w;
+	const files = path ? folderImages(path) : [];
+	return createHash('sha256').update(JSON.stringify({ path, url, count, pad, start, resize, files })).digest('base64url').slice(0, 10);
 }
 
 // The wallpaper of the day, 1 to the count, picked in the server's time zone.
@@ -239,13 +249,9 @@ export async function wallpaperResponse(w = {}, id, size, { signedIn, fetchFn } 
 	const n = parseIndex(id, wallpaperCount(w));
 	const image = n && (await loadWallpaper(w, n, SIZES[size], fetchFn));
 	if (!image) return new Response('Not found', { status: 404 });
-	// "today" changes at midnight. A folder's numbering moves when files are
-	// added or removed. Signed-in images stay out of shared caches.
-	const cache = isPublic
-		? 'public, max-age=3600'
-		: w.path
-			? 'private, max-age=3600'
-			: 'private, max-age=604800, stale-while-revalidate=86400';
+	// "today" changes at midnight. Numbered URLs carry wallpaperVersion, so
+	// they can be kept a week. Signed-in images stay out of shared caches.
+	const cache = isPublic ? 'public, max-age=3600' : 'private, max-age=604800, stale-while-revalidate=86400';
 	return new Response(image.body, {
 		headers: { 'Content-Type': image.type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': cache }
 	});

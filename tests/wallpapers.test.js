@@ -16,6 +16,7 @@ import {
 	resizedUrl,
 	loadWallpaper,
 	wallpaperResponse,
+	wallpaperVersion,
 	hasResizer,
 	FULL_WIDTH,
 	THUMB_WIDTH,
@@ -220,11 +221,11 @@ test('only today at full size is public; numbered ids, thumbs and originals need
 	assert.equal(today.headers.get('X-Content-Type-Options'), 'nosniff');
 });
 
-test('signed in, folder images are private and short-lived; other sources private for a week', async () => {
+test('signed in, numbered images are private, kept a week', async () => {
 	const dir = folder(['a.jpg']);
 	const res = await wallpaperResponse({ path: dir }, '1', 'full', { signedIn: true, fetchFn: fakeFetch({}) });
 	assert.equal(res.status, 200);
-	assert.equal(res.headers.get('Cache-Control'), 'private, max-age=3600');
+	assert.equal(res.headers.get('Cache-Control'), 'private, max-age=604800, stale-while-revalidate=86400');
 	assert.equal(res.headers.get('Content-Type'), 'image/jpeg');
 	assert.equal((await wallpaperResponse({ path: dir }, '2', 'full', { signedIn: true, fetchFn: fakeFetch({}) })).status, 404);
 
@@ -242,4 +243,17 @@ test('original skips the resizer', async () => {
 	const res = await wallpaperResponse(w, '2', 'original', { signedIn: true, fetchFn: fetch });
 	assert.equal(res.headers.get('Content-Type'), 'image/png');
 	assert.deepEqual(fetch.calls, ['https://img.example/2.jpg']);
+});
+
+test('the version changes with the source and with a folder\'s files', () => {
+	const dir = folder(['a.jpg']);
+	const before = wallpaperVersion({ path: dir });
+	assert.equal(wallpaperVersion({ path: dir }), before);
+	writeFileSync(join(dir, 'b.jpg'), JPEG);
+	utimesSync(dir, new Date(), new Date(Date.now() + 9000));
+	assert.notEqual(wallpaperVersion({ path: dir }), before);
+	assert.notEqual(wallpaperVersion({}), wallpaperVersion({ url: 'https://x/{id}.jpg', count: 2 }));
+	assert.notEqual(wallpaperVersion({ url: 'https://x/{id}.jpg', count: 2 }), wallpaperVersion({ url: 'https://x/{id}.jpg', count: 3 }));
+	assert.notEqual(wallpaperVersion({}), wallpaperVersion({ resize: 'none' }));
+	assert.match(wallpaperVersion({}), /^[\w-]{10}$/);
 });

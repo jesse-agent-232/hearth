@@ -7,7 +7,7 @@
 	const wallpapers = getContext('config')?.wallpapers;
 	let loaded = $state(false);
 	let failed = $state(false);
-	let imgSrc = $derived(getWallpaperUrl(wallpaperId, wallpapers?.count));
+	let imgSrc = $derived(getWallpaperUrl(wallpaperId, wallpapers));
 	// The original, swapped in over the 1920px image once it has loaded, on a
 	// screen with more pixels than that. Without a resizer the first image
 	// already is the original.
@@ -32,7 +32,7 @@
 		if (!loaded || !img || !wallpapers?.resized) return;
 		if (screen.width * devicePixelRatio <= 1920) return;
 		const shown = img.naturalWidth;
-		const src = getWallpaperOriginalUrl(wallpaperId, wallpapers?.count);
+		const src = getWallpaperOriginalUrl(wallpaperId, wallpapers);
 		const pre = new Image();
 		pre.onload = () => { if (pre.naturalWidth > shown) fullSrc = src; };
 		pre.src = src;

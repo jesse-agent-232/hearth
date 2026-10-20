@@ -306,7 +306,7 @@ wallpapers:
   # resize: "http://imgproxy:8080/insecure/rs:fit:{width}/plain/local:///{file}@webp"
 ```
 
-Users still pick wallpapers by number in Configure → Appearance, and the daily rotation runs through the whole set. Extensions match in any case (`.JPG` too). A photo added to the folder shows up on the next page load, with no restart. Folder images are served by their number in the sorted list, never by a filename from the request. Hidden files, subfolders and symlinks are skipped. Adding or removing files renumbers the ones after them, so a folder's images are cached for an hour, not a week. If someone's pick runs past the end of a smaller set, they get the wallpaper of the day.
+Users still pick wallpapers by number in Configure → Appearance, and the daily rotation runs through the whole set. Extensions match in any case (`.JPG` too). A photo added to the folder shows up on the next page load, with no restart. Folder images are served by their number in the sorted list, never by a filename from the request. Hidden files, subfolders and symlinks are skipped. Adding or removing files renumbers the ones after them. Wallpaper URLs carry a version that changes whenever the folder's files or any `wallpapers` setting do, so browsers fetch fresh images instead of ones cached under the same number. If someone's pick runs past the end of a smaller set, they get the wallpaper of the day.
 
 Holm serves only JPEG, PNG, WebP and AVIF, up to 25 MB each, with `X-Content-Type-Options: nosniff`. It checks the type the server sends for `url` images and the extension for folder images. Anything else, including SVG, gets a 404.
 

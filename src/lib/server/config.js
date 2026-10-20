@@ -9,7 +9,7 @@ import { latestRelease, updateFor } from './updateCheck.js';
 import { substituteEnvVars } from './envVars.js';
 import { searchOnFocusError } from '../searchOnFocus.js';
 import { searchLookError } from '../searchLook.js';
-import { wallpapersError, wallpaperCount, hasResizer } from './wallpapers.js';
+import { wallpapersError, wallpaperCount, wallpaperVersion, hasResizer } from './wallpapers.js';
 
 let _config = null;
 
@@ -171,7 +171,8 @@ async function loadPrivacyHtml(privacy) {
 function clientWallpapers(config) {
 	const enabled = config.wallpapers?.enabled ?? false;
 	const w = config.wallpapers || {};
-	return { enabled, count: enabled ? wallpaperCount(w) : 0, resized: enabled && hasResizer(w) };
+	if (!enabled) return { enabled, count: 0, resized: false };
+	return { enabled, count: wallpaperCount(w), v: wallpaperVersion(w), resized: hasResizer(w) };
 }
 
 // Returns a client-safe subset (no secrets).
