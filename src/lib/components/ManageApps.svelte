@@ -13,6 +13,7 @@
 	import { DEFAULT_TIME_FORMAT, DEFAULT_TEMP_UNIT, TIME_FORMATS, TEMP_UNITS } from '$lib/units.js';
 	import UnitPicker from '$lib/components/UnitPicker.svelte';
 	import { SEARCH_ON_FOCUS, searchOnFocus } from '$lib/searchOnFocus.js';
+	import { SEARCH_TRANSPARENCY, SEARCH_TIPS, searchTransparency, searchTips } from '$lib/searchLook.js';
 
 	const siteConfig = getContext('config');
 	const version = siteConfig?.version || '';
@@ -410,7 +411,11 @@
 					{ id: 'weather', name: 'Weather', desc: 'Conditions where you are', icon: 'M12 3v2M12 19v2M5.6 5.6 7 7M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
 						settings: [{ key: 'tempUnit', label: 'Temperature', options: TEMP_UNITS, fallback: DEFAULT_TEMP_UNIT }] },
 					{ id: 'search', name: 'Search', desc: 'Apps and files, mid-page', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
-						settings: [{ key: 'searchOnFocus', label: 'On focus', options: SEARCH_ON_FOCUS, fallback: searchOnFocus(undefined, siteConfig?.search?.on_focus) }] }
+						settings: [
+							{ key: 'searchOnFocus', label: 'On focus', options: SEARCH_ON_FOCUS, fallback: searchOnFocus(undefined, siteConfig?.search?.on_focus) },
+							{ key: 'searchTransparency', label: 'Transparency', options: SEARCH_TRANSPARENCY, fallback: searchTransparency(undefined, siteConfig?.search?.transparency) },
+							{ key: 'searchTips', label: 'Hints', options: SEARCH_TIPS, fallback: searchTips(undefined, siteConfig?.search?.tips) }
+						] }
 				]}
 				{#snippet toggle(on)}
 					<div class="w-9 h-5 rounded-full transition-colors duration-200 relative shrink-0 {on ? 'bg-surface-toggle-on' : 'bg-surface-toggle-off'}">
@@ -526,6 +531,7 @@
 		padding: 0.4rem 0.75rem 0.4rem 3.5rem;
 		border-top: 1px solid var(--glass-border);
 	}
+	.widget-setting + .widget-setting { border-top: none; }
 	.widget-setting > :global(*) { flex: 1; min-width: 0; }
 	@media (max-width: 767px) {
 		.widget-setting { padding-left: 0.75rem; }

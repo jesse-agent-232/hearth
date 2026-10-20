@@ -14,6 +14,7 @@
 	import { recordOpen, frecencyScores } from '$lib/launcher/frecency.js';
 	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
 	import { searchOnFocus } from '$lib/searchOnFocus.js';
+	import { searchTransparency, searchGlassLevel, searchTips } from '$lib/searchLook.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -33,6 +34,9 @@
 	// keyboard. `lift` is the px the bar is raised by.
 	let lift = $state(0);
 	const onFocus = $derived(searchOnFocus($prefs.searchOnFocus, searchConfig.on_focus));
+	// The bar's glass level: the page's, or the one this person pinned it to.
+	const glassLevel = $derived(searchGlassLevel(searchTransparency($prefs.searchTransparency, searchConfig.transparency), $prefs.glass));
+	const tipsOn = $derived(searchTips($prefs.searchTips, searchConfig.tips) === 'on');
 	// env(safe-area-inset-top) in px: the status bar in an installed app.
 	// Measured on mount and on resize (which covers rotation), not per scroll.
 	let safeTop = 0;
@@ -194,7 +198,8 @@
 	// Cycles through hints so the placeholder advertises what the palette
 	// can do (bangs, actions, shortcuts) without a static wall of text.
 	// Pauses while the user is focused, typing, or scoped — those are
-	// states where a moving placeholder would distract.
+	// states where a moving placeholder would distract. With Hints set to Still
+	// (Configure → Widgets → Search) the first hint just stays.
 	// The scope hint uses a real shortcut from a connected integration, since
 	// shortcuts are per-adapter and operator-overridable.
 	const scopeHint = $derived.by(() => {
@@ -217,6 +222,10 @@
 
 	$effect(() => {
 		if (typeof document === 'undefined') return;
+		if (!tipsOn) {
+			placeholderText = FIRST_HINT;
+			return;
+		}
 		if (inlineOpen || query || activeScope) return;
 		return cycleHints(PLACEHOLDER_HINTS, (text) => (placeholderText = text), () => prefersReducedMotion.current);
 	});
@@ -995,7 +1004,7 @@
 <!-- Close when keyboard focus leaves the palette (Tab-out); click-outside is
      handled by onClickOutside. A null relatedTarget is a click on a
      non-focusable spot, which may be inside the panel, so it's ignored. -->
-<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px"
+<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" data-glass={glassLevel} bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px"
 	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) { inlineOpen = false; panelOpen = false; } }}>
 	<form
 		class="hero-search-form relative flex items-center px-4 md:px-6"

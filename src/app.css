@@ -182,7 +182,6 @@
 	   no-wallpaper dark theme. The bar's interior (text/icons/kbd/chip) is
 	   themed by the bar's own bg, not the page, so we expose dedicated
 	   --hero-search-* tokens. */
-	--hero-search-bg: var(--glass-bg);
 	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.64);
@@ -196,7 +195,6 @@
    the white tile flips to a quiet translucent zinc. The bar keeps the
    dark palette it already has in auto. */
 .theme-dark {
-	--hero-search-bg: var(--glass-bg);
 	--hero-search-border: var(--glass-border);
 	--hero-search-text: #fafafa;
 	--hero-search-text-dim: rgba(255, 255, 255, 0.64);
@@ -210,7 +208,8 @@
    the blur keeps it the page's primary control (clear glass sank into the
    photo) while the wallpaper still softly shows through. Once the palette
    opens it takes the dark tokens above, so the joined bar + results match
-   the tile context menu. */
+   the tile context menu. The bar's glass level (see "Search transparency"
+   below) sets how much white: Clear lets more photo through, Solid none. */
 body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-form {
 	--hero-search-bg: rgba(255, 255, 255, 0.78);
 	--hero-search-border: rgba(255, 255, 255, 0.6);
@@ -220,6 +219,12 @@ body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-
 	--hero-search-chip-bg: rgba(0, 0, 0, 0.05);
 	--hero-search-chip-border: rgba(0, 0, 0, 0.10);
 	box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+}
+body:not(.theme-dark):not(.theme-light) .hero-search[data-glass='clear']:not(.is-open) .hero-search-form {
+	--hero-search-bg: rgba(255, 255, 255, 0.42);
+}
+body:not(.theme-dark):not(.theme-light) .hero-search[data-glass='solid']:not(.is-open) .hero-search-form {
+	--hero-search-bg: #ffffff;
 }
 
 
@@ -286,7 +291,6 @@ body:not(.theme-dark):not(.theme-light) .hero-search:not(.is-open) .hero-search-
 
 	/* Hero search + tile defaults — light theme gets the white palette,
 	   matching the white menu surface there. */
-	--hero-search-bg: #ffffff;
 	--hero-search-border: rgba(0, 0, 0, 0.10);
 	--hero-search-text: #18181b;
 	--hero-search-text-dim: rgba(0, 0, 0, 0.45);
@@ -417,6 +421,38 @@ html[data-glass='solid'] body.theme-light {
 }
 .glass-card.menu-surface {
 	background: var(--glass-menu-bg);
+}
+
+/* Search transparency. The search bar carries its own glass level in
+   data-glass: the page's (Theme), or solid when pinned under Configure →
+   Widgets → Search. Solid repeats the page's solid level on the bar itself,
+   so it wins over the page's for the bar and its results, and
+   --hero-search-bg is worked out again from it here. */
+.hero-search {
+	--hero-search-bg: var(--glass-bg);
+}
+.hero-search[data-glass='solid'] {
+	--glass-bg: rgba(9, 9, 11, 0.75);
+	--glass-menu-bg: rgba(9, 9, 11, 0.75);
+	--glass-blur: blur(40px) saturate(1.6);
+}
+.theme-dark .hero-search[data-glass='solid'] {
+	--glass-bg: #09090b;
+	--glass-menu-bg: #09090b;
+}
+.theme-light .hero-search[data-glass='solid'] {
+	--glass-bg: #ffffff;
+	--glass-menu-bg: #ffffff;
+}
+/* Light theme, resting bar: white glass, opaque at Solid. */
+.theme-light .hero-search:not(.is-open) .hero-search-form {
+	--hero-search-bg: rgba(255, 255, 255, 0.78);
+}
+.theme-light .hero-search[data-glass='clear']:not(.is-open) .hero-search-form {
+	--hero-search-bg: rgba(255, 255, 255, 0.42);
+}
+.theme-light .hero-search[data-glass='solid']:not(.is-open) .hero-search-form {
+	--hero-search-bg: #ffffff;
 }
 /* Modal backdrop: dim + soft blur painted by a pseudo-layer rather than
    the wrapper itself. A wrapper with backdrop-filter becomes the backdrop
@@ -962,12 +998,6 @@ body.search-active .launcher-host { z-index: 40; }
 	box-shadow:
 		0 2px 8px -2px rgba(0, 0, 0, 0.10),
 		0 1px 2px -1px rgba(0, 0, 0, 0.05);
-}
-
-/* Light theme: the open palette is the same white glass as the modals;
-   only the resting bar stays solid white. */
-.theme-light .hero-search.is-open {
-	--hero-search-bg: var(--glass-bg);
 }
 
 /* Suggestions / results dropdown — mirrors the input pill so the two
