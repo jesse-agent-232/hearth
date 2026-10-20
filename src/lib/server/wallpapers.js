@@ -9,7 +9,10 @@
 //   public wsrv.nl; or "none" to serve originals. A resizer that fails falls back to the original.
 //
 // Wallpapers are always asked for by number, 1 to the count, so a request
-// never names a file. Only image types are served, up to MAX_BYTES.
+// never names a file. Only image types are served, up to MAX_BYTES. Only
+// /api/wallpaper/today at full size is public (the sign-in page shows it);
+// every numbered id, thumbnail and original needs a signed-in session, since
+// a folder may be family photos.
 
 import { readdirSync, statSync, openSync, fstatSync, closeSync, createReadStream } from 'node:fs';
 import { isAbsolute, join, extname } from 'node:path';
@@ -150,9 +153,17 @@ export function originalFor(w = {}, n) {
 	return { url: BUILTIN_URL.replace('{id}', String(n).padStart(4, '0')) };
 }
 
+const resizeOf = (w) => w.resize ?? (w.path || w.url ? 'none' : 'wsrv');
+
+// Whether wallpapers go through a resizer, so the full image may be smaller
+// than the original.
+export function hasResizer(w = {}) {
+	return resizeOf(w) !== 'none';
+}
+
 // The resizer URL for an original at a width, or null to serve the original.
 export function resizedUrl(w = {}, original, width) {
-	let resize = w.resize ?? (w.path || w.url ? 'none' : 'wsrv');
+	let resize = resizeOf(w);
 	if (resize === 'none') return null;
 	if (resize === 'wsrv') resize = width === THUMB_WIDTH ? WSRV_THUMB : WSRV;
 	return resize
@@ -204,15 +215,38 @@ function fromFile(original) {
 }
 
 // The image for index n at a width: the resized one, else the original.
-// Returns { body, type } or null.
+// A null width asks for the original. Returns { body, type } or null.
 export async function loadWallpaper(w = {}, n, width, fetchFn = fetchHeadersWithin) {
 	const original = originalFor(w, n);
 	if (!original) return null;
-	const resized = resizedUrl(w, original, width);
+	const resized = width && resizedUrl(w, original, width);
 	if (resized) {
 		const image = servable(await fetchFn(resized, 8000));
 		if (image) return image;
 	}
 	if (original.file) return fromFile(original);
 	return servable(await fetchFn(original.url, 15000));
+}
+
+const SIZES = { full: FULL_WIDTH, thumb: THUMB_WIDTH, original: null };
+
+// The response for /api/wallpaper/<id>[/thumb|/original]. size is full,
+// thumb or original; signedIn is whether the request has a session (the
+// guest counts when sign-in is off).
+export async function wallpaperResponse(w = {}, id, size, { signedIn, fetchFn } = {}) {
+	const isPublic = id === 'today' && size === 'full';
+	if (!isPublic && !signedIn) return new Response('Unauthorized', { status: 401 });
+	const n = parseIndex(id, wallpaperCount(w));
+	const image = n && (await loadWallpaper(w, n, SIZES[size], fetchFn));
+	if (!image) return new Response('Not found', { status: 404 });
+	// "today" changes at midnight. A folder's numbering moves when files are
+	// added or removed. Signed-in images stay out of shared caches.
+	const cache = isPublic
+		? 'public, max-age=3600'
+		: w.path
+			? 'private, max-age=3600'
+			: 'private, max-age=604800, stale-while-revalidate=86400';
+	return new Response(image.body, {
+		headers: { 'Content-Type': image.type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': cache }
+	});
 }

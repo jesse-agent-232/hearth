@@ -15,6 +15,8 @@ import {
 	originalFor,
 	resizedUrl,
 	loadWallpaper,
+	wallpaperResponse,
+	hasResizer,
 	FULL_WIDTH,
 	THUMB_WIDTH,
 	MAX_BYTES
@@ -203,4 +205,41 @@ test('bad values are rejected at load with the reason', () => {
 	for (const [w, reason] of cases) {
 		assert.match(wallpapersError(w) || '', reason, JSON.stringify(w));
 	}
+});
+
+test('only today at full size is public; numbered ids, thumbs and originals need sign-in', async () => {
+	const dir = folder(['a.jpg', 'b.jpg']);
+	const w = { path: dir };
+	for (const [id, size] of [['1', 'full'], ['0002', 'full'], ['1', 'thumb'], ['today', 'thumb'], ['1', 'original'], ['today', 'original'], ['99', 'full']]) {
+		const res = await wallpaperResponse(w, id, size, { signedIn: false, fetchFn: fakeFetch({}) });
+		assert.equal(res.status, 401, `${id} ${size}`);
+	}
+	const today = await wallpaperResponse(w, 'today', 'full', { signedIn: false, fetchFn: fakeFetch({}) });
+	assert.equal(today.status, 200);
+	assert.equal(today.headers.get('Cache-Control'), 'public, max-age=3600');
+	assert.equal(today.headers.get('X-Content-Type-Options'), 'nosniff');
+});
+
+test('signed in, folder images are private and short-lived; other sources private for a week', async () => {
+	const dir = folder(['a.jpg']);
+	const res = await wallpaperResponse({ path: dir }, '1', 'full', { signedIn: true, fetchFn: fakeFetch({}) });
+	assert.equal(res.status, 200);
+	assert.equal(res.headers.get('Cache-Control'), 'private, max-age=3600');
+	assert.equal(res.headers.get('Content-Type'), 'image/jpeg');
+	assert.equal((await wallpaperResponse({ path: dir }, '2', 'full', { signedIn: true, fetchFn: fakeFetch({}) })).status, 404);
+
+	const w = { url: 'https://img.example/{id}.jpg', count: 2 };
+	const remote = await wallpaperResponse(w, '1', 'thumb', { signedIn: true, fetchFn: fakeFetch({ 'https://img.example/1.jpg': image() }) });
+	assert.equal(remote.headers.get('Cache-Control'), 'private, max-age=604800, stale-while-revalidate=86400');
+});
+
+test('original skips the resizer', async () => {
+	const w = { url: 'https://img.example/{id}.jpg', count: 2, resize: 'http://resizer/?url={url}&w={width}' };
+	assert.equal(hasResizer(w), true);
+	assert.equal(hasResizer({ url: w.url, count: 2 }), false);
+	assert.equal(hasResizer({}), true);
+	const fetch = fakeFetch({ 'https://img.example/2.jpg': image('image/png') });
+	const res = await wallpaperResponse(w, '2', 'original', { signedIn: true, fetchFn: fetch });
+	assert.equal(res.headers.get('Content-Type'), 'image/png');
+	assert.deepEqual(fetch.calls, ['https://img.example/2.jpg']);
 });

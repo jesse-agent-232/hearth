@@ -12,3 +12,8 @@ export function getWallpaperUrl(wallpaperId, count) {
 export function getWallpaperThumbUrl(wallpaperId, count) {
 	return inRange(wallpaperId, count) ? `/api/wallpaper/${String(wallpaperId).padStart(4, '0')}/thumb` : '/api/wallpaper/today/thumb';
 }
+
+// The original, skipping the resizer, for screens wider than the 1920px image.
+export function getWallpaperOriginalUrl(wallpaperId, count) {
+	return inRange(wallpaperId, count) ? `/api/wallpaper/${String(wallpaperId).padStart(4, '0')}/original` : '/api/wallpaper/today/original';
+}

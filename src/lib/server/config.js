@@ -9,7 +9,7 @@ import { latestRelease, updateFor } from './updateCheck.js';
 import { substituteEnvVars } from './envVars.js';
 import { searchOnFocusError } from '../searchOnFocus.js';
 import { searchLookError } from '../searchLook.js';
-import { wallpapersError, wallpaperCount } from './wallpapers.js';
+import { wallpapersError, wallpaperCount, hasResizer } from './wallpapers.js';
 
 let _config = null;
 
@@ -170,7 +170,8 @@ async function loadPrivacyHtml(privacy) {
 // The picker needs only the switch and how many there are, never the source.
 function clientWallpapers(config) {
 	const enabled = config.wallpapers?.enabled ?? false;
-	return { enabled, count: enabled ? wallpaperCount(config.wallpapers || {}) : 0 };
+	const w = config.wallpapers || {};
+	return { enabled, count: enabled ? wallpaperCount(w) : 0, resized: enabled && hasResizer(w) };
 }
 
 // Returns a client-safe subset (no secrets).
