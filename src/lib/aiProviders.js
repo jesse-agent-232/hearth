@@ -168,6 +168,9 @@ function claudeHeaders(config, browser) {
 	};
 }
 
+// Claude's display names ("Claude Opus 5.5") by model id; the same for every key.
+const claudeNames = new Map();
+
 /**
  * Test and stream for each, given `fetch` and the user's config. `browser`
  * is true when the page calls the API itself.
@@ -183,10 +186,22 @@ export const PROVIDERS = {
 				if (res.status === 404) return { ok: false, message: `The key works, but there is no model “${model}”` };
 				if (!res.ok) return { ok: false, message: await apiError(res, 'Anthropic') };
 				const data = await res.json();
+				if (data?.display_name) claudeNames.set(model, data.display_name);
 				return { ok: true, message: `Connected — answers come from ${data?.display_name || model}` };
 			} catch (err) {
 				return { ok: false, message: `Connection failed: ${err.message}` };
 			}
+		},
+		/** The model's display name for an answer's byline, or its id if Anthropic doesn't say. */
+		async modelName({ config, fetch, browser = false }) {
+			const model = modelOf('claude', config);
+			if (!claudeNames.has(model)) {
+				const res = await fetch(`${ANTHROPIC}/models/${encodeURIComponent(model)}`, { headers: claudeHeaders(config, browser) });
+				const data = res.ok ? await res.json() : null;
+				if (!data?.display_name) return model;
+				claudeNames.set(model, data.display_name);
+			}
+			return claudeNames.get(model);
 		},
 		async *stream({ config, system, messages, fetch, browser = false }) {
 			const res = await fetch(`${ANTHROPIC}/messages`, {
@@ -225,6 +240,8 @@ export const PROVIDERS = {
 				return { ok: false, message: `Connection failed: ${err.message}` };
 			}
 		},
+		// OpenAI has no display names: the model id is the name.
+		modelName: async ({ config }) => modelOf('openai', config),
 		stream({ config, system, messages, fetch }) {
 			return streamOpenAiChat({
 				base: OPENAI,

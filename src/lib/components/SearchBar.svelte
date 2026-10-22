@@ -520,10 +520,17 @@
 		try {
 			const asked = aiChoices.find((it) => it.id === ai.integration);
 			const id = asked?.id;
-			const callbacks = { messages, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; }, onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; } };
+			const callbacks = {
+				messages,
+				signal: ctrl.signal,
+				onText: (t) => { if (seq === aiSeq) answer.content += t; },
+				onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; },
+				onModel: (name) => { if (seq === aiSeq) answer.model = name; }
+			};
 			// `calls: browser`: straight to the API with the key on this device.
 			if (asked?.calls === 'browser') await streamInBrowser({ ...callbacks, integration: id, config: integrationsStore.browserConfig(id) });
 			else await streamAnswer({ ...callbacks, integration: id });
+			if (seq === aiSeq) answer.at = Date.now();
 			// A reasoning model can spend its whole budget thinking and say nothing.
 			if (seq === aiSeq && !answer.content.trim()) ai.error = 'The model finished without an answer. Try again, or another model.';
 		} catch (err) {
@@ -543,6 +550,7 @@
 		lastAi = choice.id;
 		try { localStorage.setItem('holm.ai-last', choice.id); } catch {}
 		ai = { question: q, integration: choice.id, name: aiLabel(choice), messages: [], streaming: true, error: '', chat: false };
+		showAllResults = false;
 		chatLayout = false;
 		userMoved = false;
 		runAi([{ role: 'user', content: q }]);
@@ -603,6 +611,9 @@
 			leaveChat();
 		}
 	}
+
+	// The other results, once the answer's first words hid them.
+	let showAllResults = $state(false);
 
 	// The first answer, for the card and its Copy.
 	const firstAnswer = $derived(ai?.messages[1]?.content || '');
@@ -875,23 +886,27 @@
 			}
 			if (fb.length) out.push({ id: 'fallbacks', label: 'Use “' + (q.length > 24 ? q.slice(0, 24) + '…' : q) + '” with…', items: fb });
 		}
-		// The AI's answer to this very query sits above everything.
+		// The AI's answer to this very query sits above everything. Once its
+		// first words arrive the other results step aside, behind a "Show N
+		// results" link; editing the query brings them back.
 		if (ai && !activeScope && ai.question === q) {
-			out.unshift({
-				id: 'ai',
-				label: ai.name,
-				layout: 'ai',
-				items: [{
-					key: 'ai',
-					title: ai.question,
-					ai,
-					actions: [
-						{ label: 'Continue conversation', run: continueChat },
-						...(firstAnswer ? [{ label: 'Copy answer', run: () => copyText(firstAnswer) }] : []),
-						...(!ai.streaming ? [{ label: 'Ask again', run: () => askAi(ai.question) }] : [])
-					]
-				}]
-			});
+			const others = out.reduce((n, s) => n + (s.id === 'fallbacks' ? 0 : s.items.length), 0);
+			const hide = !!firstAnswer && !showAllResults;
+			const item = {
+				key: 'ai',
+				title: ai.question,
+				ai,
+				hidden: hide ? others || -1 : 0,
+				showResults: () => { showAllResults = true; },
+				// While it streams there is nothing to continue yet: no actions, no Enter.
+				actions: ai.streaming ? [] : [
+					{ label: 'Continue conversation', run: continueChat },
+					...(firstAnswer ? [{ label: 'Copy answer', run: () => copyText(firstAnswer) }] : []),
+					{ label: 'Ask again', run: () => askAi(ai.question, aiChoices.find((it) => it.id === ai.integration)) }
+				]
+			};
+			const section = { id: 'ai', label: ai.name, layout: 'ai', items: [item] };
+			return hide ? [section] : [section, ...out];
 		}
 		return out;
 	});
@@ -1356,6 +1371,7 @@
 			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
 			chat={ai?.chat ? ai : null}
 			onchatback={leaveChat}
+			onaistop={stopAi}
 		/>
 	{/if}
 </div>
