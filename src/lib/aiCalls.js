@@ -32,6 +32,18 @@ export function clearLocal(user, id) {
 	localStorage.removeItem(storageKey(user, id));
 }
 
+/** Forgets every AI key saved in this browser, for every user: on log out. */
+export function clearAllLocal() {
+	try {
+		for (let i = localStorage.length - 1; i >= 0; i--) {
+			const k = localStorage.key(i);
+			if (k?.startsWith('holm.ai.')) localStorage.removeItem(k);
+		}
+	} catch {
+		/* storage unavailable: nothing saved */
+	}
+}
+
 // A fetch that gives up after `ms`, or when `signal` aborts.
 function timed(ms, signal) {
 	const signals = [AbortSignal.timeout(ms), ...(signal ? [signal] : [])];
