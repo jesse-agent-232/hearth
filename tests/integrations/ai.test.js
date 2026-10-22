@@ -178,3 +178,12 @@ test('an answer that hits the length limit ends with CUT_OFF, from Claude and Op
 	const done = fakeFetch(streamed([`data: ${JSON.stringify({ choices: [{ delta: { content: 'whole' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`]));
 	assert.deepEqual(await pieces(openai.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: done.fetch })), ['whole']);
 });
+
+test('a refused key reports what the API said', async () => {
+	const forbidden = fakeFetch(() => new Response(JSON.stringify({ type: 'error', error: { type: 'permission_error', message: 'Your key does not have access to claude-opus-5-5' } }), { status: 403 }));
+	const r = await claude.test({ config: { key: 'k', model: 'claude-opus-5-5' }, fetch: forbidden.fetch });
+	assert.equal(r.ok, false);
+	assert.match(r.message, /refused this key: Your key does not have access to claude-opus-5-5/);
+	const bad = fakeFetch(() => new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), { status: 401 }));
+	assert.match((await claude.test({ config: { key: 'k' }, fetch: bad.fetch })).message, /rejected the API key: invalid x-api-key/);
+});
