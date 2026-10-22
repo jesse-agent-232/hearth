@@ -2,7 +2,7 @@
 # JavaScript and no production dependency ships a native binary, so only the
 # small final stage needs emulation for arm64. Running npm ci under QEMU hung
 # the multi-platform release build.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:22.23.4-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 COPY --from=build /app/build ./build
 COPY --from=build /app/package.json .

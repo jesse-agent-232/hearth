@@ -6,6 +6,10 @@ using it. Headings are `## <version> — <date>`. One line per change:
 **New:**, **Improved:** or **Fixed:**, then a plain line of at most about
 twelve words, ending with a link to its PR.
 
+## 0.10.1 — 2026-10-22
+
+- **Fixed:** Runs on Node 22.23.4, which patches October's Node security issues. ([#109](https://github.com/man15h/holm/pull/109))
+
 ## 0.10.0 — 2026-10-20
 
 - **New:** Search → Transparency: Match theme or Solid, with `search.transparency`. ([#103](https://github.com/man15h/holm/pull/103))
