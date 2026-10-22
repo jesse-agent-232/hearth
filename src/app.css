@@ -981,7 +981,8 @@ body.search-active .launcher-host { z-index: 40; }
 	backdrop-filter: var(--glass-blur);
 	transition:
 		box-shadow 220ms var(--ease-standard),
-		border-color 220ms var(--ease-standard);
+		border-color 220ms var(--ease-standard),
+		transform 250ms var(--ease-standard);
 }
 .hero-search-form:focus-within {
 	border-color: var(--hero-search-border);
@@ -1746,35 +1747,6 @@ body.search-active .launcher-host { z-index: 40; }
 	overflow-wrap: anywhere;
 }
 .ai-bubble.is-assistant { padding: 4px 2px; }
-.launcher-chat-composer {
-	display: flex;
-	align-items: flex-end;
-	gap: 8px;
-	margin: 0 10px 10px;
-	padding: 6px 6px 6px 12px;
-	border-radius: 12px;
-	background: var(--hero-search-chip-bg);
-	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
-	transition: box-shadow 200ms var(--ease-standard);
-}
-.launcher-chat-composer:focus-within { box-shadow: inset 0 0 0 1px var(--launcher-sel-ring); }
-.launcher-chat-input {
-	flex: 1;
-	min-width: 0;
-	min-height: 28px;
-	max-height: 140px;
-	padding: 4px 0;
-	border: none;
-	outline: none;
-	resize: none;
-	field-sizing: content;
-	background: transparent;
-	color: var(--hero-search-text);
-	font: inherit;
-	font-size: 0.85rem;
-	line-height: 1.5;
-}
-.launcher-chat-input::placeholder { color: var(--hero-search-text-dim); }
 .launcher-chat-send {
 	display: inline-flex;
 	align-items: center;
@@ -1792,6 +1764,44 @@ body.search-active .launcher-host { z-index: 40; }
 .launcher-chat-send:disabled { opacity: 0.35; cursor: default; }
 .launcher-chat-send:not(:disabled):hover { filter: brightness(1.08); }
 .launcher-chat-send svg { width: 16px; height: 16px; }
+/* The chat: the panel takes the results' full height, the list fades, and
+   the bar slides down to its bottom edge as the message box. The bar keeps
+   its place in the page (a transform), so nothing around it moves. */
+.hero-search .launcher-panel { transition: top 250ms var(--ease-standard); }
+/* The joined surface's shadow is on the wrapper, which is only as tall as
+   the bar; the panel carries it in a chat. */
+.hero-search.is-open.is-chat { box-shadow: none; }
+.hero-search.is-chat .launcher-panel {
+	top: 0;
+	height: var(--results-max-h);
+	max-height: none;
+	padding-bottom: var(--form-h);
+	margin-top: 0 !important;
+	border-radius: var(--radius-lg, 14px) !important;
+	border-top: 1px solid var(--hero-search-border) !important;
+	box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.45), 0 4px 12px -4px rgba(0, 0, 0, 0.18) !important;
+}
+.hero-search.is-chat .launcher-scroll:not(.launcher-chat) { opacity: 0; transition: opacity 120ms var(--ease-standard); }
+.hero-search.is-chat .hero-search-form {
+	position: relative;
+	z-index: 21;
+	transform: translateY(calc(var(--results-max-h) - var(--form-h)));
+	/* It sits on the panel's own glass: a hairline above, no second layer. */
+	background: transparent;
+	backdrop-filter: none;
+	border-color: transparent;
+	border-top-color: var(--hero-search-border);
+	border-radius: 0 0 var(--radius-lg, 14px) var(--radius-lg, 14px);
+	box-shadow: none;
+}
+.hero-search.is-chat .hero-search-form .launcher-chat-send { margin-right: -6px; }
+.hero-search-ai { color: var(--accent, #f5b942) !important; }
+.launcher-chat { animation: launcher-chat-in 180ms var(--ease-standard) both; }
+@keyframes launcher-chat-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+	.hero-search-form, .hero-search .launcher-panel, .hero-search.is-chat .launcher-scroll { transition: none; }
+	.launcher-chat { animation: none; }
+}
 @media (prefers-reduced-motion: reduce) {
 	.ai-thinking-dots span, .ai-markdown.is-streaming > :last-child::after, .ai-markdown.is-streaming.is-plain::after { animation: none; }
 	.ai-bubble { animation: none; }
@@ -2338,10 +2348,6 @@ body.search-active .launcher-host { z-index: 40; }
 /* No keyboard on touch: keep the footer buttons, drop the key hints. */
 @media (pointer: coarse) {
 	.launcher-footer-hint, .launcher-footer kbd, .launcher-action-hint { display: none; }
-}
-/* The chat's footer holds key hints only, so it goes where they do. */
-@media (max-width: 767px), (pointer: coarse) {
-	.launcher-footer.is-chat { display: none; }
 }
 
 /* ── Tile context menu ─────────────────────────────────────── */

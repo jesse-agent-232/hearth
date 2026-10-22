@@ -2,7 +2,6 @@
 	import AppIcon from './AppIcon.svelte';
 	import Keys from './Keys.svelte';
 	import AiMessage from './AiMessage.svelte';
-	import { MAX_CHAT_MESSAGES } from '$lib/aiAnswer.js';
 
 	// Raycast-style result list. SearchBar owns the data, the selection and
 	// the keyboard; this only renders. Focus never leaves the input: the
@@ -13,7 +12,8 @@
 	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }],
 	//             answer?: { from: { value, label }, to: { value, label }, also?: [{ value, label }] },
 	//             ai?: { question, name, messages, streaming, error } }
-	// chat:     the AI conversation shown in place of the list, or null
+	// chat:     the AI conversation shown in place of the list, or null; its
+	//           message box is the search input, moved below it by SearchBar
 	let {
 		sections = [],
 		selectedKey = null,
@@ -30,34 +30,10 @@
 		answerCopied = -1,
 		oncopyanswer = () => {},
 		chat = null,
-		onchatback = () => {},
-		onchatsend = () => {},
-		onchatstop = () => {}
+		onchatback = () => {}
 	} = $props();
 
-	// The chat's follow-up box: Enter sends, ⇧↵ is a new line, Esc goes back.
-	let draft = $state('');
-	let composerEl = $state();
 	let chatScrollEl = $state();
-	const chatFull = $derived(!!chat && chat.messages.length + 2 > MAX_CHAT_MESSAGES);
-	$effect(() => {
-		if (chat) queueMicrotask(() => composerEl?.focus());
-	});
-	function send() {
-		if (!draft.trim() || chat?.streaming || chatFull) return;
-		onchatsend(draft);
-		draft = '';
-	}
-	function composerKey(e) {
-		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-			e.preventDefault();
-			send();
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			e.stopPropagation();
-			onchatback();
-		}
-	}
 	// Follow the answer down as it streams, unless the reader scrolled up.
 	let pinned = true;
 	$effect(() => {
@@ -185,7 +161,7 @@
 			<div class="launcher-chat-head">
 				<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={onchatback}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-					Results
+					Back
 				</button>
 				<span class="launcher-chat-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{@html SPARKLE}</svg>{chat.name}</span>
 			</div>
@@ -201,28 +177,6 @@
 			{/each}
 			{#if chat.error}<div class="launcher-error ai-error">{chat.error}</div>{/if}
 		</div>
-		<form class="launcher-chat-composer" onsubmit={(e) => { e.preventDefault(); send(); }}>
-			<textarea
-				bind:this={composerEl}
-				bind:value={draft}
-				rows="1"
-				class="launcher-chat-input"
-				placeholder={chatFull ? 'This conversation is full. Start a new search to ask more.' : `Ask ${chat.name} a follow-up…`}
-				aria-label="Follow-up question"
-				maxlength="4000"
-				disabled={chatFull}
-				onkeydown={composerKey}
-			></textarea>
-			{#if chat.streaming}
-				<button type="button" class="launcher-chat-send" onclick={onchatstop} aria-label="Stop the answer">
-					<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
-				</button>
-			{:else}
-				<button type="submit" class="launcher-chat-send" disabled={!draft.trim() || chatFull} aria-label="Send">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-				</button>
-			{/if}
-		</form>
 	{:else if detail}
 		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
 		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
@@ -234,7 +188,7 @@
 				{/if}
 				<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={ondetailclose}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-					Results
+					Back
 				</button>
 			</div>
 			<!-- An event is compact: its icon, then title and facts, with the buttons on the right. -->
@@ -500,15 +454,10 @@
 	{/if}
 
 	<!-- Footer bar: what Enter does, and where the rest of the actions live. -->
-	<div class="launcher-footer" class:is-chat={!!chat}>
-		{#if chat}
-			<span class="launcher-footer-hint">
-				<Keys keys="esc" /> back
-			</span>
-			<span class="launcher-footer-hint">
-				<Keys keys="↵" /> send · <Keys keys="⇧ ↵" /> new line
-			</span>
-		{:else if detail}
+	<!-- None in a chat: the search bar sits there instead, as its message box. -->
+	{#if !chat}
+	<div class="launcher-footer">
+		{#if detail}
 			<span class="launcher-footer-hint">
 				<Keys keys="←" /> <Keys keys="esc" /> back
 			</span>
@@ -535,6 +484,7 @@
 		{/if}
 		{/if}
 	</div>
+	{/if}
 
 	{#if panelOpen && selected && !detail && !chat}
 		<div class="launcher-actions" role="menu" aria-label="Actions for {selected.title}">
