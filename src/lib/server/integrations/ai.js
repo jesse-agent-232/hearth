@@ -2,6 +2,17 @@
 // shared calls (src/lib/aiProviders.js) for the adapters and POST /api/ai.
 
 export * from '../../aiProviders.js';
+import { withDeadline } from './deadline.js';
+
+/**
+ * The fetch for an AI provider's calls: the platform's own, with a deadline.
+ * Not SvelteKit's event fetch, which adds `Origin: <Holm's URL>` to every
+ * cross-site call; Anthropic takes that for a browser and refuses the call,
+ * and neither API needs to learn Holm's address.
+ */
+export function providerFetch(ms, signal) {
+	return withDeadline((input, init) => globalThis.fetch(input, init), ms, signal);
+}
 
 // A sliding window per user. In memory: a restart forgets it, which is fine
 // for a guard against runaway loops on the user's own key.

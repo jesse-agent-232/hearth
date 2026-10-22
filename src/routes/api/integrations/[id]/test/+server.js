@@ -6,6 +6,7 @@ import { getConnection } from '$lib/server/integrations/store.js';
 import { isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
 import { otherAccounts } from '$lib/server/integrations/accounts.js';
+import { providerFetch } from '$lib/server/integrations/ai.js';
 
 const TEST_TIMEOUT_MS = 8000;
 
@@ -50,7 +51,8 @@ export async function POST({ cookies, url, request, params, fetch }) {
 	try {
 		const result = await adapter.test({
 			config: merged,
-			fetch: withDeadline(fetch, TEST_TIMEOUT_MS)
+			// The AI providers get a fetch that doesn't send Holm's Origin (ai.js).
+			fetch: adapter.answers ? providerFetch(TEST_TIMEOUT_MS) : withDeadline(fetch, TEST_TIMEOUT_MS)
 		});
 		return json({
 			ok: !!result?.ok,

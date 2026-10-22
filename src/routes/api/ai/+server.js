@@ -2,8 +2,8 @@ import { json } from '@sveltejs/kit';
 import { getSessionUser } from '$lib/server/session.js';
 import { getRegistry } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
-import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
-import { checkMessages, takeRateSlot, SYSTEM_PROMPT, CUT_OFF } from '$lib/server/integrations/ai.js';
+import { describeFetchError } from '$lib/server/integrations/deadline.js';
+import { checkMessages, takeRateSlot, providerFetch, SYSTEM_PROMPT, CUT_OFF } from '$lib/server/integrations/ai.js';
 
 // A local model can take a while to load before its first word, and a long
 // answer streams for a while after; past this the answer is cut off.
@@ -20,7 +20,7 @@ const ANSWER_TIMEOUT_MS = 180000;
 // stored, and closing the request (a new search, closing the chat) stops
 // the upstream call.
 
-export async function POST({ cookies, url, request, fetch }) {
+export async function POST({ cookies, url, request }) {
 	const user = getSessionUser(cookies, url);
 	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -55,7 +55,7 @@ export async function POST({ cookies, url, request, fetch }) {
 	}
 
 	const upstream = new AbortController();
-	const deadlineFetch = withDeadline(fetch, ANSWER_TIMEOUT_MS, AbortSignal.any([request.signal, upstream.signal]));
+	const deadlineFetch = providerFetch(ANSWER_TIMEOUT_MS, AbortSignal.any([request.signal, upstream.signal]));
 	const encoder = new TextEncoder();
 
 	const stream = new ReadableStream({
