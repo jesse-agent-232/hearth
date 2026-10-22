@@ -16,7 +16,7 @@
 	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
 	import { searchOnFocus } from '$lib/searchOnFocus.js';
 	import { searchTransparency, searchGlassLevel, searchHints } from '$lib/searchLook.js';
-	import { streamAnswer, followUpMessages } from '$lib/aiAnswer.js';
+	import { streamAnswer, followUpMessages, MAX_CHAT_MESSAGES } from '$lib/aiAnswer.js';
 	import { streamInBrowser } from '$lib/aiCalls.js';
 
 	const siteConfig = getContext('config');
@@ -29,6 +29,7 @@
 	// bottom edge to the viewport bottom minus a breathing gap. Recomputed on
 	// open + window resize so the panel never spills past the visible area.
 	let resultsMaxHeight = $state(420);
+	let formHeight = $state(52);
 	// On desktop the open palette slides up toward the top of the viewport,
 	// Spotlight-style, so short screens (a 14" laptop) give the results most
 	// of the height instead of the strip under a mid-page bar, unless the
@@ -533,19 +534,65 @@
 		if (!q || !aiIntegration) return;
 		stopAi();
 		ai = { question: q, name: aiIntegration.name, messages: [], streaming: true, error: '', chat: false };
+		chatLayout = false;
 		userMoved = false;
 		runAi([{ role: 'user', content: q }]);
 	}
 
+	// The chat layout: the results fade, and the bar slides to the bottom of
+	// the panel to become the message box; then the conversation fades in
+	// above it. Back (or Esc) runs it in reverse, to the same query and
+	// results. `chatLayout` moves the bar at once, `ai.chat` swaps the list
+	// for the conversation once the list has faded.
+	let chatLayout = $state(false);
+	const chatOn = $derived(chatLayout && !!ai);
+	let chatDraft = $state('');
+	let chatInputEl = $state();
+	let chatTimer;
+	const LIST_FADE_MS = 120;
+	const chatFull = $derived(!!ai && ai.messages.length + 2 > MAX_CHAT_MESSAGES);
+
 	function continueChat() {
 		if (!ai) return;
-		ai.chat = true;
 		panelOpen = false;
+		chatLayout = true;
+		clearTimeout(chatTimer);
+		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		chatTimer = setTimeout(() => { if (ai && chatLayout) ai.chat = true; }, still ? 0 : LIST_FADE_MS);
+		tick().then(() => chatInputEl?.focus());
 	}
 
-	function sendFollowUp(text) {
-		if (!ai || ai.streaming || !text.trim()) return;
-		runAi(followUpMessages(ai.messages, text.trim()));
+	function leaveChat() {
+		clearTimeout(chatTimer);
+		if (ai) ai.chat = false;
+		chatLayout = false;
+		chatDraft = '';
+		tick().then(() => inputEl?.focus());
+	}
+
+	// Closing the palette leaves the chat; opening it again shows the card.
+	$effect(() => {
+		if (!isPaletteOpen) untrack(() => {
+			if (!chatLayout) return;
+			clearTimeout(chatTimer);
+			chatLayout = false;
+			if (ai) ai.chat = false;
+		});
+	});
+
+	function sendFollowUp() {
+		const text = chatDraft.trim();
+		if (!ai || ai.streaming || chatFull || !text) return;
+		chatDraft = '';
+		runAi(followUpMessages(ai.messages, text));
+	}
+
+	function handleChatKeydown(e) {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			leaveChat();
+		}
 	}
 
 	// The first answer, for the card and its Copy.
@@ -863,6 +910,7 @@
 			if (ai && (query || '').trim() !== ai.question) {
 				stopAi();
 				ai = null;
+				chatLayout = false;
 			}
 		});
 	});
@@ -1002,6 +1050,12 @@
 	});
 
 	function handleSubmit(e) {
+		// In a chat the bar is its message box: Enter sends the follow-up.
+		if (chatOn) {
+			e.preventDefault();
+			sendFollowUp();
+			return;
+		}
 		// Enter is handled in the keydown below; a submit only gets here with
 		// nothing to run (no results yet), and then it is a web search.
 		if (!query.trim()) e.preventDefault();
@@ -1020,7 +1074,6 @@
 			e.preventDefault();
 			e.stopPropagation();
 			if (panelOpen) panelOpen = false;
-			else if (ai?.chat) ai.chat = false;
 			else if (detailView) closeDetail();
 			else if (query) query = '';
 			else if (activeFilter) activeFilter = null;
@@ -1030,11 +1083,6 @@
 			// (e.g. Vimium) blur a text field on Escape. After this event, so
 			// after their blur.
 			setTimeout(() => inputEl?.focus({ preventScroll: true }), 0);
-			return;
-		}
-		// The chat hides the list, so its keys do nothing until Esc goes back.
-		if (ai?.chat && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
-			e.preventDefault();
 			return;
 		}
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -1158,7 +1206,7 @@
 <!-- Close when keyboard focus leaves the palette (Tab-out); click-outside is
      handled by onClickOutside. A null relatedTarget is a click on a
      non-focusable spot, which may be inside the panel, so it's ignored. -->
-<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" data-glass={glassLevel} bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px"
+<div class="relative hero-search {isPaletteOpen ? 'is-open' : ''}" class:is-chat={chatOn && isPaletteOpen} data-glass={glassLevel} bind:this={containerEl} style="--results-max-h: {resultsMaxHeight}px; --search-lift: {lift}px; --form-h: {formHeight}px"
 	onfocusout={(e) => { if (inlineOpen && e.relatedTarget && !containerEl.contains(e.relatedTarget)) { inlineOpen = false; panelOpen = false; } }}>
 	<form
 		class="hero-search-form relative flex items-center px-4 md:px-6"
@@ -1167,7 +1215,34 @@
 		target="_blank"
 		role="search"
 		onsubmit={handleSubmit}
+		bind:offsetHeight={formHeight}
 	>
+		{#if chatOn}
+		<svg class="hero-search-ai shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+		<input
+			bind:this={chatInputEl}
+			bind:value={chatDraft}
+			type="text"
+			class="hero-search-input w-full h-[48px] md:h-[52px] bg-transparent border-none px-3 md:px-4 outline-none font-mono"
+			placeholder={chatFull ? 'This conversation is full. Start a new search to ask more.' : `Ask ${ai.name} a follow-up…`}
+			aria-label="Follow-up question for {ai.name}"
+			autocomplete="off"
+			spellcheck="true"
+			enterkeyhint="send"
+			maxlength="4000"
+			disabled={chatFull}
+			onkeydown={handleChatKeydown}
+		/>
+		{#if ai.streaming}
+			<button type="button" class="launcher-chat-send" onclick={stopAi} aria-label="Stop the answer">
+				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+			</button>
+		{:else}
+			<button type="submit" class="launcher-chat-send" disabled={!chatDraft.trim() || chatFull} aria-label="Send">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+			</button>
+		{/if}
+		{:else}
 		<svg class="text-content-dim shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 
 		{#if activeIntegration}
@@ -1209,6 +1284,7 @@
 		{:else}
 			<kbd class="hero-search-kbd hidden md:inline-flex items-center gap-0.5 text-[0.7rem] py-1 px-2 rounded border font-mono shrink-0">{#if macKeys}<svg class="kbd-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Command"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3Z"/></svg>{:else}Ctrl&nbsp;{/if}K</kbd>
 		{/if}
+		{/if}
 		<!-- One thin line while an app is still searching, so "still looking"
 		     and "found nothing" don't look the same. -->
 		{#if isPaletteOpen && sections.some((s) => s.loading)}<span class="search-progress" aria-hidden="true"></span>{/if}
@@ -1232,9 +1308,7 @@
 			oncopyanswer={(item, i) => item.actions[i]?.run()}
 			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
 			chat={ai?.chat ? ai : null}
-			onchatback={() => { if (ai) ai.chat = false; inputEl?.focus(); }}
-			onchatsend={sendFollowUp}
-			onchatstop={stopAi}
+			onchatback={leaveChat}
 		/>
 	{/if}
 </div>
