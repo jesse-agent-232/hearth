@@ -88,7 +88,22 @@ Claude, OpenAI and Self-hosted AI answer questions typed into the search bar. Th
 
 With one connected, a search offers **Ask Claude “…”** above the web search, and **Shift+Enter** asks from anywhere in the list. The answer streams into a card at the top of the results, showing a "Thinking" line until the first words arrive (a local model can take a while to load). **Continue conversation** (or Enter on the card) opens it as a chat in place of the results, with the question and answer already in it; Enter sends a follow-up, Shift+Enter starts a new line, Esc goes back to the results. With more than one connected, the first in the list above answers.
 
-What the model gets is the conversation and a short instruction to answer briefly, nothing else: no tools, no web, and none of the user's apps, files or Holm data. The call is made by Holm's server, so the key never reaches the browser. Nothing is saved: typing a new search, or closing the tab, forgets the answer and its chat. A conversation holds up to 20 messages, each question up to 4,000 characters, and each user can ask 20 times a minute. An answer that reaches the length limit (1,024 tokens) says it was cut off; asking it to go on picks up from there. Answers are Markdown, sanitised before they're shown: links open in a new tab, and images aren't loaded, so an answer can't make the browser fetch anything on its own.
+What the model gets is the conversation and a short instruction to answer briefly, nothing else: no tools, no web, and none of the user's apps, files or Holm data. By default the call is made by Holm's server, so the key never reaches the browser. Nothing is saved: typing a new search, or closing the tab, forgets the answer and its chat. A conversation holds up to 20 messages, each question up to 4,000 characters, and each user can ask 20 times a minute. An answer that reaches the length limit (1,024 tokens) says it was cut off; asking it to go on picks up from there. Answers are Markdown, sanitised before they're shown: links open in a new tab, and images aren't loaded, so an answer can't make the browser fetch anything on its own.
+
+For Claude and OpenAI, the operator chooses who makes the call with `calls`:
+
+```yaml
+integrations:
+  claude:
+    calls: browser   # server (the default) or browser
+  openai:
+    calls: browser
+```
+
+- **`server`** (default): the key is stored encrypted on Holm's server, which makes every call. The rate limit above applies.
+- **`browser`**: the key is saved only in that browser's local storage and is never sent to Holm. **Test** and every answer go from the browser straight to `api.anthropic.com` or `api.openai.com`; the card says the key is stored on this device only, so each browser or device is connected separately. Holm's server sees neither the key nor the questions, so its rate limit doesn't apply. Holm still sanitises the answers in the same way. A key saved on the server before the switch is ignored, and **Disconnect** deletes it. The trade-off: anything that can run script in that browser, such as an extension or a script-injection bug in Holm, could read the key. Claude calls from the browser carry Anthropic's `anthropic-dangerous-direct-browser-access` header, which is how Anthropic allows them.
+
+Self-hosted AI has no `calls`: it is always called from Holm's server, so `default_url` and the URL policy keep covering it.
 
 An integration's widgets switch is also in **Configure → Widgets**. Once an integration with `surfaces.widgets` on is connected, it appears there next to Clock, Weather and Search, and both places flip the same switch.
 

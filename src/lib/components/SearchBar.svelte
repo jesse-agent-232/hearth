@@ -17,6 +17,7 @@
 	import { searchOnFocus } from '$lib/searchOnFocus.js';
 	import { searchTransparency, searchGlassLevel, searchHints } from '$lib/searchLook.js';
 	import { streamAnswer, followUpMessages } from '$lib/aiAnswer.js';
+	import { streamInBrowser } from '$lib/aiCalls.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -510,7 +511,11 @@
 		ai.error = '';
 		const answer = ai.messages[ai.messages.length - 1];
 		try {
-			await streamAnswer({ messages, integration: aiIntegration?.id, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; }, onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; } });
+			const id = aiIntegration?.id;
+			const callbacks = { messages, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; }, onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; } };
+			// `calls: browser`: straight to the API with the key on this device.
+			if (aiIntegration?.calls === 'browser') await streamInBrowser({ ...callbacks, integration: id, config: integrationsStore.browserConfig(id) });
+			else await streamAnswer({ ...callbacks, integration: id });
 			// A reasoning model can spend its whole budget thinking and say nothing.
 			if (seq === aiSeq && !answer.content.trim()) ai.error = 'The model finished without an answer. Try again, or another model.';
 		} catch (err) {
