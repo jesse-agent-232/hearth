@@ -6,7 +6,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
+import { createServer } from 'node:http';
+
+import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, providerFetch, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
 import claude from '../../src/lib/server/integrations/claude.js';
 import openai from '../../src/lib/server/integrations/openai.js';
 import openaiCompatible from '../../src/lib/server/integrations/openai_compatible.js';
@@ -186,4 +188,39 @@ test('a refused key reports what the API said', async () => {
 	assert.match(r.message, /refused this key: Your key does not have access to claude-opus-5-5/);
 	const bad = fakeFetch(() => new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), { status: 401 }));
 	assert.match((await claude.test({ config: { key: 'k' }, fetch: bad.fetch })).message, /rejected the API key: invalid x-api-key/);
+});
+
+test('a server-side Claude call carries no Origin header', async () => {
+	// Anthropic refuses a call with an Origin unless it opts in to browser
+	// access, and SvelteKit's event fetch adds one. The real platform fetch,
+	// pointed at a local server standing in for the API, shows what is sent.
+	const seen = [];
+	const server = createServer((req, res) => {
+		seen.push({ path: req.url, origin: req.headers.origin, browser: req.headers['anthropic-dangerous-direct-browser-access'] });
+		if (req.url.startsWith('/v1/models/')) {
+			res.setHeader('content-type', 'application/json');
+			return res.end(JSON.stringify({ display_name: 'Claude Haiku' }));
+		}
+		res.setHeader('content-type', 'text/event-stream');
+		res.end(`event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'hi' } })}\n\nevent: message_stop\ndata: {}\n\n`);
+	});
+	await new Promise((r) => server.listen(0, '127.0.0.1', r));
+	const local = `http://127.0.0.1:${server.address().port}`;
+	const platform = globalThis.fetch;
+	globalThis.fetch = (input, init) => platform(String(input).replace('https://api.anthropic.com', local), init);
+	try {
+		const fetch = providerFetch(5000);
+		assert.equal((await claude.test({ config: { key: 'k' }, fetch })).ok, true);
+		const out = [];
+		for await (const piece of claude.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch })) out.push(piece);
+		assert.deepEqual(out, ['hi']);
+	} finally {
+		globalThis.fetch = platform;
+		server.close();
+	}
+	assert.equal(seen.length, 2);
+	for (const req of seen) {
+		assert.equal(req.origin, undefined, `${req.path} sent an Origin`);
+		assert.equal(req.browser, undefined, `${req.path} claimed browser access`);
+	}
 });
