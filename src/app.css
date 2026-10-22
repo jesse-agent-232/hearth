@@ -1129,6 +1129,41 @@ body.search-active .launcher-host { z-index: 40; }
 	color: var(--hero-search-text-dim);
 }
 .hero-search-form .clear-btn:hover { color: var(--hero-search-text); }
+/* "Ask Claude" in the bar, when nothing matched or the query is a question.
+   Accent-tinted while Enter would send it; a quiet chip once the user has
+   arrowed to a result. */
+.ask-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+	margin-right: 6px;
+	padding: 5px 10px;
+	border: none;
+	border-radius: 999px;
+	background: var(--hero-search-chip-bg);
+	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
+	color: var(--hero-search-text);
+	font: inherit;
+	font-size: 0.72rem;
+	white-space: nowrap;
+	cursor: pointer;
+	animation: ask-pill-in 160ms var(--ease-standard) both;
+	transition: background 150ms var(--ease-standard), box-shadow 150ms var(--ease-standard);
+}
+.ask-pill svg { width: 14px; height: 14px; color: var(--accent, #f5b942); }
+.ask-pill.is-leading {
+	background: color-mix(in srgb, var(--accent, #f5b942) 18%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, #f5b942) 40%, transparent);
+}
+.ask-pill:hover { filter: brightness(1.1); }
+.ask-pill:focus-visible { outline: 2px solid var(--accent, #f5b942); outline-offset: 2px; }
+.ask-pill-key { display: inline-flex; opacity: 0.75; }
+.ask-pill kbd { display: inline-flex; border: none; padding: 0; background: none; box-shadow: none; color: inherit; }
+/* A phone's bar is narrow: the pill says just "Ask" (its label names the AI). */
+@media (max-width: 479px) { .ask-pill-name { display: none; } }
+@keyframes ask-pill-in { from { opacity: 0; transform: scale(0.94); } }
+@media (prefers-reduced-motion: reduce) { .ask-pill { animation: none; } }
 
 /* "Recent" chips — one-click reopens of the last N apps the user
    launched. Sits below the search slot, above the full app grid.
