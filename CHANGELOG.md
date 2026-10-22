@@ -8,7 +8,7 @@ twelve words, ending with a link to its PR.
 
 ## Unreleased
 
-- **New:** Ask Claude, OpenAI or your own Ollama from search, and keep chatting. ([#PR](https://github.com/man15h/holm/pull/PR))
+- **New:** Ask Claude, OpenAI or your own Ollama from search, and keep chatting. ([#111](https://github.com/man15h/holm/pull/111))
 
 ## 0.10.1 — 2026-10-22
 
