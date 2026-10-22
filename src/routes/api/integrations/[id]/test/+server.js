@@ -6,7 +6,7 @@ import { getConnection } from '$lib/server/integrations/store.js';
 import { isRedacted } from '$lib/server/integrations/serialize.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
 import { otherAccounts } from '$lib/server/integrations/accounts.js';
-import { providerFetch } from '$lib/server/integrations/ai.js';
+import { providerFetch, callsInBrowser } from '$lib/server/integrations/ai.js';
 
 const TEST_TIMEOUT_MS = 8000;
 
@@ -22,6 +22,11 @@ export async function POST({ cookies, url, request, params, fetch }) {
 
 	const adapter = getAdapter(params.id);
 	if (!adapter) return json({ error: 'Unknown integration' }, { status: 404 });
+
+	// With `calls: browser` the browser tests the key itself.
+	if (callsInBrowser(adapter, getOperatorDefaults(adapter.id))) {
+		return json({ error: 'This integration runs in your browser, and its key stays on your device' }, { status: 409 });
+	}
 
 	let body;
 	try {

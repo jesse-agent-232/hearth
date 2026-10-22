@@ -1,6 +1,7 @@
 <script>
 	import { onDestroy } from 'svelte';
 	import { marked } from 'marked';
+	import { NAMES } from '$lib/aiCalls.js';
 	import AppIcon from './AppIcon.svelte';
 	import IntegrationAccounts from './IntegrationAccounts.svelte';
 	import { integrations as integrationsStore } from '$lib/stores/integrations.js';
@@ -381,6 +382,11 @@
 			{#if integration.tip}
 				<div class="text-[0.7rem] text-content-dim/70 leading-relaxed px-2 py-1.5 rounded-lg bg-surface-card/40 border border-border-card">
 					{integration.tip}
+				</div>
+			{/if}
+			{#if integration.calls === 'browser'}
+				<div class="text-[0.7rem] text-content-dim leading-relaxed px-2 py-1.5 rounded-lg bg-surface-card/40 border border-border-card" data-testid="stored-on-device">
+					Stored on this device only. The key goes straight to {NAMES[integration.id] || integration.name}, never to Holm. Enter it again on other devices.
 				</div>
 			{/if}
 			{#snippet mainForm()}

@@ -3,7 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getRegistry } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { describeFetchError } from '$lib/server/integrations/deadline.js';
-import { checkMessages, takeRateSlot, providerFetch, SYSTEM_PROMPT, CUT_OFF } from '$lib/server/integrations/ai.js';
+import { checkMessages, takeRateSlot, providerFetch, SYSTEM_PROMPT, CUT_OFF, callsInBrowser } from '$lib/server/integrations/ai.js';
 
 // A local model can take a while to load before its first word, and a long
 // answer streams for a while after; past this the answer is cut off.
@@ -37,7 +37,8 @@ export async function POST({ cookies, url, request }) {
 	if (!checked.ok) return json({ error: checked.message }, { status: 400 });
 
 	const wanted = typeof body?.integration === 'string' ? body.integration : null;
-	const candidates = getRegistry().filter(({ adapter }) => adapter.answers && (!wanted || adapter.id === wanted));
+	// One set to `calls: browser` is the browser's to call, never the server's.
+	const candidates = getRegistry().filter(({ adapter, operator }) => adapter.answers && !callsInBrowser(adapter, operator) && (!wanted || adapter.id === wanted));
 	let adapter = null;
 	let conn = null;
 	for (const entry of candidates) {

@@ -14,6 +14,15 @@ export function providerFetch(ms, signal) {
 	return withDeadline((input, init) => globalThis.fetch(input, init), ms, signal);
 }
 
+/**
+ * True when the operator set `calls: browser` on an integration that
+ * supports it (Claude, OpenAI): the user's key then stays in their browser,
+ * which calls the API itself, and Holm's server never holds or uses it.
+ */
+export function callsInBrowser(adapter, operator) {
+	return !!adapter?.browserCalls && operator?.calls === 'browser';
+}
+
 // A sliding window per user. In memory: a restart forgets it, which is fine
 // for a guard against runaway loops on the user's own key.
 const RATE_LIMIT = 20;

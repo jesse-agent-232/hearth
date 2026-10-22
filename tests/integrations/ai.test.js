@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 
 import { createServer } from 'node:http';
 
-import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, providerFetch, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
+import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, providerFetch, callsInBrowser, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
+import { readLocal, writeLocal, clearLocal, streamInBrowser, testInBrowser } from '../../src/lib/aiCalls.js';
 import claude from '../../src/lib/server/integrations/claude.js';
 import openai from '../../src/lib/server/integrations/openai.js';
 import openaiCompatible from '../../src/lib/server/integrations/openai_compatible.js';
@@ -222,5 +223,50 @@ test('a server-side Claude call carries no Origin header', async () => {
 	for (const req of seen) {
 		assert.equal(req.origin, undefined, `${req.path} sent an Origin`);
 		assert.equal(req.browser, undefined, `${req.path} claimed browser access`);
+	}
+});
+
+test('calls: browser applies to Claude and OpenAI only; server stays the default', () => {
+	assert.equal(callsInBrowser(claude, { enabled: true }), false);
+	assert.equal(callsInBrowser(claude, { calls: 'server' }), false);
+	assert.equal(callsInBrowser(claude, { calls: 'browser' }), true);
+	assert.equal(callsInBrowser(openai, { calls: 'browser' }), true);
+	assert.equal(callsInBrowser(openaiCompatible, { calls: 'browser' }), false);
+	assert.equal(callsInBrowser(claude, null), false);
+});
+
+test('in browser mode the key stays in this browser, per user, and goes only to the API', async () => {
+	const items = new Map();
+	const calls = [];
+	const platform = globalThis.fetch;
+	globalThis.localStorage = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => items.set(k, String(v)), removeItem: (k) => items.delete(k) };
+	const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+	globalThis.fetch = async (input, init = {}) => {
+		calls.push({ url: String(input), headers: { ...init.headers } });
+		if (String(input).includes('/v1/models/')) return new Response(JSON.stringify({ display_name: 'Claude Haiku' }));
+		return streamed([sse('content_block_delta', { type: 'content_block_delta', delta: { type: 'text_delta', text: 'hi' } }), sse('message_stop', {})]);
+	};
+	try {
+		writeLocal('ana', 'claude', { key: 'sk-local' });
+		assert.equal(readLocal('ben', 'claude'), null);
+		const config = readLocal('ana', 'claude');
+		assert.equal((await testInBrowser('claude', config)).ok, true);
+		const text = [];
+		let cut = false;
+		await streamInBrowser({ integration: 'claude', config, messages: ask, onText: (t) => text.push(t), onCutOff: () => (cut = true) });
+		assert.deepEqual(text, ['hi']);
+		assert.equal(cut, false);
+		assert.equal(calls.length, 2);
+		for (const c of calls) {
+			assert.match(c.url, /^https:\/\/api\.anthropic\.com\/v1\//);
+			assert.equal(c.headers['x-api-key'], 'sk-local');
+			assert.equal(c.headers['anthropic-dangerous-direct-browser-access'], 'true');
+		}
+		clearLocal('ana', 'claude');
+		assert.equal(readLocal('ana', 'claude'), null);
+		await assert.rejects(streamInBrowser({ integration: 'claude', config: null, messages: ask, onText() {} }), /not on this device/);
+	} finally {
+		globalThis.fetch = platform;
+		delete globalThis.localStorage;
 	}
 });
