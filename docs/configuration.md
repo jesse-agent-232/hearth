@@ -241,7 +241,7 @@ privacy:
   groups: ["family"]           # optional: only these groups see it
 ```
 
-Set `default_url` for every integration you enable: it pins the server URL for every user. Without it, users can point the integration at any http(s) host Holm can reach, and Holm logs a warning at startup.
+Set `default_url` for every integration you enable: it pins the server URL for every user. Without it, users can point the integration at any http(s) host Holm can reach, and Holm logs a warning at startup. Claude and OpenAI have no URL, so they take no `default_url`.
 
 ### What's new
 

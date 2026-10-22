@@ -430,9 +430,9 @@
 											{@html marked.parse(field.help)}
 										</div>
 									{/if}
-									{#if field.helpUrl && formConfig[field.helpUrl.baseKey]}
+									{#if field.helpUrl && (field.helpUrl.url || formConfig[field.helpUrl.baseKey])}
 										<a
-											href="{formConfig[field.helpUrl.baseKey]}{field.helpUrl.path}"
+											href={field.helpUrl.url || `${formConfig[field.helpUrl.baseKey]}${field.helpUrl.path}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											class="inline-block text-[0.7rem] text-blue-400 hover:text-blue-300 mt-1 no-underline hover:underline"

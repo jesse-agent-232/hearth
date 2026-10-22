@@ -331,6 +331,16 @@ integrations:
     surfaces:
       search: true
       widgets: false
+  # AI answers in search: each user connects their own API key (billed by
+  # Anthropic or OpenAI), or a self-hosted model. No key of yours is used.
+  claude:
+    enabled: true
+  openai:
+    enabled: true
+  openai_compatible:                          # Ollama, LM Studio, vLLM, llama.cpp
+    enabled: true
+    name: "Ollama"                            # Optional — "Self-hosted AI" by default
+    default_url: "http://ollama:11434/v1"     # Pins the server; leave out to let users enter their own
 
 # ── Wallpapers ──────────────────────────────────────────────
 wallpapers:
