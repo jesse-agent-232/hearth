@@ -1,15 +1,12 @@
 // Claude integration adapter: AI answers in search, with the user's own
-// Anthropic API key. The call is made by Holm's server, so the key never
-// reaches the browser.
+// Anthropic API key. By default Holm's server makes the call, so the key never
+// reaches the browser; with `calls: browser` the browser keeps the key and
+// calls Anthropic itself (src/lib/aiCalls.js).
 //
 // Surfaces:
 //   - answers — a streamed answer to a search, and a conversation from it
 
-import { apiError, sseEvents, MAX_OUTPUT_TOKENS, CUT_OFF } from './ai.js';
-
-const API = 'https://api.anthropic.com/v1';
-const VERSION = '2023-06-01';
-const DEFAULT_MODEL = 'claude-haiku-4-5';
+import { PROVIDERS, DEFAULT_MODELS } from './ai.js';
 
 /** @type {import('./_types.js').IntegrationAdapter} */
 const adapter = {
@@ -32,60 +29,20 @@ const adapter = {
 			key: 'model',
 			type: 'text',
 			label: 'Model',
-			default: DEFAULT_MODEL,
+			default: DEFAULT_MODELS.claude,
 			advanced: true,
 			help: 'Haiku is the fastest. Any model id from Anthropic’s models list works.'
 		}
 	],
 
-	async test({ config, fetch }) {
-		if (!config?.key) return { ok: false, message: 'An API key is required' };
-		const model = modelOf(config);
-		try {
-			const res = await fetch(`${API}/models/${encodeURIComponent(model)}`, { headers: headers(config) });
-			if (res.status === 404) return { ok: false, message: `The key works, but there is no model “${model}”` };
-			if (!res.ok) return { ok: false, message: await apiError(res, 'Anthropic') };
-			const data = await res.json();
-			return { ok: true, message: `Connected — answers come from ${data?.display_name || model}` };
-		} catch (err) {
-			return { ok: false, message: `Connection failed: ${err.message}` };
-		}
-	},
+	// The calls themselves are shared with the browser, for `calls: browser`.
+	browserCalls: true,
+
+	test: (ctx) => PROVIDERS.claude.test(ctx),
 
 	answers: {
-		async *stream({ config, system, messages, fetch }) {
-			const res = await fetch(`${API}/messages`, {
-				method: 'POST',
-				headers: { ...headers(config), 'content-type': 'application/json', accept: 'text/event-stream' },
-				body: JSON.stringify({ model: modelOf(config), max_tokens: MAX_OUTPUT_TOKENS, system, messages, stream: true })
-			});
-			if (!res.ok) throw new Error(await apiError(res, 'Anthropic'));
-			for await (const { event, data } of sseEvents(res)) {
-				if (event === 'message_stop') return;
-				let body;
-				try {
-					body = JSON.parse(data);
-				} catch {
-					continue;
-				}
-				if (event === 'error' || body?.type === 'error') {
-					throw new Error(`Anthropic: ${body?.error?.message || 'the answer stopped'}`);
-				}
-				if (body?.type === 'content_block_delta' && body.delta?.type === 'text_delta' && body.delta.text) {
-					yield body.delta.text;
-				}
-				if (body?.type === 'message_delta' && body.delta?.stop_reason === 'max_tokens') yield CUT_OFF;
-			}
-		}
+		stream: (ctx) => PROVIDERS.claude.stream(ctx)
 	}
 };
-
-function modelOf(config) {
-	return String(config?.model || '').trim() || DEFAULT_MODEL;
-}
-
-function headers(config) {
-	return { 'x-api-key': config.key, 'anthropic-version': VERSION, accept: 'application/json' };
-}
 
 export default adapter;
