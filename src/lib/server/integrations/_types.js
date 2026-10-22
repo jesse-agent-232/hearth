@@ -162,7 +162,7 @@
  * @property {boolean} [multiAccount]  The user can add more accounts under the first (up to 5), stored as `config.accounts`: each a config of the same schema plus an `id`, checked and redacted like the first. The adapter reads them all (see accountsOf in caldav.js)
  * @property {boolean} [widgetsOnConnect]  Turn the widgets switch on when the user first connects (where the operator allows widgets); otherwise it starts off
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<Reminder[]>} [reminders]  Reminders due in the next day, or already due for an event not yet over, for GET /api/reminders; asked only while the user's widgets switch is on
- * @property {{ stream: (ctx: { config: object, system: string, messages: { role: 'user'|'assistant', content: string }[], fetch: typeof fetch }) => AsyncIterable<string> }} [answers]  AI answers in search (Claude, OpenAI, OpenAI-compatible): yields the answer's text as it arrives, for POST /api/ai. Answer only: it gets the conversation and no tools or Holm data
+ * @property {{ stream: (ctx: { config: object, system: string, messages: { role: 'user'|'assistant', content: string }[], fetch: typeof fetch }) => AsyncIterable<string> }} [answers]  AI answers in search (Claude, OpenAI, OpenAI-compatible): yields the answer's text as it arrives, for POST /api/ai, then `CUT_OFF` (ai.js) if it hit the length limit. Answer only: it gets the conversation and no tools or Holm data
  * @property {(ctx: { config: object, fetch: typeof fetch, timeZone: string }) => Promise<UpcomingEvent[]>} [upcoming]  The next events, still on now to a week ahead, for GET /api/upcoming; asked only while the user's widgets switch is on
  */
 

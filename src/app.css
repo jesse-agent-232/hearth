@@ -1670,6 +1670,7 @@ body.search-active .launcher-host { z-index: 40; }
 .ai-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
 .ai-card-note { font-size: 0.7rem; color: var(--hero-search-text-dim); }
 .ai-error { padding: 8px 0 0; }
+.ai-cut-off { margin-top: 8px; font-size: 0.7rem; color: var(--hero-search-text-dim); }
 
 .ai-markdown {
 	font-size: 0.85rem;

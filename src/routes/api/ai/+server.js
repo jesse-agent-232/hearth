@@ -3,7 +3,7 @@ import { getSessionUser } from '$lib/server/session.js';
 import { getRegistry } from '$lib/server/integrations/index.js';
 import { getConnection } from '$lib/server/integrations/store.js';
 import { withDeadline, describeFetchError } from '$lib/server/integrations/deadline.js';
-import { checkMessages, takeRateSlot, SYSTEM_PROMPT } from '$lib/server/integrations/ai.js';
+import { checkMessages, takeRateSlot, SYSTEM_PROMPT, CUT_OFF } from '$lib/server/integrations/ai.js';
 
 // A local model can take a while to load before its first word, and a long
 // answer streams for a while after; past this the answer is cut off.
@@ -13,7 +13,8 @@ const ANSWER_TIMEOUT_MS = 180000;
 //
 // Streams an answer from the user's own AI connection (Claude, OpenAI or a
 // self-hosted server) as NDJSON lines: { "text": "…" } per piece, then
-// { "done": true }, or { "error": "…" } if it stops partway. `integration`
+// { "cutOff": true } if it hit the length limit, and { "done": true }, or
+// { "error": "…" } if it stops partway. `integration`
 // picks one of the user's AI connections; without it, the first connected.
 // The model gets the conversation only: no tools, no Holm data. Nothing is
 // stored, and closing the request (a new search, closing the chat) stops
@@ -68,9 +69,9 @@ export async function POST({ cookies, url, request, fetch }) {
 					try { controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n')); } catch {}
 				};
 				try {
-					for await (const text of adapter.answers.stream({ config: conn.config, system: SYSTEM_PROMPT, messages: checked.messages, fetch: deadlineFetch })) {
+					for await (const piece of adapter.answers.stream({ config: conn.config, system: SYSTEM_PROMPT, messages: checked.messages, fetch: deadlineFetch })) {
 						if (upstream.signal.aborted || request.signal.aborted) break;
-						send({ text });
+						send(piece === CUT_OFF ? { cutOff: true } : { text: piece });
 					}
 					send({ done: true });
 				} catch (err) {
