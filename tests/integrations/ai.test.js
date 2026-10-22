@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 
 import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, providerFetch, callsInBrowser, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
-import { readLocal, writeLocal, clearLocal, streamInBrowser, testInBrowser } from '../../src/lib/aiCalls.js';
+import { readLocal, writeLocal, clearLocal, clearAllLocal, streamInBrowser, testInBrowser } from '../../src/lib/aiCalls.js';
 import claude from '../../src/lib/server/integrations/claude.js';
 import openai from '../../src/lib/server/integrations/openai.js';
 import openaiCompatible from '../../src/lib/server/integrations/openai_compatible.js';
@@ -239,7 +239,7 @@ test('in browser mode the key stays in this browser, per user, and goes only to 
 	const items = new Map();
 	const calls = [];
 	const platform = globalThis.fetch;
-	globalThis.localStorage = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => items.set(k, String(v)), removeItem: (k) => items.delete(k) };
+	globalThis.localStorage = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => items.set(k, String(v)), removeItem: (k) => items.delete(k), key: (i) => [...items.keys()][i] ?? null, get length() { return items.size; } };
 	const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 	globalThis.fetch = async (input, init = {}) => {
 		calls.push({ url: String(input), headers: { ...init.headers } });
@@ -265,6 +265,12 @@ test('in browser mode the key stays in this browser, per user, and goes only to 
 		clearLocal('ana', 'claude');
 		assert.equal(readLocal('ana', 'claude'), null);
 		await assert.rejects(streamInBrowser({ integration: 'claude', config: null, messages: ask, onText() {} }), /not on this device/);
+		// Logging out forgets every user's keys, and nothing else.
+		writeLocal('ana', 'claude', { key: 'a' });
+		writeLocal('ben', 'openai', { key: 'b' });
+		localStorage.setItem('holm_theme', 'dark');
+		clearAllLocal();
+		assert.deepEqual([...items.keys()], ['holm_theme']);
 	} finally {
 		globalThis.fetch = platform;
 		delete globalThis.localStorage;
