@@ -16,6 +16,7 @@
 	import { instantAnswer, isCalculation } from '$lib/launcher/instant.js';
 	import { searchOnFocus } from '$lib/searchOnFocus.js';
 	import { searchTransparency, searchGlassLevel, searchHints } from '$lib/searchLook.js';
+	import { streamAnswer, followUpMessages } from '$lib/aiAnswer.js';
 
 	const siteConfig = getContext('config');
 	const searchConfig = siteConfig?.search || { enabled: true, url: 'https://www.google.com/search', param: 'q' };
@@ -219,6 +220,7 @@
 	const FIRST_HINT = 'Search apps, files, photos…';
 	const PLACEHOLDER_HINTS = $derived([
 		FIRST_HINT,
+		...(aiIntegration ? [`Ask ${aiIntegration.name} anything: type it, then Shift+Enter`] : []),
 		...(scopeHint ? [scopeHint] : []),
 		'Type a command, like “dark” or “wallpaper”',
 		'Do quick maths, like “12 * 7” or “5 km in mi”',
@@ -481,6 +483,69 @@
 			: null
 	});
 
+	// ── AI answers ────────────────────────────────────────────────
+	// With Claude, OpenAI or a self-hosted AI connected, a question asked from
+	// the bar (the "Ask" row, or Shift+Enter) streams an answer into a card above the
+	// results. "Continue conversation" opens it as a chat in place of the
+	// list. It lives only here: a new search, or closing Holm, forgets it.
+	const aiIntegration = $derived($integrationsStore.integrations.find((it) => it.answers && it.userState?.connected) || null);
+	// { question, name, messages: [{ role, content }], streaming, error, chat }
+	let ai = $state(null);
+	let aiAbort = null;
+	let aiSeq = 0;
+
+	function stopAi() {
+		aiAbort?.abort();
+		aiAbort = null;
+		if (ai) ai.streaming = false;
+	}
+
+	async function runAi(messages) {
+		stopAi();
+		const seq = ++aiSeq;
+		const ctrl = new AbortController();
+		aiAbort = ctrl;
+		ai.messages = [...messages, { role: 'assistant', content: '' }];
+		ai.streaming = true;
+		ai.error = '';
+		const answer = ai.messages[ai.messages.length - 1];
+		try {
+			await streamAnswer({ messages, integration: aiIntegration?.id, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; } });
+			// A reasoning model can spend its whole budget thinking and say nothing.
+			if (seq === aiSeq && !answer.content.trim()) ai.error = 'The model finished without an answer. Try again, or another model.';
+		} catch (err) {
+			if (seq === aiSeq && !ctrl.signal.aborted) ai.error = err.message || 'No answer came back';
+		} finally {
+			if (seq === aiSeq) {
+				if (ai) ai.streaming = false;
+				aiAbort = null;
+			}
+		}
+	}
+
+	function askAi(question) {
+		const q = question.trim();
+		if (!q || !aiIntegration) return;
+		stopAi();
+		ai = { question: q, name: aiIntegration.name, messages: [], streaming: true, error: '', chat: false };
+		userMoved = false;
+		runAi([{ role: 'user', content: q }]);
+	}
+
+	function continueChat() {
+		if (!ai) return;
+		ai.chat = true;
+		panelOpen = false;
+	}
+
+	function sendFollowUp(text) {
+		if (!ai || ai.streaming || !text.trim()) return;
+		runAi(followUpMessages(ai.messages, text.trim()));
+	}
+
+	// The first answer, for the card and its Copy.
+	const firstAnswer = $derived(ai?.messages[1]?.content || '');
+
 	function appItem(app) {
 		const key = `app:${app.id}`;
 		let host = '';
@@ -720,6 +785,16 @@
 		// The icon is grey so it doesn't pull the eye from the results.
 		if (q) {
 			const fb = [];
+			if (aiIntegration && !activeScope && ai?.question !== q) {
+				fb.push({
+					key: 'ask',
+					title: `Ask ${aiIntegration.name} “${q}”`,
+					subtitle: 'Shift+Enter',
+					svg: SPARKLE,
+					accessory: 'AI',
+					actions: [{ label: `Ask ${aiIntegration.name}`, run: () => askAi(q) }]
+				});
+			}
 			if (searchConfig?.url) {
 				const param = searchConfig.param || 'q';
 				const url = `${searchConfig.url}${searchConfig.url.includes('?') ? '&' : '?'}${param}=${encodeURIComponent(q)}`;
@@ -736,8 +811,28 @@
 			}
 			if (fb.length) out.push({ id: 'fallbacks', label: 'Use “' + (q.length > 24 ? q.slice(0, 24) + '…' : q) + '” with…', items: fb });
 		}
+		// The AI's answer to this very query sits above everything.
+		if (ai && !activeScope && ai.question === q) {
+			out.unshift({
+				id: 'ai',
+				label: ai.name,
+				layout: 'ai',
+				items: [{
+					key: 'ai',
+					title: ai.question,
+					ai,
+					actions: [
+						{ label: 'Continue conversation', run: continueChat },
+						...(firstAnswer ? [{ label: 'Copy answer', run: () => copyText(firstAnswer) }] : []),
+						...(!ai.streaming ? [{ label: 'Ask again', run: () => askAi(ai.question) }] : [])
+					]
+				}]
+			});
+		}
 		return out;
 	});
+
+	const SPARKLE = '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>';
 
 	const flatItems = $derived(sections.flatMap((s) => s.items));
 	let selectedKey = $state(null);
@@ -758,6 +853,13 @@
 		panelOpen = false;
 		userMoved = false;
 		untrack(closeDetail);
+		// A new search forgets the answer, and the chat that grew from it.
+		untrack(() => {
+			if (ai && (query || '').trim() !== ai.question) {
+				stopAi();
+				ai = null;
+			}
+		});
 	});
 
 	function moveSelection(delta) {
@@ -913,6 +1015,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			if (panelOpen) panelOpen = false;
+			else if (ai?.chat) ai.chat = false;
 			else if (detailView) closeDetail();
 			else if (query) query = '';
 			else if (activeFilter) activeFilter = null;
@@ -922,6 +1025,11 @@
 			// (e.g. Vimium) blur a text field on Escape. After this event, so
 			// after their blur.
 			setTimeout(() => inputEl?.focus({ preventScroll: true }), 0);
+			return;
+		}
+		// The chat hides the list, so its keys do nothing until Esc goes back.
+		if (ai?.chat && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
+			e.preventDefault();
 			return;
 		}
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -982,6 +1090,12 @@
 			if (detail) {
 				e.preventDefault();
 				if (!e.repeat) detail.open?.run();
+				return;
+			}
+			// Shift+Enter asks the AI, whatever row is selected.
+			if (e.shiftKey && aiIntegration && !activeScope && query.trim() && !query.trim().startsWith('!')) {
+				e.preventDefault();
+				if (!e.repeat) askAi(query);
 				return;
 			}
 			const item = flatItems.find((i) => i.key === selectedKey);
@@ -1112,6 +1226,10 @@
 			answerCopied={answerCopied?.query === query ? answerCopied.index : -1}
 			oncopyanswer={(item, i) => item.actions[i]?.run()}
 			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
+			chat={ai?.chat ? ai : null}
+			onchatback={() => { if (ai) ai.chat = false; inputEl?.focus(); }}
+			onchatsend={sendFollowUp}
+			onchatstop={stopAi}
 		/>
 	{/if}
 </div>

@@ -27,6 +27,9 @@ Holm has two kinds of app support.
 | Kavita | Manga, comics and book series | URL + Auth Key (Kavita 0.8.9 or later) | `!kavita` |
 | Papra | Documents, by name and content | URL + read-only API token + organization ID | `!papra` |
 | Thingport | 3D models; under `!tp`, collections and tags too; "More" opens Thingport's results page | URL + API token | `!tp` |
+| Claude | AI answers to a search, and a conversation from them | The user's own Anthropic API key | — |
+| OpenAI | AI answers to a search, and a conversation from them | The user's own OpenAI API key | — |
+| Self-hosted AI | AI answers from Ollama, LM Studio, vLLM, llama.cpp or any OpenAI-compatible server | API URL + model, and a key only if the server wants one | — |
 
 Integrations are marked Alpha in the UI. The widgets so far are Navidrome's player and the Calendar's reminders and upcoming events.
 
@@ -78,6 +81,14 @@ The Calendar's widgets are **Reminders** and **Upcoming events**. The operator a
 With **Reminders** on, Holm shows each event's own reminders on the page, at the times set in the calendar app (15 minutes before, a day before, and so on); an event with no reminder set gets none. The page asks Holm for what's due in the next day every 5 minutes and when the tab comes back into view, so a reminder added in the calendar shows up within about 5 minutes. Each one appears in the bottom-right corner (above the search on a phone, and above the player while a song is playing) with the title, how soon it starts, the place, **Join call** for an event with a video call link, **Open**, **Snooze** and **Dismiss**. It shows in every open Holm tab and stays up, through reloads, until dismissed; dismissing or snoozing it in one tab clears it in all of them. **Snooze** brings it back in 10 minutes, or when the event starts if that's sooner, as the Mac's Calendar does. One that fell due while the page was closed still shows when it opens, as long as its event isn't over. Reminders that only send email are left to the calendar server.
 
 Navidrome asks for a password once. Holm computes the Subsonic token `md5(password + salt)` with a random salt and stores the salt and token, encrypted at rest, never the password. The token works for the Subsonic API until the password changes, and anyone holding the salt and token can try to brute-force a weak password, so use a strong one. Changing the username asks for the password again.
+
+### AI answers
+
+Claude, OpenAI and Self-hosted AI answer questions typed into the search bar. The operator only enables them; Holm has no key of its own, so each user connects their own. For Claude and OpenAI that's an **API key** from the Anthropic Console or the OpenAI platform, billed per use to that user's account. A Claude Pro or ChatGPT Plus subscription doesn't cover API use, and neither lets other apps sign in with it. Self-hosted AI talks to any server with an OpenAI-compatible API: Ollama (`http://<host>:11434/v1`), LM Studio (`http://<host>:1234/v1`), vLLM, llama.cpp or LocalAI, so nothing leaves the network. **Test** lists the server's models when none is picked, or the one typed isn't there. Its URL is a `url` field like any other self-hosted app's: set `default_url` to pin it, and changing it to another server drops the stored key. The default models are Claude Haiku 4.5 and `gpt-4.1-mini`, for speed; each card's **Advanced** takes any other model id.
+
+With one connected, a search offers **Ask Claude “…”** above the web search, and **Shift+Enter** asks from anywhere in the list. The answer streams into a card at the top of the results, showing a "Thinking" line until the first words arrive (a local model can take a while to load). **Continue conversation** (or Enter on the card) opens it as a chat in place of the results, with the question and answer already in it; Enter sends a follow-up, Shift+Enter starts a new line, Esc goes back to the results. With more than one connected, the first in the list above answers.
+
+What the model gets is the conversation and a short instruction to answer briefly, nothing else: no tools, no web, and none of the user's apps, files or Holm data. The call is made by Holm's server, so the key never reaches the browser. Nothing is saved: typing a new search, or closing the tab, forgets the answer and its chat. A conversation holds up to 20 messages, each question up to 4,000 characters, and each user can ask 20 times a minute. Answers are Markdown, sanitised before they're shown: links open in a new tab, and images aren't loaded, so an answer can't make the browser fetch anything on its own.
 
 An integration's widgets switch is also in **Configure → Widgets**. Once an integration with `surfaces.widgets` on is connected, it appears there next to Clock, Weather and Search, and both places flip the same switch.
 
@@ -131,6 +142,10 @@ An integration is one file plus one import line. The settings form, API routes a
    			}
    		}
    	},
+
+   	// Optional: AI answers in search (see claude.js). stream() yields text
+   	// as it arrives; Holm sends it on to the browser.
+   	// answers: { async *stream({ config, system, messages, fetch }) { yield 'text'; } },
 
    	// Optional: serve authenticated images through Holm
    	proxy: {

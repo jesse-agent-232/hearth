@@ -1,6 +1,8 @@
 <script>
 	import AppIcon from './AppIcon.svelte';
 	import Keys from './Keys.svelte';
+	import AiMessage from './AiMessage.svelte';
+	import { MAX_CHAT_MESSAGES } from '$lib/aiAnswer.js';
 
 	// Raycast-style result list. SearchBar owns the data, the selection and
 	// the keyboard; this only renders. Focus never leaves the input: the
@@ -9,7 +11,9 @@
 	// sections: [{ id, label, layout: 'list'|'grid'|'poster'|'tracks', loading, error, items }]
 	// item:     { key, title, subtitle?, accessory?, appIcon?, svg?, thumbnail?, kind?, color?, badge?, play?,
 	//             iconStyle?, play?: { run }, request?: { label, busy, run }, actions: [{ label, hint?, run }],
-	//             answer?: { from: { value, label }, to: { value, label }, also?: [{ value, label }] } }
+	//             answer?: { from: { value, label }, to: { value, label }, also?: [{ value, label }] },
+	//             ai?: { question, name, messages, streaming, error } }
+	// chat:     the AI conversation shown in place of the list, or null
 	let {
 		sections = [],
 		selectedKey = null,
@@ -24,8 +28,48 @@
 		onaction = () => {},
 		onpanel = () => {},
 		answerCopied = -1,
-		oncopyanswer = () => {}
+		oncopyanswer = () => {},
+		chat = null,
+		onchatback = () => {},
+		onchatsend = () => {},
+		onchatstop = () => {}
 	} = $props();
+
+	// The chat's follow-up box: Enter sends, ⇧↵ is a new line, Esc goes back.
+	let draft = $state('');
+	let composerEl = $state();
+	let chatScrollEl = $state();
+	const chatFull = $derived(!!chat && chat.messages.length + 2 > MAX_CHAT_MESSAGES);
+	$effect(() => {
+		if (chat) queueMicrotask(() => composerEl?.focus());
+	});
+	function send() {
+		if (!draft.trim() || chat?.streaming || chatFull) return;
+		onchatsend(draft);
+		draft = '';
+	}
+	function composerKey(e) {
+		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+			e.preventDefault();
+			send();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			onchatback();
+		}
+	}
+	// Follow the answer down as it streams, unless the reader scrolled up.
+	let pinned = true;
+	$effect(() => {
+		if (!chat) return;
+		chat.messages.map((m) => m.content.length);
+		chat.error;
+		if (pinned && chatScrollEl) queueMicrotask(() => chatScrollEl && (chatScrollEl.scrollTop = chatScrollEl.scrollHeight));
+	});
+	function chatScrolled() {
+		pinned = chatScrollEl.scrollHeight - chatScrollEl.scrollTop - chatScrollEl.clientHeight < 40;
+	}
+	const SPARKLE = '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>';
 
 	const flat = $derived(sections.flatMap((s) => s.items));
 	// The ⌘K panel floats over the list, so a short list (one web result) would
@@ -139,7 +183,50 @@
 </script>
 
 <div class="launcher-panel hero-search-results" style:min-height={panelOpen && actionsHeight ? `${actionsHeight + 54}px` : null}>
-	{#if detail}
+	{#if chat}
+		<!-- The AI conversation, in place of the list. Nothing in it is saved. -->
+		<div class="launcher-scroll launcher-chat" bind:this={chatScrollEl} onscroll={chatScrolled} role="log" aria-label="Conversation with {chat.name}">
+			<div class="launcher-chat-head">
+				<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={onchatback}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+					Results
+				</button>
+				<span class="launcher-chat-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{@html SPARKLE}</svg>{chat.name}</span>
+			</div>
+			{#each chat.messages as message, i}
+				{#if message.role === 'user'}
+					<div class="ai-bubble is-user">{message.content}</div>
+				{:else}
+					<div class="ai-bubble is-assistant">
+						<AiMessage content={message.content} streaming={chat.streaming && i === chat.messages.length - 1} />
+					</div>
+				{/if}
+			{/each}
+			{#if chat.error}<div class="launcher-error ai-error">{chat.error}</div>{/if}
+		</div>
+		<form class="launcher-chat-composer" onsubmit={(e) => { e.preventDefault(); send(); }}>
+			<textarea
+				bind:this={composerEl}
+				bind:value={draft}
+				rows="1"
+				class="launcher-chat-input"
+				placeholder={chatFull ? 'This conversation is full. Start a new search to ask more.' : `Ask ${chat.name} a follow-up…`}
+				aria-label="Follow-up question"
+				maxlength="4000"
+				disabled={chatFull}
+				onkeydown={composerKey}
+			></textarea>
+			{#if chat.streaming}
+				<button type="button" class="launcher-chat-send" onclick={onchatstop} aria-label="Stop the answer">
+					<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+				</button>
+			{:else}
+				<button type="submit" class="launcher-chat-send" disabled={!draft.trim() || chatFull} aria-label="Send">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+				</button>
+			{/if}
+		</form>
+	{:else if detail}
 		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
 		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
 			<!-- An event never has a backdrop, so it gets the short hero while loading
@@ -237,7 +324,7 @@
 					{#if section.error}
 						<div class="launcher-error">{section.error}</div>
 					{/if}
-					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : section.layout === 'answer' ? 'launcher-answers' : 'launcher-rows'}>
+					<div class={section.layout === 'grid' ? 'launcher-grid' : section.layout === 'poster' ? 'launcher-posters' : section.layout === 'tracks' ? 'launcher-tracks' : section.layout === 'answer' || section.layout === 'ai' ? 'launcher-answers' : 'launcher-rows'}>
 						{#each section.items as item, i (item.key)}
 							{@const isSel = item.key === selectedKey}
 							<!-- Keyboard lives on the search input (combobox + aria-activedescendant). -->
@@ -246,9 +333,9 @@
 								id="{listId}-{item.key}"
 								role="option"
 								aria-selected={isSel}
-								aria-label={section.layout === 'list' ? undefined : item.answer ? `${item.answer.from.value} = ${[item.answer.to, ...(item.answer.also || [])].map((r) => r.value).join(' = ')}` : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
+								aria-label={section.layout === 'list' ? undefined : item.ai ? `${item.ai.name}’s answer to ${item.ai.question}` : item.answer ? `${item.answer.from.value} = ${[item.answer.to, ...(item.answer.also || [])].map((r) => r.value).join(' = ')}` : [item.title, item.subtitle, item.badge].filter(Boolean).join(', ')}
 								tabindex="-1"
-								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : section.layout === 'answer' ? 'is-answer' : 'is-row'}"
+								class="launcher-item {section.layout === 'grid' ? 'is-tile' : section.layout === 'poster' ? 'is-poster' : section.layout === 'tracks' ? 'is-track' : section.layout === 'answer' ? 'is-answer' : section.layout === 'ai' ? 'is-ai' : 'is-row'}"
 								class:is-selected={isSel}
 								use:scrollIntoView={isSel}
 								use:enter={!back && 'is-rising'}
@@ -258,7 +345,26 @@
 								onclick={(e) => onrun(item, e)}
 								onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); onrun(item, e); } }}
 							>
-								{#if item.answer}
+								{#if item.ai}
+									<!-- The AI's answer, Google-overview style. A click (or Enter)
+									     continues the conversation. -->
+									<div class="ai-card-body" aria-live="polite">
+										<AiMessage content={item.ai.messages[1]?.content || ''} streaming={item.ai.streaming && item.ai.messages.length <= 2} />
+										{#if item.ai.error}<div class="launcher-error ai-error">{item.ai.error}</div>{/if}
+									</div>
+									{#if !item.ai.streaming || item.ai.messages[1]?.content}
+										<div class="ai-card-actions">
+											<button type="button" tabindex="-1" class="launcher-detail-btn is-primary" onclick={(e) => { e.stopPropagation(); item.actions[0].run(); }}>
+												Continue conversation
+											</button>
+											{#if item.ai.streaming}
+												<span class="ai-card-note">Writing…</span>
+											{:else}
+												<span class="ai-card-note">AI can be wrong. Check what matters.</span>
+											{/if}
+										</div>
+									{/if}
+								{:else if item.answer}
 									<!-- Instant answer: the question on the left, the answer on the right. -->
 									<div class="launcher-answer-side">
 										<span class="launcher-answer-value">{item.answer.from.value}</span>
@@ -396,8 +502,15 @@
 	{/if}
 
 	<!-- Footer bar: what Enter does, and where the rest of the actions live. -->
-	<div class="launcher-footer">
-		{#if detail}
+	<div class="launcher-footer" class:is-chat={!!chat}>
+		{#if chat}
+			<span class="launcher-footer-hint">
+				<Keys keys="esc" /> back
+			</span>
+			<span class="launcher-footer-hint">
+				<Keys keys="↵" /> send · <Keys keys="⇧ ↵" /> new line
+			</span>
+		{:else if detail}
 			<span class="launcher-footer-hint">
 				<Keys keys="←" /> <Keys keys="esc" /> back
 			</span>
@@ -425,7 +538,7 @@
 		{/if}
 	</div>
 
-	{#if panelOpen && selected && !detail}
+	{#if panelOpen && selected && !detail && !chat}
 		<div class="launcher-actions" role="menu" aria-label="Actions for {selected.title}" bind:offsetHeight={actionsHeight}>
 			<div class="launcher-actions-title">{selected.title}</div>
 			{#each selected.actions as action, i}
