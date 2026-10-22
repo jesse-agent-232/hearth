@@ -12,6 +12,9 @@ export const SYSTEM_PROMPT =
 	'You cannot browse the web or see anything of the user\'s, so say so when a question needs that, and be clear when you are unsure.';
 
 export const MAX_OUTPUT_TOKENS = 1024;
+
+/** Yielded by an `answers.stream` after the text when the answer hit MAX_OUTPUT_TOKENS. */
+export const CUT_OFF = Object.freeze({ cutOff: true });
 export const MAX_MESSAGES = 20;
 export const MAX_MESSAGE_CHARS = 4000;
 // Earlier answers come back with each follow-up and may run past
@@ -157,7 +160,9 @@ export async function* streamOpenAiChat({ base, key, model, system, messages, fe
 			continue;
 		}
 		if (chunk?.error) throw new Error(`${name}: ${chunk.error.message || 'the answer stopped'}`);
-		const text = chunk?.choices?.[0]?.delta?.content;
+		const choice = chunk?.choices?.[0];
+		const text = choice?.delta?.content;
 		if (typeof text === 'string' && text) yield text;
+		if (choice?.finish_reason === 'length') yield CUT_OFF;
 	}
 }

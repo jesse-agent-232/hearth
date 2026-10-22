@@ -199,6 +199,7 @@
 				{:else}
 					<div class="ai-bubble is-assistant">
 						<AiMessage content={message.content} streaming={chat.streaming && i === chat.messages.length - 1} />
+						{#if message.cutOff}<div class="ai-cut-off">Cut off at the length limit. Ask it to go on.</div>{/if}
 					</div>
 				{/if}
 			{/each}
@@ -350,6 +351,7 @@
 									     continues the conversation. -->
 									<div class="ai-card-body" aria-live="polite">
 										<AiMessage content={item.ai.messages[1]?.content || ''} streaming={item.ai.streaming && item.ai.messages.length <= 2} />
+										{#if item.ai.messages[1]?.cutOff}<div class="ai-cut-off">Cut off at the length limit. Continue the conversation to ask for the rest.</div>{/if}
 										{#if item.ai.error}<div class="launcher-error ai-error">{item.ai.error}</div>{/if}
 									</div>
 									{#if !item.ai.streaming || item.ai.messages[1]?.content}

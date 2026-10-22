@@ -5,7 +5,7 @@
 // Surfaces:
 //   - answers — a streamed answer to a search, and a conversation from it
 
-import { apiError, sseEvents, MAX_OUTPUT_TOKENS } from './ai.js';
+import { apiError, sseEvents, MAX_OUTPUT_TOKENS, CUT_OFF } from './ai.js';
 
 const API = 'https://api.anthropic.com/v1';
 const VERSION = '2023-06-01';
@@ -74,6 +74,7 @@ const adapter = {
 				if (body?.type === 'content_block_delta' && body.delta?.type === 'text_delta' && body.delta.text) {
 					yield body.delta.text;
 				}
+				if (body?.type === 'message_delta' && body.delta?.stop_reason === 'max_tokens') yield CUT_OFF;
 			}
 		}
 	}

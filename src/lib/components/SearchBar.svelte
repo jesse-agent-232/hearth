@@ -510,7 +510,7 @@
 		ai.error = '';
 		const answer = ai.messages[ai.messages.length - 1];
 		try {
-			await streamAnswer({ messages, integration: aiIntegration?.id, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; } });
+			await streamAnswer({ messages, integration: aiIntegration?.id, signal: ctrl.signal, onText: (t) => { if (seq === aiSeq) answer.content += t; }, onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; } });
 			// A reasoning model can spend its whole budget thinking and say nothing.
 			if (seq === aiSeq && !answer.content.trim()) ai.error = 'The model finished without an answer. Try again, or another model.';
 		} catch (err) {

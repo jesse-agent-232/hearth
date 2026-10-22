@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkMessages, takeRateSlot, resetRateLimits, sseEvents } from '../../src/lib/server/integrations/ai.js';
+import { checkMessages, takeRateSlot, resetRateLimits, sseEvents, CUT_OFF } from '../../src/lib/server/integrations/ai.js';
 import claude from '../../src/lib/server/integrations/claude.js';
 import openai from '../../src/lib/server/integrations/openai.js';
 import openaiCompatible from '../../src/lib/server/integrations/openai_compatible.js';
@@ -158,4 +158,23 @@ test('followUpMessages keeps answered exchanges and drops a failed empty one', (
 	assert.deepEqual(followUpMessages(history, 'q3'), [
 		{ role: 'user', content: 'q1' }, { role: 'assistant', content: 'a1' }, { role: 'user', content: 'q3' }
 	]);
+});
+
+test('an answer that hits the length limit ends with CUT_OFF, from Claude and OpenAI', async () => {
+	const pieces = async (iter) => { const out = []; for await (const p of iter) out.push(p); return out; };
+	const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+	const c = fakeFetch(streamed([
+		sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'half' } }),
+		sse('message_delta', { type: 'message_delta', delta: { stop_reason: 'max_tokens' } }),
+		sse('message_stop', { type: 'message_stop' })
+	]));
+	assert.deepEqual(await pieces(claude.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: c.fetch })), ['half', CUT_OFF]);
+	const o = fakeFetch(streamed([
+		`data: ${JSON.stringify({ choices: [{ delta: { content: 'half' } }] })}\n\n`,
+		`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'length' }] })}\n\n`,
+		'data: [DONE]\n\n'
+	]));
+	assert.deepEqual(await pieces(openai.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: o.fetch })), ['half', CUT_OFF]);
+	const done = fakeFetch(streamed([`data: ${JSON.stringify({ choices: [{ delta: { content: 'whole' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`]));
+	assert.deepEqual(await pieces(openai.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: done.fetch })), ['whole']);
 });
