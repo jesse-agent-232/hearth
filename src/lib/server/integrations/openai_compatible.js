@@ -60,6 +60,7 @@ const adapter = {
 	},
 
 	answers: {
+		modelName: async ({ config }) => String(config.model || '').trim(),
 		stream({ config, system, messages, fetch }) {
 			return streamOpenAiChat({
 				base: stripTrailingSlash(config.url),

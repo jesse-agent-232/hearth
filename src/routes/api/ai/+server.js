@@ -12,7 +12,8 @@ const ANSWER_TIMEOUT_MS = 180000;
 // POST /api/ai   body: { messages: [{ role, content }], integration? }
 //
 // Streams an answer from the user's own AI connection (Claude, OpenAI or a
-// self-hosted server) as NDJSON lines: { "text": "…" } per piece, then
+// self-hosted server) as NDJSON lines: { "model": "…" } naming the model for the byline,
+// { "text": "…" } per piece, then
 // { "cutOff": true } if it hit the length limit, and { "done": true }, or
 // { "error": "…" } if it stops partway. `integration`
 // picks one of the user's AI connections; without it, the first connected.
@@ -69,11 +70,16 @@ export async function POST({ cookies, url, request }) {
 					if (upstream.signal.aborted) return;
 					try { controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n')); } catch {}
 				};
+				// The model's name comes alongside the answer, never holding it up.
+				const named = adapter.answers.modelName
+					? adapter.answers.modelName({ config: conn.config, fetch: providerFetch(5000) }).then((model) => model && send({ model }), () => {})
+					: Promise.resolve();
 				try {
 					for await (const piece of adapter.answers.stream({ config: conn.config, system: SYSTEM_PROMPT, messages: checked.messages, fetch: deadlineFetch })) {
 						if (upstream.signal.aborted || request.signal.aborted) break;
 						send(piece === CUT_OFF ? { cutOff: true } : { text: piece });
 					}
+					await named;
 					send({ done: true });
 				} catch (err) {
 					if (!request.signal.aborted) send({ error: describeFetchError(err, ANSWER_TIMEOUT_MS) });

@@ -276,3 +276,16 @@ test('in browser mode the key stays in this browser, per user, and goes only to 
 		delete globalThis.localStorage;
 	}
 });
+
+test('the byline names Claude by its display name, looked up once; others by model id', async () => {
+	let calls = 0;
+	const fetch = async () => { calls++; return new Response(JSON.stringify({ display_name: 'Claude Sonnet Test' })); };
+	const config = { key: 'k', model: 'claude-byline-test' };
+	assert.equal(await claude.answers.modelName({ config, fetch }), 'Claude Sonnet Test');
+	assert.equal(await claude.answers.modelName({ config, fetch }), 'Claude Sonnet Test');
+	assert.equal(calls, 1);
+	const missing = async () => new Response('{}', { status: 404 });
+	assert.equal(await claude.answers.modelName({ config: { key: 'k', model: 'claude-nope' }, fetch: missing }), 'claude-nope');
+	assert.equal(await openai.answers.modelName({ config: { key: 'k' } }), 'gpt-4.1-mini');
+	assert.equal(await openaiCompatible.answers.modelName({ config: { model: 'llama3.2' } }), 'llama3.2');
+});

@@ -30,7 +30,8 @@
 		answerCopied = -1,
 		oncopyanswer = () => {},
 		chat = null,
-		onchatback = () => {}
+		onchatback = () => {},
+		onaistop = () => {}
 	} = $props();
 
 	let chatScrollEl = $state();
@@ -273,7 +274,8 @@
 		{#each sections as section (section.id)}
 			{#if section.items.length || section.error}
 				<div class="launcher-section" role="group" aria-labelledby="{listId}-{section.id}">
-					<div class="launcher-section-label" id="{listId}-{section.id}">
+					<!-- An AI answer needs no heading: its byline names the model. -->
+					<div class="launcher-section-label" class:is-visually-hidden={section.layout === 'ai'} id="{listId}-{section.id}">
 						<span>{section.label}</span>
 					</div>
 					{#if section.error}
@@ -297,7 +299,7 @@
 								style:--i={Math.min(i, 5)}
 								onpointermove={() => { if (!isSel) onselect(item.key); }}
 								onmousedown={(e) => e.preventDefault()}
-								onclick={(e) => onrun(item, e)}
+								onclick={(e) => { if (!item.ai) onrun(item, e); }}
 								onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); onrun(item, e); } }}
 							>
 								{#if item.ai}
@@ -308,17 +310,29 @@
 										{#if item.ai.messages[1]?.cutOff}<div class="ai-cut-off">Cut off at the length limit. Continue the conversation to ask for the rest.</div>{/if}
 										{#if item.ai.error}<div class="launcher-error ai-error">{item.ai.error}</div>{/if}
 									</div>
-									{#if !item.ai.streaming || item.ai.messages[1]?.content}
-										<div class="ai-card-actions">
+									{@const answer = item.ai.messages[1]}
+									{#if answer?.content || answer?.model}
+										<div class="ai-byline">
+											{answer.model || item.ai.name}{#if answer.at && !item.ai.streaming}{" · "}<time datetime={new Date(answer.at).toISOString()}>{new Date(answer.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time>{/if}
+										</div>
+									{/if}
+									<div class="ai-card-actions">
+										{#if item.ai.streaming}
+											<button type="button" tabindex="-1" class="launcher-detail-btn" onclick={(e) => { e.stopPropagation(); onaistop(); }}>
+												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+												Stop
+											</button>
+										{:else}
 											<button type="button" tabindex="-1" class="launcher-detail-btn is-primary" onclick={(e) => { e.stopPropagation(); item.actions[0].run(); }}>
 												Continue conversation
 											</button>
-											{#if item.ai.streaming}
-												<span class="ai-card-note">Writing…</span>
-											{:else}
-												<span class="ai-card-note">AI can be wrong. Check what matters.</span>
-											{/if}
-										</div>
+											<span class="ai-card-note">AI can be wrong. Check what matters.</span>
+										{/if}
+									</div>
+									{#if item.hidden}
+										<button type="button" tabindex="-1" class="ai-show-results" onclick={(e) => { e.stopPropagation(); item.showResults(); }}>
+											{item.hidden > 0 ? `Show ${item.hidden} result${item.hidden === 1 ? '' : 's'}` : 'Show the other options'}
+										</button>
 									{/if}
 								{:else if item.answer}
 									<!-- Instant answer: the question on the left, the answer on the right. -->
@@ -475,7 +489,8 @@
 		<span class="launcher-footer-hint">
 			<Keys keys="↑ ↓" /> to move
 		</span>
-		{#if selected}
+		<!-- A streaming answer has nothing to run yet, so no Enter hint. -->
+		{#if selected && selected.actions.length}
 			<button type="button" class="launcher-footer-btn" onmousedown={(e) => e.preventDefault()} onclick={(e) => onrun(selected, e)}>
 				{selected.actions[0]?.label || 'Open'} <Keys keys="↵" />
 			</button>

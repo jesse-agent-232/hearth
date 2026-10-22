@@ -41,7 +41,8 @@ const adapter = {
 	test: (ctx) => PROVIDERS.claude.test(ctx),
 
 	answers: {
-		stream: (ctx) => PROVIDERS.claude.stream(ctx)
+		stream: (ctx) => PROVIDERS.claude.stream(ctx),
+		modelName: (ctx) => PROVIDERS.claude.modelName(ctx)
 	}
 };
 

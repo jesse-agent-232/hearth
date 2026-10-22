@@ -41,7 +41,8 @@ const adapter = {
 	test: (ctx) => PROVIDERS.openai.test(ctx),
 
 	answers: {
-		stream: (ctx) => PROVIDERS.openai.stream(ctx)
+		stream: (ctx) => PROVIDERS.openai.stream(ctx),
+		modelName: (ctx) => PROVIDERS.openai.modelName(ctx)
 	}
 };
 

@@ -1688,20 +1688,41 @@ body.search-active .launcher-host { z-index: 40; }
 	color: var(--hero-search-text-dim);
 }
 .launcher-answer-arrow { width: 18px; height: 18px; color: var(--hero-search-text-dim); }
-/* AI answers: the card above the results, and the chat it opens into. */
+/* AI answers: straight on the panel above the results, no card, and the
+   chat it opens into. Selected (Enter continues) shows as an accent rule. */
 .launcher-item.is-ai {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-	padding: 14px 16px;
-	border-radius: 12px;
-	background: var(--hero-search-chip-bg);
-	box-shadow: inset 0 0 0 1px var(--hero-search-chip-border);
-	cursor: pointer;
-	transition: background-color 120ms ease, box-shadow 200ms var(--ease-standard);
+	gap: 10px;
+	padding: 6px 10px 10px 12px;
+	border-left: 2px solid transparent;
+	cursor: default;
+	transition: border-color 150ms var(--ease-standard);
 }
-.launcher-item.is-ai.is-selected { box-shadow: inset 0 0 0 1px var(--launcher-sel-ring); }
-.launcher-item.is-ai:hover { background: color-mix(in srgb, var(--hero-search-text) 6%, var(--hero-search-chip-bg)); }
+.launcher-item.is-ai.is-selected:not(:has(.ai-thinking, .is-streaming)) { border-left-color: color-mix(in srgb, var(--accent, #f5b942) 60%, transparent); }
+.launcher-section-label.is-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+.ai-byline { font-size: 0.7rem; color: var(--hero-search-text-dim); }
+.ai-show-results {
+	align-self: flex-start;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--hero-search-text-dim);
+	font: inherit;
+	font-size: 0.72rem;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+	cursor: pointer;
+}
+.ai-show-results:hover { color: var(--hero-search-text); }
 .ai-card-body { min-width: 0; }
 .ai-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
 .ai-card-note { font-size: 0.7rem; color: var(--hero-search-text-dim); }
