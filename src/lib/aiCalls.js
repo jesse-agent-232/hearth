@@ -73,7 +73,7 @@ export async function testInBrowser(id, config) {
  * Streams an answer straight from the API, with the same callbacks as
  * streamAnswer (aiAnswer.js). Throws with a message the card can show.
  */
-export async function streamInBrowser({ integration, config, messages, signal, onText, onCutOff = () => {}, onModel = () => {} }) {
+export async function streamInBrowser({ integration, config, messages, signal, onText, onCutOff = () => {}, onModel = () => {}, onUsage = () => {} }) {
 	const provider = PROVIDERS[integration];
 	if (!provider || !config?.key) throw new Error('Connect this integration again: its key is not on this device');
 	const checked = checkMessages(messages);
@@ -84,6 +84,7 @@ export async function streamInBrowser({ integration, config, messages, signal, o
 		for await (const piece of provider.stream({ config, system: SYSTEM_PROMPT, messages: checked.messages, fetch, browser: true })) {
 			if (signal?.aborted) return;
 			if (piece === CUT_OFF) onCutOff();
+			else if (piece?.usage) onUsage(piece.usage);
 			else onText(piece);
 		}
 	} catch (err) {

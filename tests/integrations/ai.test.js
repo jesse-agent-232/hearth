@@ -182,6 +182,25 @@ test('an answer that hits the length limit ends with CUT_OFF, from Claude and Op
 	assert.deepEqual(await pieces(openai.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: done.fetch })), ['whole']);
 });
 
+test('a stream ends with the tokens the API reports, from Claude and OpenAI', async () => {
+	const pieces = async (iter) => { const out = []; for await (const p of iter) out.push(p); return out; };
+	const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+	const c = fakeFetch(streamed([
+		sse('message_start', { type: 'message_start', message: { usage: { input_tokens: 12, cache_read_input_tokens: 3, output_tokens: 1 } } }),
+		sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'hi' } }),
+		sse('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 7 } }),
+		sse('message_stop', { type: 'message_stop' })
+	]));
+	assert.deepEqual(await pieces(claude.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: c.fetch })), ['hi', { usage: { input: 15, output: 7 } }]);
+	const o = fakeFetch(streamed([
+		`data: ${JSON.stringify({ choices: [{ delta: { content: 'hi' }, finish_reason: 'stop' }] })}\n\n`,
+		`data: ${JSON.stringify({ choices: [], usage: { prompt_tokens: 20, completion_tokens: 4 } })}\n\n`,
+		'data: [DONE]\n\n'
+	]));
+	assert.deepEqual(await pieces(openai.answers.stream({ config: { key: 'k' }, system: '', messages: ask, fetch: o.fetch })), ['hi', { usage: { input: 20, output: 4 } }]);
+	assert.deepEqual(o.calls[0].body.stream_options, { include_usage: true });
+});
+
 test('a refused key reports what the API said', async () => {
 	const forbidden = fakeFetch(() => new Response(JSON.stringify({ type: 'error', error: { type: 'permission_error', message: 'Your key does not have access to claude-opus-5-5' } }), { status: 403 }));
 	const r = await claude.test({ config: { key: 'k', model: 'claude-opus-5-5' }, fetch: forbidden.fetch });

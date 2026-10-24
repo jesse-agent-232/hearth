@@ -9,11 +9,12 @@ export const MAX_CHAT_MESSAGES = 20;
 /**
  * Streams the answer to `messages` (alternating user and assistant, ending
  * with the user), calling `onText` with each piece as it arrives, and
- * `onCutOff` if it stopped at the length limit, and `onModel` with the
- * model's name for the byline. Resolves
+ * `onCutOff` if it stopped at the length limit, `onModel` with the
+ * model's name for the byline, and `onUsage` with its { input, output }
+ * tokens when the API reports them. Resolves
  * when the answer is whole; throws with the server's message otherwise.
  */
-export async function streamAnswer({ messages, integration, signal, onText, onCutOff = () => {}, onModel = () => {} }) {
+export async function streamAnswer({ messages, integration, signal, onText, onCutOff = () => {}, onModel = () => {}, onUsage = () => {} }) {
 	const res = await fetch('/api/ai', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
@@ -40,6 +41,7 @@ export async function streamAnswer({ messages, integration, signal, onText, onCu
 			if (typeof msg.text === 'string') onText(msg.text);
 			if (msg.cutOff) onCutOff();
 			if (typeof msg.model === 'string') onModel(msg.model);
+			if (msg.usage) onUsage(msg.usage);
 		}
 		if (done) throw new Error('The answer stopped before it was finished');
 	}
