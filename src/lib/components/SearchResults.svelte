@@ -31,14 +31,43 @@
 		oncopyanswer = () => {},
 		chat = null,
 		onchatback = () => {},
-		onaistop = () => {}
+		chatDraft = $bindable(''),
+		chatInputEl = $bindable(),
+		chatFull = false,
+		onchatsend = () => {},
+		onchatstop = () => {},
+		onchatkeydown = () => {}
 	} = $props();
+
+	// The message box grows with what is typed, up to six lines (its CSS
+	// max-height), and only scrolls past that.
+	function grow(node) {
+		const fit = () => {
+			node.style.height = 'auto';
+			const max = parseFloat(getComputedStyle(node).maxHeight);
+			node.style.height = `${Math.min(node.scrollHeight, max)}px`;
+			node.style.overflowY = node.scrollHeight > max ? 'auto' : 'hidden';
+		};
+		fit();
+		node.addEventListener('input', fit);
+		return { update: fit, destroy: () => node.removeEventListener('input', fit) };
+	}
+
+	// The header names the model that answered last, and what the whole
+	// conversation has cost: every turn sends the history again.
+	const chatModel = $derived(chat ? [...chat.messages].reverse().find((m) => m.role === 'assistant' && m.model)?.model || chat.name : '');
+	const chatTokens = $derived(chat ? chat.messages.reduce((n, m) => n + (m.usage ? m.usage.input + m.usage.output : 0), 0) : 0);
+	const formatTokens = (n) => `${n < 10000 ? n.toLocaleString() : `${(n / 1000).toFixed(1)}k`} tokens`;
 
 	let chatScrollEl = $state();
 	// Follow the answer down as it streams, unless the reader scrolled up.
+	// Sending a message always brings the bottom back into view.
 	let pinned = true;
+	let seenMessages = 0;
 	$effect(() => {
 		if (!chat) return;
+		if (chat.messages.length > seenMessages) pinned = true;
+		seenMessages = chat.messages.length;
 		chat.messages.map((m) => m.content.length);
 		chat.error;
 		if (pinned && chatScrollEl) queueMicrotask(() => chatScrollEl && (chatScrollEl.scrollTop = chatScrollEl.scrollHeight));
@@ -162,14 +191,15 @@
 <div class="launcher-panel hero-search-results" style:min-height={panelOpen && actionsHeight ? `${actionsHeight + 54}px` : null}>
 	{#if chat}
 		<!-- The AI conversation, in place of the list. Nothing in it is saved. -->
+		<!-- The head stays put above the scroll, so Back is always in reach. -->
+		<div class="launcher-chat-head">
+			<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={onchatback}>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+				Back
+			</button>
+			<span class="launcher-chat-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{@html SPARKLE}</svg>{chatModel}{#if chatTokens}<span class="launcher-chat-tokens">{" · "}{formatTokens(chatTokens)}</span>{/if}</span>
+		</div>
 		<div class="launcher-scroll launcher-chat" bind:this={chatScrollEl} onscroll={chatScrolled} role="log" aria-label="Conversation with {chat.name}">
-			<div class="launcher-chat-head">
-				<button type="button" class="launcher-detail-back" onmousedown={(e) => e.preventDefault()} onclick={onchatback}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-					Back
-				</button>
-				<span class="launcher-chat-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{@html SPARKLE}</svg>{chat.name}</span>
-			</div>
 			{#each chat.messages as message, i}
 				{#if message.role === 'user'}
 					<div class="ai-bubble is-user">{message.content}</div>
@@ -182,6 +212,31 @@
 			{/each}
 			{#if chat.error}<div class="launcher-error ai-error">{chat.error}</div>{/if}
 		</div>
+		<!-- The chat's own message box, in the answer's type size. -->
+		<form class="ai-composer" onsubmit={(e) => { e.preventDefault(); onchatsend(); }}>
+			<textarea
+				bind:this={chatInputEl}
+				bind:value={chatDraft}
+				use:grow={chatDraft}
+				rows="1"
+				placeholder={chatFull ? 'This conversation is full. Start a new search to ask more.' : `Ask ${chat.name} a follow-up…`}
+				aria-label="Follow-up question for {chat.name}"
+				spellcheck="true"
+				enterkeyhint="send"
+				maxlength="4000"
+				disabled={chatFull}
+				onkeydown={onchatkeydown}
+			></textarea>
+			{#if chat.streaming}
+				<button type="button" class="ai-composer-btn" onclick={onchatstop} aria-label="Stop the answer">
+					<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+				</button>
+			{:else}
+				<button type="submit" class="ai-composer-btn" disabled={!chatDraft.trim() || chatFull} aria-label="Send">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+				</button>
+			{/if}
+		</form>
 	{:else if detail}
 		<!-- Detail view: one title, Spotlight-style, in place of the list. -->
 		<div class="launcher-scroll launcher-detail" role="region" aria-label="Details for {detail.title}">
@@ -311,22 +366,18 @@
 										{#if item.ai.error}<div class="launcher-error ai-error">{item.ai.error}</div>{/if}
 									</div>
 									{@const answer = item.ai.messages[1]}
-									{#if answer?.content || answer?.model}
-										<div class="ai-byline">
-											{answer.model || item.ai.name}{#if answer.at && !item.ai.streaming}{" · "}<time datetime={new Date(answer.at).toISOString()}>{new Date(answer.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time>{/if}
-										</div>
-									{/if}
+									<!-- Byline on the left, Continue on the right once the answer is
+									     done. Stop lives in the search bar while it streams. -->
 									<div class="ai-card-actions">
-										{#if item.ai.streaming}
-											<button type="button" tabindex="-1" class="launcher-detail-btn" onclick={(e) => { e.stopPropagation(); onaistop(); }}>
-												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
-												Stop
-											</button>
-										{:else}
+										{#if answer?.content || answer?.model}
+											<div class="ai-byline">
+												{answer.model || item.ai.name}{#if answer.at && !item.ai.streaming}{" · "}<time datetime={new Date(answer.at).toISOString()}>{new Date(answer.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time>{/if}
+											</div>
+										{/if}
+										{#if !item.ai.streaming}
 											<button type="button" tabindex="-1" class="launcher-detail-btn is-primary" onclick={(e) => { e.stopPropagation(); item.actions[0].run(); }}>
 												Continue conversation
 											</button>
-											<span class="ai-card-note">AI can be wrong. Check what matters.</span>
 										{/if}
 									</div>
 									{#if item.hidden}

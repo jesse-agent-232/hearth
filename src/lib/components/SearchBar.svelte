@@ -525,7 +525,8 @@
 				signal: ctrl.signal,
 				onText: (t) => { if (seq === aiSeq) answer.content += t; },
 				onCutOff: () => { if (seq === aiSeq) answer.cutOff = true; },
-				onModel: (name) => { if (seq === aiSeq) answer.model = name; }
+				onModel: (name) => { if (seq === aiSeq) answer.model = name; },
+				onUsage: (u) => { if (seq === aiSeq) answer.usage = u; }
 			};
 			// `calls: browser`: straight to the API with the key on this device.
 			if (asked?.calls === 'browser') await streamInBrowser({ ...callbacks, integration: id, config: integrationsStore.browserConfig(id) });
@@ -575,8 +576,12 @@
 		chatLayout = true;
 		clearTimeout(chatTimer);
 		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-		chatTimer = setTimeout(() => { if (ai && chatLayout) ai.chat = true; }, still ? 0 : LIST_FADE_MS);
-		tick().then(() => chatInputEl?.focus());
+		// The message box only exists once the chat is shown, so focus it then.
+		chatTimer = setTimeout(() => {
+			if (!ai || !chatLayout) return;
+			ai.chat = true;
+			tick().then(() => chatInputEl?.focus());
+		}, still ? 0 : LIST_FADE_MS);
 	}
 
 	function leaveChat() {
@@ -604,7 +609,13 @@
 		runAi(followUpMessages(ai.messages, text));
 	}
 
+	// The chat's message box: Enter sends, Shift+Enter is a new line.
 	function handleChatKeydown(e) {
+		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+			e.preventDefault();
+			sendFollowUp();
+			return;
+		}
 		if (e.key === 'Escape') {
 			e.preventDefault();
 			e.stopPropagation();
@@ -649,7 +660,7 @@
 		if (inlineOpen) frecency = frecencyScores();
 	});
 
-	const sections = $derived.by(() => {
+	const allSections = $derived.by(() => {
 		const q = (query || '').trim();
 		const out = [];
 
@@ -886,17 +897,17 @@
 			}
 			if (fb.length) out.push({ id: 'fallbacks', label: 'Use “' + (q.length > 24 ? q.slice(0, 24) + '…' : q) + '” with…', items: fb });
 		}
-		// The AI's answer to this very query sits above everything. Once its
-		// first words arrive the other results step aside, behind a "Show N
-		// results" link; editing the query brings them back.
+		// The AI's answer to this very query sits above everything. While it
+		// is asked the other results step aside; once it is done they wait
+		// behind a "Show N results" link. Editing the query brings them back.
 		if (ai && !activeScope && ai.question === q) {
 			const others = out.reduce((n, s) => n + (s.id === 'fallbacks' ? 0 : s.items.length), 0);
-			const hide = !!firstAnswer && !showAllResults;
+			const hide = (ai.streaming || !!firstAnswer) && !showAllResults;
 			const item = {
 				key: 'ai',
 				title: ai.question,
 				ai,
-				hidden: hide ? others || -1 : 0,
+				hidden: hide && !ai.streaming ? others || -1 : 0,
 				showResults: () => { showAllResults = true; },
 				// While it streams there is nothing to continue yet: no actions, no Enter.
 				actions: ai.streaming ? [] : [
@@ -919,6 +930,14 @@
 
 	const SPARKLE = '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>';
 
+	// With the pill in the bar, its own "Ask …" row below would say it twice.
+	const sections = $derived(
+		pillShown
+			? allSections
+				.map((s) => (s.id === 'fallbacks' ? { ...s, items: s.items.filter((i) => i.key !== `ask:${aiIntegration.id}`) } : s))
+				.filter((s) => s.id !== 'fallbacks' || s.items.length)
+			: allSections
+	);
 	const flatItems = $derived(sections.flatMap((s) => s.items));
 
 	// The "Ask Claude" pill in the bar: shown when nothing matched, or the
@@ -928,7 +947,7 @@
 	const askQuery = $derived((query || '').trim());
 	const askable = $derived(!!aiIntegration && !activeScope && !detail && !!askQuery && !askQuery.startsWith('!') && ai?.question !== askQuery);
 	const nothingMatched = $derived(
-		!sections.some((s) => s.loading) && !sections.some((s) => s.id !== 'fallbacks' && s.id !== 'ai' && s.items.length)
+		!allSections.some((s) => s.loading) && !allSections.some((s) => s.id !== 'fallbacks' && s.id !== 'ai' && s.items.length)
 	);
 	const pillShown = $derived(askable && (nothingMatched || isQuestion(askQuery)));
 	const pillLeads = $derived(pillShown && !userMoved);
@@ -1096,12 +1115,6 @@
 	});
 
 	function handleSubmit(e) {
-		// In a chat the bar is its message box: Enter sends the follow-up.
-		if (chatOn) {
-			e.preventDefault();
-			sendFollowUp();
-			return;
-		}
 		// Enter is handled in the keydown below; a submit only gets here with
 		// nothing to run (no results yet), and then it is a web search.
 		if (!query.trim()) e.preventDefault();
@@ -1268,33 +1281,8 @@
 		role="search"
 		onsubmit={handleSubmit}
 		bind:offsetHeight={formHeight}
+		inert={chatOn && isPaletteOpen}
 	>
-		{#if chatOn}
-		<svg class="hero-search-ai shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
-		<input
-			bind:this={chatInputEl}
-			bind:value={chatDraft}
-			type="text"
-			class="hero-search-input w-full h-[48px] md:h-[52px] bg-transparent border-none px-3 md:px-4 outline-none font-mono"
-			placeholder={chatFull ? 'This conversation is full. Start a new search to ask more.' : `Ask ${ai.name} a follow-up…`}
-			aria-label="Follow-up question for {ai.name}"
-			autocomplete="off"
-			spellcheck="true"
-			enterkeyhint="send"
-			maxlength="4000"
-			disabled={chatFull}
-			onkeydown={handleChatKeydown}
-		/>
-		{#if ai.streaming}
-			<button type="button" class="launcher-chat-send" onclick={stopAi} aria-label="Stop the answer">
-				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
-			</button>
-		{:else}
-			<button type="submit" class="launcher-chat-send" disabled={!chatDraft.trim() || chatFull} aria-label="Send">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-			</button>
-		{/if}
-		{:else}
 		<svg class="text-content-dim shrink-0 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 
 		{#if activeIntegration}
@@ -1345,11 +1333,16 @@
 				{#if pillLeads}<span class="ask-pill-key" aria-hidden="true"><Keys keys="↵" /></span>{/if}
 			</button>
 		{/if}
-		{#if query}
+		{#if ai?.streaming && ai.question === askQuery}
+			<!-- While it answers, Stop takes the clear button's place. -->
+			<button type="button" class="ask-pill is-leading" onmousedown={(e) => e.preventDefault()} onclick={stopAi}>
+				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+				Stop
+			</button>
+		{:else if query}
 			<button type="button" class="clear-btn text-sm md:text-base bg-transparent border-none cursor-pointer px-1" aria-label="Clear search" onclick={() => { query = ''; inputEl?.focus(); }}>&times;</button>
 		{:else}
 			<kbd class="hero-search-kbd hidden md:inline-flex items-center gap-0.5 text-[0.7rem] py-1 px-2 rounded border font-mono shrink-0">{#if macKeys}<svg class="kbd-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Command"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3Z"/></svg>{:else}Ctrl&nbsp;{/if}K</kbd>
-		{/if}
 		{/if}
 		<!-- One thin line while an app is still searching, so "still looking"
 		     and "found nothing" don't look the same. -->
@@ -1375,7 +1368,12 @@
 			onpanel={() => { panelOpen = !panelOpen; inputEl?.focus(); }}
 			chat={ai?.chat ? ai : null}
 			onchatback={leaveChat}
-			onaistop={stopAi}
+			bind:chatDraft
+			bind:chatInputEl
+			{chatFull}
+			onchatsend={sendFollowUp}
+			onchatstop={stopAi}
+			onchatkeydown={handleChatKeydown}
 		/>
 	{/if}
 </div>
