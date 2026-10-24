@@ -335,10 +335,10 @@ integrations:
   # Anthropic or OpenAI), or a self-hosted model. No key of yours is used.
   claude:
     enabled: true
-    calls: server                             # Optional: browser keeps each user's key in their browser, which calls Anthropic itself
+    calls: browser                            # Optional: the default; server stores each user's key encrypted on Holm's server, which calls Anthropic
   openai:
     enabled: true
-    calls: server                             # Optional: server or browser, as for claude
+    calls: browser                            # Optional: browser or server, as for claude
   openai_compatible:                          # Ollama, LM Studio, vLLM, llama.cpp
     enabled: true
     name: "Ollama"                            # Optional — "Self-hosted AI" by default

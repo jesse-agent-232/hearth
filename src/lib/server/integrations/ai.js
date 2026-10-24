@@ -15,12 +15,12 @@ export function providerFetch(ms, signal) {
 }
 
 /**
- * True when the operator set `calls: browser` on an integration that
- * supports it (Claude, OpenAI): the user's key then stays in their browser,
+ * True for an integration that supports it (Claude, OpenAI) unless the
+ * operator set `calls: server`: the user's key then stays in their browser,
  * which calls the API itself, and Holm's server never holds or uses it.
  */
 export function callsInBrowser(adapter, operator) {
-	return !!adapter?.browserCalls && operator?.calls === 'browser';
+	return !!adapter?.browserCalls && operator?.calls !== 'server';
 }
 
 // A sliding window per user. In memory: a restart forgets it, which is fine

@@ -245,13 +245,15 @@ test('a server-side Claude call carries no Origin header', async () => {
 	}
 });
 
-test('calls: browser applies to Claude and OpenAI only; server stays the default', () => {
-	assert.equal(callsInBrowser(claude, { enabled: true }), false);
+test('calls: browser applies to Claude and OpenAI only, and is the default', () => {
+	assert.equal(callsInBrowser(claude, { enabled: true }), true);
+	assert.equal(callsInBrowser(openai, { enabled: true }), true);
 	assert.equal(callsInBrowser(claude, { calls: 'server' }), false);
 	assert.equal(callsInBrowser(claude, { calls: 'browser' }), true);
 	assert.equal(callsInBrowser(openai, { calls: 'browser' }), true);
 	assert.equal(callsInBrowser(openaiCompatible, { calls: 'browser' }), false);
-	assert.equal(callsInBrowser(claude, null), false);
+	assert.equal(callsInBrowser(openaiCompatible, { enabled: true }), false);
+	assert.equal(callsInBrowser(claude, null), true);
 });
 
 test('in browser mode the key stays in this browser, per user, and goes only to the API', async () => {

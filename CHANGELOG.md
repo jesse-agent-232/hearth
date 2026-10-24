@@ -8,7 +8,7 @@ twelve words, ending with a link to its PR.
 
 ## Unreleased
 
-- **New:** Ask Claude, OpenAI or your own Ollama from search, and keep chatting. Claude and OpenAI can keep the key in your browser with `calls: browser`. ([#111](https://github.com/man15h/holm/pull/111))
+- **New:** Ask Claude, OpenAI or your own Ollama from search, and keep chatting. Claude and OpenAI keep the key in your browser and call from there; `calls: server` moves the key and the calls to Holm's server. ([#111](https://github.com/man15h/holm/pull/111))
 
 ## 0.10.1 — 2026-10-22
 
