@@ -14,7 +14,8 @@ const ANSWER_TIMEOUT_MS = 180000;
 // Streams an answer from the user's own AI connection (Claude, OpenAI or a
 // self-hosted server) as NDJSON lines: { "model": "…" } naming the model for the byline,
 // { "text": "…" } per piece, then
-// { "cutOff": true } if it hit the length limit, and { "done": true }, or
+// { "cutOff": true } if it hit the length limit, { "usage": { input, output } }
+// in tokens if the API reports it, and { "done": true }, or
 // { "error": "…" } if it stops partway. `integration`
 // picks one of the user's AI connections; without it, the first connected.
 // The model gets the conversation only: no tools, no Holm data. Nothing is
@@ -77,7 +78,7 @@ export async function POST({ cookies, url, request }) {
 				try {
 					for await (const piece of adapter.answers.stream({ config: conn.config, system: SYSTEM_PROMPT, messages: checked.messages, fetch: deadlineFetch })) {
 						if (upstream.signal.aborted || request.signal.aborted) break;
-						send(piece === CUT_OFF ? { cutOff: true } : { text: piece });
+						send(piece === CUT_OFF ? { cutOff: true } : piece?.usage ? { usage: piece.usage } : { text: piece });
 					}
 					await named;
 					send({ done: true });

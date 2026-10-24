@@ -16,6 +16,8 @@ export const MAX_OUTPUT_TOKENS = 1024;
 
 /** Yielded by an `answers.stream` after the text when the answer hit MAX_OUTPUT_TOKENS. */
 export const CUT_OFF = Object.freeze({ cutOff: true });
+/** A stream's last piece when the API reports what the answer cost: { usage: { input, output } } in tokens. */
+export const usage = (input, output) => ({ usage: { input: input || 0, output: output || 0 } });
 export const MAX_MESSAGES = 20;
 export const MAX_MESSAGE_CHARS = 4000;
 // Earlier answers come back with each follow-up and may run past
@@ -146,6 +148,7 @@ export async function* streamOpenAiChat({ base, key, model, system, messages, fe
 		const text = choice?.delta?.content;
 		if (typeof text === 'string' && text) yield text;
 		if (choice?.finish_reason === 'length') yield CUT_OFF;
+		if (chunk?.usage) yield usage(chunk.usage.prompt_tokens, chunk.usage.completion_tokens);
 	}
 }
 
@@ -210,6 +213,7 @@ export const PROVIDERS = {
 				body: JSON.stringify({ model: modelOf('claude', config), max_tokens: MAX_OUTPUT_TOKENS, system, messages, stream: true })
 			});
 			if (!res.ok) throw new Error(await apiError(res, 'Anthropic'));
+			let input = 0;
 			for await (const { event, data } of sseEvents(res)) {
 				if (event === 'message_stop') return;
 				let body;
@@ -224,7 +228,12 @@ export const PROVIDERS = {
 				if (body?.type === 'content_block_delta' && body.delta?.type === 'text_delta' && body.delta.text) {
 					yield body.delta.text;
 				}
+				if (body?.type === 'message_start') {
+					const u = body.message?.usage;
+					input = (u?.input_tokens || 0) + (u?.cache_read_input_tokens || 0) + (u?.cache_creation_input_tokens || 0);
+				}
 				if (body?.type === 'message_delta' && body.delta?.stop_reason === 'max_tokens') yield CUT_OFF;
+				if (body?.type === 'message_delta' && body.usage) yield usage(input, body.usage.output_tokens);
 			}
 		}
 	},
@@ -251,7 +260,7 @@ export const PROVIDERS = {
 				messages,
 				fetch,
 				name: 'OpenAI',
-				extra: { max_completion_tokens: MAX_OUTPUT_TOKENS }
+				extra: { max_completion_tokens: MAX_OUTPUT_TOKENS, stream_options: { include_usage: true } }
 			});
 		}
 	}
